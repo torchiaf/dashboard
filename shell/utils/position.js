@@ -173,3 +173,15 @@ export function fitOnScreen(contentElem, triggerElemOrEvent, opt, useDefaults) {
 
   return style;
 }
+
+export function dragZone(event) {
+  if (window.innerWidth - event.x < 300 && window.innerHeight - event.y > 150) {
+    return RIGHT;
+  } else if (window.innerWidth - event.x > 150 && window.innerHeight - event.y < 300) {
+    return BOTTOM;
+  } else if (event.x < 300 && window.innerHeight - event.y > 150) {
+    return LEFT;
+  } else {
+    return CENTER;
+  }
+}
