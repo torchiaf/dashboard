@@ -44,6 +44,12 @@ export default {
       required: true,
     },
 
+    // The width of the window
+    width: {
+      type:     Number,
+      default:  undefined,
+    },
+
     // The pod to connect to
     pod: {
       type:     Object,
@@ -93,6 +99,10 @@ export default {
     },
 
     height() {
+      this.fit();
+    },
+
+    width() {
       this.fit();
     },
   },

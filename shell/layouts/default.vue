@@ -35,6 +35,7 @@ import { sortBy } from '@shell/utils/sort';
 import PageHeaderActions from '@shell/mixins/page-actions';
 import BrowserTabVisibility from '@shell/mixins/browser-tab-visibility';
 import { getProductFromRoute } from '@shell/middleware/authenticated';
+import { BOTTOM, CENTER, dragZone } from '@shell/utils/position';
 
 const SET_LOGIN_ACTION = 'set-as-login';
 
@@ -60,6 +61,10 @@ export default {
   // Note - This will not run on route change
   data() {
     return {
+      wmDrag:   {
+        active: false,
+        zone:   null,
+      },
       noLocaleShortcut: process.env.dev || false,
       groups:           [],
       gettingGroups:    false,
@@ -73,10 +78,11 @@ export default {
   ],
 
   computed: {
-    ...mapState(['managementReady', 'clusterReady']),
+    ...mapState(['managementReady', 'clusterReady', 'wm']),
     ...mapGetters(['productId', 'clusterId', 'namespaceMode', 'isExplorer', 'currentProduct', 'isSingleProduct']),
     ...mapGetters({ locale: 'i18n/selectedLocaleLabel', availableLocales: 'i18n/availableLocales' }),
     ...mapGetters('type-map', ['activeProducts']),
+    ...mapState('wm', ['userPin']),
 
     afterLoginRoute: mapPref(AFTER_LOGIN_ROUTE),
 
@@ -199,6 +205,23 @@ export default {
         this.currentProduct?.name === getProductFromRoute(this.$route);
     },
 
+    pin: {
+      get() {
+        return this.userPin;
+      },
+
+      set(pin) {
+        if (pin === CENTER) {
+          return;
+        }
+        window.localStorage.setItem('wm-pin', pin);
+        this.$store.commit('wm/setUserPin', pin);
+      },
+    },
+
+    pinClass() {
+      return `pin-${ this.pin }`;
+    }
   },
 
   watch: {
@@ -307,9 +330,27 @@ export default {
   mounted() {
     // Sync the navigation tree on fresh load
     this.$nextTick(() => this.syncNav());
+    this.pin = window.localStorage.getItem('wm-pin') || BOTTOM;
   },
 
   methods: {
+
+    onDragStart(event) {
+      this.wmDrag.active = true;
+    },
+
+    onDrag(event) {
+      this.wmDrag.zone = dragZone(event);
+    },
+
+    onDragEnd(event) {
+      this.pin = dragZone(event);
+      this.wmDrag = {
+        active: false,
+        zone:   CENTER,
+      };
+    },
+
     async setClusterAsLastRoute() {
       const route = {
         name:   this.$route.name,
@@ -575,7 +616,11 @@ export default {
     <FixedBanner :header="true" />
     <AwsComplianceBanner v-if="managementReady" />
     <AzureWarning v-if="managementReady" />
-    <div v-if="managementReady" class="dashboard-content">
+    <div
+      v-if="managementReady"
+      class="dashboard-content"
+      :class="{[pinClass]: true}"
+    >
       <Header />
       <nav v-if="clusterReady" class="side-nav">
         <div class="nav">
@@ -662,12 +707,27 @@ export default {
       <main v-else-if="unmatchedRoute">
         <nuxt class="outlet" />
       </main>
-      <div class="wm">
+      <div
+        class="wm"
+        :class="{
+          'drag-end': !wmDrag.active,
+          'drag-start': wmDrag.active,
+        }"
+        draggable="true"
+        @dragstart="onDragStart($event)"
+        @drag="onDrag($event)"
+        @dragend="onDragEnd($event)"
+      >
         <WindowManager />
       </div>
     </div>
     <FixedBanner :footer="true" />
     <GrowlManager />
+    <span
+      v-if="wmDrag.active && wmDrag.zone != pin"
+      class="pin-area"
+      :class="wmDrag.zone"
+    />
   </div>
 </template>
 <style lang="scss" scoped>
@@ -695,13 +755,30 @@ export default {
     overflow-y: auto;
     min-height: 0px;
 
-    grid-template-areas:
-      "header  header"
-      "nav      main"
-      "wm       wm";
+    &.pin-right {
+      grid-template-areas:
+        "header  header  header"
+        "nav      main     wm";
+      grid-template-rows:    var(--header-height) auto;
+      grid-template-columns: var(--nav-width)     auto var(--wm-width, 0px);
+    }
 
-    grid-template-columns: var(--nav-width)     auto;
-    grid-template-rows:    var(--header-height) auto  var(--wm-height, 0px);
+    &.pin-bottom {
+      grid-template-areas:
+        "header  header"
+        "nav       main"
+        "wm         wm";
+      grid-template-rows:    var(--header-height) auto  var(--wm-height, 0px);
+      grid-template-columns: var(--nav-width)     auto;
+    }
+
+    &.pin-left {
+      grid-template-areas:
+        "header  header  header"
+        "wm       nav     main";
+      grid-template-rows:    var(--header-height) auto;
+      grid-template-columns: var(--wm-width, 0px) var(--nav-width) auto;
+    }
 
     > HEADER {
       grid-area: header;
@@ -873,5 +950,61 @@ export default {
         text-decoration: none;
       }
     }
+  }
+
+  .drag-start {
+    z-index: 1000;
+    opacity: 0.5;
+    transition: opacity .3s ease;
+  }
+
+  .drag-end {
+    opacity: 1;
+  }
+
+  .pin-area {
+    position: absolute;
+    z-index: 1000;
+    width: 0;
+    height: 0;
+    border-style: hidden;
+
+    &.right {
+      top: 55px;
+      right: 0;
+      width: 300px;
+      transition: width .5s ease;
+      height: 100%;
+      background-image: linear-gradient(to right, rgba(220, 222, 231, 0), rgba(220, 222, 231, 0.9));
+      border-left: 1px;
+      border-style: hidden hidden hidden dashed;
+    }
+
+    &.left {
+      top: 55px;
+      left: 0;
+      width: 300px;
+      transition: width .5s ease;
+      height: 100%;
+      background-image: linear-gradient(to left, rgba(220, 222, 231, 0), rgba(220, 222, 231, 0.9));
+      border-right: 1px;
+      border-style: hidden dashed hidden hidden;
+    }
+
+    &.bottom {
+      bottom: 0;
+      height: 250px;
+      transition: height .5s ease;
+      width: 100%;
+      background-image: linear-gradient(to top, rgba(220, 222, 231, 0.9), rgba(220, 222, 231, 0));
+      border-top: 1px;
+      border-style: dashed hidden hidden hidden;
+    }
+
+    &.center {
+      width: 0;
+      height: 0;
+    }
+
   }
 </style>
