@@ -6,6 +6,7 @@ import day from 'dayjs';
 import { convertSelectorObj, matching, matches } from '@shell/utils/selector';
 import { SEPARATOR } from '@shell/components/DetailTop';
 import WorkloadService from '@shell/models/workload.service';
+import { getSecondsDiff } from '@shell/utils/time';
 
 export default class Workload extends WorkloadService {
   // remove clone as yaml/edit as yaml until API supported
@@ -617,5 +618,27 @@ export default class Workload extends WorkloadService {
     const selector = convertSelectorObj(this.spec.selector);
 
     return matching(allInNamespace, selector);
+  }
+
+  get duration() {
+    const schema = this.$getters['schemaFor'](this.type);
+    const rowValueGetter = this.$rootGetters['type-map/rowValueGetter'];
+
+    if (schema && rowValueGetter) {
+      const value = rowValueGetter(schema, 'Duration')(this);
+      const { completionTime, startTime } = this.status;
+      let seconds;
+
+      if (value && startTime && completionTime) {
+        seconds = getSecondsDiff(startTime, completionTime);
+      }
+
+      return {
+        value,
+        seconds,
+      };
+    }
+
+    return {};
   }
 }
