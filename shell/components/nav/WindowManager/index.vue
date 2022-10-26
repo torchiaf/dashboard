@@ -80,6 +80,10 @@ export default {
         return val;
       }
     },
+
+    pinClass() {
+      return `pin-${ this.userPin }`;
+    },
   },
 
   watch: {
@@ -297,7 +301,7 @@ export default {
 </script>
 
 <template>
-  <div id="windowmanager" class="windowmanager">
+  <div id="windowmanager" class="windowmanager" :class="{[pinClass]: true}">
     <div
       ref="tabs"
       class="tabs"
@@ -466,6 +470,14 @@ export default {
         display: block;
         height: 100%;
       }
+    }
+
+    &.pin-right {
+      border-left: var(--nav-border-size) solid var(--nav-border);
+    }
+
+    &.pin-left {
+      border-right: var(--nav-border-size) solid var(--nav-border);
     }
   }
 </style>

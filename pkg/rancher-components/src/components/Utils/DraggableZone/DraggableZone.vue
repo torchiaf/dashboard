@@ -110,7 +110,7 @@ export default Vue.extend({
       width: 300px;
       transition: width .5s ease;
       height: 100%;
-      background-image: linear-gradient(to right, rgba(220, 222, 231, 0), rgba(220, 222, 231, 0.9));
+      background-image: linear-gradient(to right, var(--drag-over-outer-bg), var(--drag-over-inner-bg));
       border-left: 1px;
       border-style: hidden hidden hidden dashed;
     }
@@ -121,7 +121,7 @@ export default Vue.extend({
       width: 300px;
       transition: width .5s ease;
       height: 100%;
-      background-image: linear-gradient(to left, rgba(220, 222, 231, 0), rgba(220, 222, 231, 0.9));
+      background-image: linear-gradient(to left, var(--drag-over-outer-bg), var(--drag-over-inner-bg));
       border-right: 1px;
       border-style: hidden dashed hidden hidden;
     }
@@ -131,7 +131,7 @@ export default Vue.extend({
       height: 270px;
       transition: height .5s ease;
       width: 100%;
-      background-image: linear-gradient(to top, rgba(220, 222, 231, 0.9), rgba(220, 222, 231, 0));
+      background-image: linear-gradient(to top, var(--drag-over-inner-bg), var(--drag-over-outer-bg));
       border-top: 1px;
       border-style: dashed hidden hidden hidden;
     }
