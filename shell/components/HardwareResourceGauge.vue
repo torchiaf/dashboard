@@ -1,9 +1,8 @@
 <script>
-import ConsumptionGauge from '@shell/components/ConsumptionGauge';
-import SimpleBox from '@shell/components/SimpleBox';
+import { StringList } from '@components/StringList';
 
 export default {
-  components: { ConsumptionGauge, SimpleBox },
+  components: { StringList },
   props:      {
     name: {
       type:     String,
@@ -25,6 +24,9 @@ export default {
       default: null
     }
   },
+  data() {
+    return { items: ['test'] };
+  },
   computed: {
     colorStops() {
       return {
@@ -33,6 +35,9 @@ export default {
     }
   },
   methods: {
+    onChange(items) {
+      this.items = [...items];
+    },
     maxDecimalPlaces(n) {
       return Math.round(n * 100) / 100;
     },
@@ -62,75 +67,14 @@ export default {
 </script>
 
 <template>
-  <SimpleBox class="hardware-resource-gauge">
-    <div class="chart">
-      <h3>
-        {{ name }}
-      </h3>
-      <div v-if="reserved && (reserved.total !== undefined || reserved.useful !== undefined)" class="hw-gauge">
-        <ConsumptionGauge
-          :capacity="reserved.total"
-          :used="reserved.useful"
-          :color-stops="colorStops"
-        >
-          <template #title>
-            <span>
-              {{ t('clusterIndexPage.hardwareResourceGauge.reserved') }}
-              <span class="values text-muted">
-                <span v-if="reserved.formattedUseful">
-                  {{ reserved.formattedUseful }}
-                </span>
-                <span v-else>
-                  {{ maxDecimalPlaces(reserved.useful) }}
-                </span>
-                /
-                <span v-if="reserved.formattedTotal">
-                  {{ reserved.formattedTotal }}
-                </span>
-                <span v-else>
-                  {{ maxDecimalPlaces(reserved.total) }} {{ reserved.units }}
-                </span>
-              </span>
-            </span>
-            <span>
-              {{ percentage(reserved) }}
-            </span>
-          </template>
-        </ConsumptionGauge>
-      </div>
-      <div v-if="used && used.useful !== undefined" class="hw-gauge">
-        <ConsumptionGauge
-          :capacity="used.total"
-          :used="used.useful"
-          :color-stops="colorStops"
-        >
-          <template #title>
-            <span>
-              {{ t('clusterIndexPage.hardwareResourceGauge.used') }}
-              <span class="values text-muted">
-                <span v-if="used.formattedUseful">
-                  {{ used.formattedUseful }}
-                </span>
-                <span v-else>
-                  {{ maxDecimalPlaces(used.useful) }}
-                </span>
-                /
-                <span v-if="used.formattedTotal">
-                  {{ used.formattedTotal }}
-                </span>
-                <span v-else>
-                  {{ maxDecimalPlaces(used.total) }} {{ used.units }}
-                </span>
-              </span>
-            </span>
-            <span>
-              {{ percentage(used) }}
-            </span>
-          </template>
-        </ConsumptionGauge>
-      </div>
-    </div>
-  </SimpleBox>
+  <StringList
+    :items="items"
+    :case-sensitive="false"
+    :placeholder="'Type new string'"
+    :readonly="false"
+    :actions-position="'left'"
+    @change="onChange($event)"
+  />
 </template>
 
 <style lang="scss" scoped>
