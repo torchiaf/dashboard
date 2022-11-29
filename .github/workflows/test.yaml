@@ -119,6 +119,25 @@ jobs:
       - name: Run linters
         run: yarn lint
 
+  rancher-components:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '14.x'
+      
+      - name: Install packages
+        run: yarn install
+
+      - name: Verify build
+        run: yarn build:lib
+      
+      - name: Run linters
+        run: cd pkg/rancher-components && yarn lint
+
   coverage:
     if: "!contains( github.event.pull_request.labels.*.name, 'ci/skip-e2e')"
     runs-on: ubuntu-latest
