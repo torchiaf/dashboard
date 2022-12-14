@@ -170,6 +170,7 @@ export default {
 <template>
   <v-select
     ref="button-dropdown"
+    data-testid="button-dropdown-select"
     class="button-dropdown btn"
     :class="{
       disabled,
@@ -216,6 +217,7 @@ export default {
     >
       <slot
         v-if="slot !== 'selected-option'"
+        :data-testid="`button-dropdown-option-${ slot }`"
         :name="slot"
         v-bind="scope"
       />

@@ -61,6 +61,7 @@ export default {
     },
 
     suffixedLabel() {
+      // console.log('SUFFIX');
       if (!this.value) {
         // If there is no value, then do not show the suffix
         return this.label;

@@ -1890,6 +1890,8 @@ export default class Resource {
   }
 
   get creationTimestamp() {
+    // console.log('TIMESTAMP', this.metadata?.creationTimestamp);
+
     return this.metadata?.creationTimestamp;
   }
 }

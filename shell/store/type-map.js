@@ -1298,7 +1298,8 @@ export const getters = {
     };
   },
 
-  rowValueGetter(state) {
+  rowValueGetter(state, getters) {
+    // debugger;
     return (schema, colName) => {
       const col = _findColumnByName(schema, colName);
 

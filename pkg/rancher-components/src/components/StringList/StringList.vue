@@ -267,7 +267,9 @@ export default Vue.extend({
     /**
      * Show/Hide the input line to create new item
      */
-    toggleCreateMode(show: boolean) {
+    toggleCreateMode(show: boolean, event?: Event) {
+      event?.stopPropagation();
+      event?.preventDefault();
       if (this.readonly) {
         return;
       }
@@ -289,7 +291,9 @@ export default Vue.extend({
     /**
      * Show/Hide the in-line editing to edit an existing item
      */
-    toggleEditMode(show: boolean, item?: string) {
+    toggleEditMode(show: boolean, item?: string, event?: Event) {
+      event?.stopPropagation();
+      event?.preventDefault();
       if (this.readonly) {
         return;
       }
@@ -424,6 +428,7 @@ export default Vue.extend({
           @input="onChange($event)"
           @blur.prevent="updateItem(item)"
           @keydown.native.enter="updateItem(item, !errors.duplicate)"
+          @keydown.native.esc.stop.prevent="toggleEditMode(false, null, $event)"
         />
       </div>
       <div
@@ -440,6 +445,7 @@ export default Vue.extend({
           @input="onChange($event)"
           @blur.prevent="saveItem"
           @keydown.native.enter="saveItem(!errors.duplicate)"
+          @keydown.native.esc.stop.prevent="toggleCreateMode(false, $event)"
         />
       </div>
     </div>
