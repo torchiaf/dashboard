@@ -82,9 +82,11 @@ export function elapsedTime(seconds) {
   const minutes = Math.floor(seconds / 60);
 
   if (minutes < 10) {
+    const s = seconds - (minutes * 60);
+
     return {
       diff:  1,
-      label: `${ minutes }m${ seconds - (minutes * 60) }s`
+      label: s === 0 ? `${ minutes }m` : `${ minutes }m${ s }s`
     };
   }
 
@@ -97,15 +99,28 @@ export function elapsedTime(seconds) {
     };
   }
 
-  if (hours > 7) {
+  if (hours < 8) {
+    const m = minutes - (hours * 60);
+
+    return {
+      diff:  60,
+      label: m === 0 ? `${ hours }h` : `${ hours }h${ m }m`,
+    };
+  }
+
+  if (hours < 47) {
     return {
       diff:  60,
       label: `${ hours }h`,
     };
   }
 
+  const days = Math.floor(seconds / (3600 * 24));
+
+  const h = hours - (days * 24);
+
   return {
     diff:  60,
-    label: `${ hours }h${ minutes - (hours * 60) }m`,
+    label: h === 0 ? `${ days }d` : `${ days }d${ h }h`,
   };
 }
