@@ -61,9 +61,9 @@ export const GitUtils: Utils = {
     normalize:   {
       repo: (data: any) => ({
         owner: {
-          name:      data.owner.login,
-          htmlUrl:   data.owner.html_url,
-          avatarUrl: data.owner.avatar_url
+          name:      data.owner?.login,
+          htmlUrl:   data.owner?.html_url,
+          avatarUrl: data.owner?.avatar_url
         },
         description: data.description,
         created_at:  data.created_at,
@@ -77,9 +77,9 @@ export const GitUtils: Utils = {
         sha:      getShortHash(data.sha),
         commitId: data.sha,
         author:   {
-          name:      data.author.login,
-          avatarUrl: data.author.avatar_url,
-          htmlUrl:   data.author.htmlUrl
+          name:      data.author?.login,
+          avatarUrl: data.author?.avatar_url,
+          htmlUrl:   data.author?.htmlUrl
         },
         isChecked: false,
         date:      data.commit?.committer.date
