@@ -58,7 +58,9 @@ export default Vue.extend<Data, any, any, any>({
     return {
       errors:           [],
       selectedApps:     [],
-      validationPassed: false
+      validationPassed: false,
+      nsTouched:        false,
+      nameTouched:      false
     };
   },
 
@@ -106,8 +108,13 @@ export default Vue.extend<Data, any, any, any>({
     },
 
     updateValidation() {
-      const nameErrors = validateKubernetesName(this.value?.meta.name || '', this.t('epinio.namespace.name'), this.$store.getters, undefined, []);
-      const nsErrors = validateKubernetesName(this.value?.meta.namespace || '', '', this.$store.getters, undefined, []);
+      const nameErrors = this.getNameErrors();
+      const nsErrors = this.getNamespaceErrors();
+
+      this.errors = [
+        ...nameErrors,
+        ...nsErrors,
+      ];
 
       if (nameErrors.length === 0 && nsErrors.length === 0) {
         const dataValues = Object.entries(this.value?.data || {});
@@ -120,6 +127,34 @@ export default Vue.extend<Data, any, any, any>({
       }
 
       Vue.set(this, 'validationPassed', false);
+    },
+
+    getNameErrors() {
+      const nameErrors = validateKubernetesName(this.value?.meta.name || '', this.t('epinio.namespace.name'), this.$store.getters, undefined, []);
+
+      return nameErrors;
+    },
+
+    getNamespaceErrors() {
+      const namespace = this.value?.meta.namespace;
+      const kubernetesErrors = validateKubernetesName(namespace || '', this.t('epinio.namespace.namespace'), this.$store.getters, undefined, []);
+
+      if (kubernetesErrors.length) {
+        return [kubernetesErrors.join(', ')];
+      }
+      const validateName = namespace.match(/[a-z0-9]([-a-z0-9]*[a-z0-9])?/);
+
+      if (!validateName || validateName[0] !== namespace) {
+        return [this.t('epinio.namespace.validations.name')];
+      }
+
+      return [];
+    },
+
+    touched(key: string, value: string) {
+      if (!value?.length && !this.touched[key]) {
+        this.touched = true;
+      }
     }
 
   },
@@ -129,7 +164,6 @@ export default Vue.extend<Data, any, any, any>({
       Vue.set(this, 'selectedApps', []);
       this.updateValidation(); // For when a user is supplying their own ns
     },
-
     'value.meta.name'() {
       this.updateValidation();
     },

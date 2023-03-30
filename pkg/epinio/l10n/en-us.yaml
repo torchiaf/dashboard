@@ -258,6 +258,7 @@ epinio:
       appCount: Applications
       configCount: Configs
     name: Name
+    namespace: Namespace
     create: Create a Namespace
     deleteWarning: All resources in a namespace will be deleted.
     validations:
