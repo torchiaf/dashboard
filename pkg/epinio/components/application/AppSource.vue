@@ -320,7 +320,6 @@ export default Vue.extend<Data, any, any, any>({
       handler() {
         this.$emit('valid', this.valid);
       },
-      immediate: true
     }
   },
 
@@ -336,7 +335,7 @@ export default Vue.extend<Data, any, any, any>({
         return !!this.gitUrl.url && !!this.gitUrl.branch && !!this.builderImage.value && !!this.gitUrl.validGitUrl;
       case APPLICATION_SOURCE_TYPE.GIT_HUB:
       case APPLICATION_SOURCE_TYPE.GIT_LAB:
-        return !!this.git.usernameOrOrg && !!this.git.url && !!this.git.commit;
+        return this.initValue === this.type && !!this.git.usernameOrOrg && !!this.git.url && !!this.git.commit;
       }
 
       return false;
