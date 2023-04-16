@@ -40,8 +40,8 @@ export default Vue.extend<Data, any, any, any>({
   },
 
   props: {
-    ghType: {
-      type:    String, // APPLICATION_SOURCE_TYPE
+    initValue: {
+      type:    Object,
       default: null
     },
     value: {
@@ -78,17 +78,13 @@ export default Vue.extend<Data, any, any, any>({
       return;
     }
 
+    if (this.initValue.ghType && this.initValue.ghType !== this.value.ghType) {
+      return;
+    }
+
     if (this.value.sourceData) {
       // API calls data - from cache
-
-      this.selectedAccOrOrg = this.value.usernameOrOrg;
-      this.selectedRepo = this.value.repo;
-      this.selectedBranch = this.value.branch;
-      this.selectedCommit = { sha: this.value.commit };
-
-      this.repos = this.value.sourceData.repos;
-      this.branches = this.value.sourceData.branches;
-      this.commits = this.value.sourceData.commits;
+      this.loadSourceCache();
     } else {
       // API calls data - from remote
       this.selectedAccOrOrg = this.value.usernameOrOrg;
@@ -119,19 +115,19 @@ export default Vue.extend<Data, any, any, any>({
   },
 
   watch: {
-    ghType: {
-      handler(old, neu) {
-        if (old !== neu) {
-          this.reset();
+    'value.ghType'(neu, old) {
+      if (neu !== old) {
+        this.reset();
+        if (old && neu && neu === this.initValue.ghType) {
+          this.loadSourceCache();
         }
-      },
-      immediate: true,
+      }
     }
   },
 
   computed: {
     type() {
-      return gitUtilsToLabel(this.ghType);
+      return gitUtilsToLabel(this.value.ghType);
     },
 
     commitHeaders() {
@@ -201,6 +197,18 @@ export default Vue.extend<Data, any, any, any>({
         commit:           this.selectedCommit,
       });
     },
+
+    loadSourceCache() {
+      this.selectedAccOrOrg = this.value.usernameOrOrg;
+      this.selectedRepo = this.value.repo;
+      this.selectedBranch = this.value.branch;
+      this.selectedCommit = { sha: this.value.commit };
+
+      this.repos = this.value.sourceData.repos;
+      this.branches = this.value.sourceData.branches;
+      this.commits = this.value.sourceData.commits;
+    },
+
     async fetchRepos() {
       if (this.selectedAccOrOrg.length) {
         this.selectedRepo = null;
