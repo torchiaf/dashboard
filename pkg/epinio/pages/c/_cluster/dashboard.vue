@@ -2,6 +2,7 @@
 import { getVersionInfo } from '@shell/utils/version';
 import Vue from 'vue';
 import DashboardCard from '../../../components/dashboard/Cards.vue';
+import Monaco from '../../../components/code-editor/Monaco.vue';
 import { createEpinioRoute } from '../../../utils/custom-routing';
 import { EpinioApplicationResource, EpinioCatalogService, EPINIO_TYPES } from '../../../types';
 import ConsumptionGauge from '@shell/components/ConsumptionGauge.vue';
@@ -11,7 +12,7 @@ import isEqual from 'lodash/isEqual';
 import { sortBy } from 'lodash';
 
 export default Vue.extend<any, any, any, any>({
-  components: { DashboardCard, ConsumptionGauge },
+  components: { DashboardCard, ConsumptionGauge, Monaco },
   async fetch() {
     await Promise.all([
       this.$store.dispatch(`epinio/findAll`, { type: EPINIO_TYPES.CATALOG_SERVICE }),
@@ -188,6 +189,7 @@ export default Vue.extend<any, any, any, any>({
         >{{ t('epinio.intro.issues') }}</a>
       </div>
     </div>
+    <Monaco />
     <div class="get-started">
       <div
         v-for="(card, index) in sectionContent"
