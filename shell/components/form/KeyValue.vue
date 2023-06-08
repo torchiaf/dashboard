@@ -247,6 +247,10 @@ export default {
       default: false,
       type:    Boolean
     },
+    parseValueFromFile: {
+      default: false,
+      type:    Boolean
+    },
     disabled: {
       default: false,
       type:    Boolean
@@ -266,10 +270,10 @@ export default {
       return this.mode === _VIEW;
     },
     containerStyle() {
-      const gap = this.canRemove ? ' 50px' : '';
       const size = 2 + this.extraColumns.length;
+      const removeGap = this.canRemove ? '50px' : '';
 
-      return `grid-template-columns: repeat(${ size }, 1fr)${ gap };`;
+      return `grid-template-columns: repeat(${ size }, 1fr) ${ removeGap };`;
     },
     usedKeyOptions() {
       return this.rows.map(row => row[this.keyName]);
@@ -544,6 +548,9 @@ export default {
      */
     onFocusMarkdownMultiline(idx, value) {
       this.$set(this.codeMirrorFocus, idx, value);
+    },
+    onValueFileSelected(idx, file) {
+      this.rows[idx][this.valueName] = file;
     }
   }
 };
@@ -662,39 +669,51 @@ export default {
             <div v-else-if="row.binary">
               {{ binaryTextSize(row.value) }}
             </div>
-            <CodeMirror
-              v-else-if="valueMarkdownMultiline"
-              ref="cm"
-              data-testid="code-mirror-multiline-field"
-              :class="{['focus']: codeMirrorFocus[i]}"
-              :value="row[valueName]"
-              :as-text-area="true"
-              :mode="mode"
-              @onInput="onInputMarkdownMultiline(i, $event)"
-              @onFocus="onFocusMarkdownMultiline(i, $event)"
-            />
-            <TextAreaAutoGrow
-              v-else-if="valueMultiline"
-              v-model="row[valueName]"
-              :class="{'conceal': valueConcealed}"
-              :disabled="disabled || isProtected(row.key)"
-              :mode="mode"
-              :placeholder="valuePlaceholder"
-              :min-height="40"
-              :spellcheck="false"
-              @input="queueUpdate"
-            />
-            <input
+            <div
               v-else
-              v-model="row[valueName]"
-              :disabled="isView || disabled || isProtected(row.key)"
-              :type="valueConcealed ? 'password' : 'text'"
-              :placeholder="valuePlaceholder"
-              autocorrect="off"
-              autocapitalize="off"
-              spellcheck="false"
-              @input="queueUpdate"
+              class="value-container"
+              :class="{ 'show-upload-button': parseValueFromFile }"
             >
+              <CodeMirror
+                v-if="valueMarkdownMultiline"
+                ref="cm"
+                data-testid="code-mirror-multiline-field"
+                :class="{['focus']: codeMirrorFocus[i]}"
+                :value="row[valueName]"
+                :as-text-area="true"
+                :mode="mode"
+                @onInput="onInputMarkdownMultiline(i, $event)"
+                @onFocus="onFocusMarkdownMultiline(i, $event)"
+              />
+              <TextAreaAutoGrow
+                v-else-if="valueMultiline"
+                v-model="row[valueName]"
+                :class="{'conceal': valueConcealed}"
+                :disabled="disabled || isProtected(row.key)"
+                :mode="mode"
+                :placeholder="valuePlaceholder"
+                :min-height="40"
+                :spellcheck="false"
+                @input="queueUpdate"
+              />
+              <input
+                v-else
+                v-model="row[valueName]"
+                :disabled="isView || disabled || isProtected(row.key)"
+                :type="valueConcealed ? 'password' : 'text'"
+                :placeholder="valuePlaceholder"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                @input="queueUpdate"
+              >
+              <FileSelector
+                v-if="parseValueFromFile && readAllowed && !isView"
+                class="btn btn-sm role-secondary"
+                :label="'Upload'"
+                @selected="onValueFileSelected(i, $event)"
+              />
+            </div>
           </slot>
         </div>
         <div
@@ -772,7 +791,7 @@ export default {
     text-transform: initial;
     padding: 0;
   }
-  .kv-container{
+  .kv-container {
     display: grid;
     align-items: center;
     column-gap: 20px;
@@ -785,7 +804,18 @@ export default {
       &.key, &.extra {
         align-self: flex-start;
       }
-      &.value textarea{
+      &.value {
+        .value-container {
+          &.show-upload-button {
+            display: grid;
+            align-items: center; // Remove this to make the upload button as high as the value field
+            -moz-column-gap: 5px;
+            column-gap: 5px;
+            grid-template-columns: auto 60px;
+          }
+        }
+      }
+      &.value textarea {
         padding: 10px 10px 10px 10px;
       }
 
@@ -796,7 +826,7 @@ export default {
   }
   .remove {
     text-align: center;
-    BUTTON{
+    BUTTON {
       padding: 0px;
     }
   }
@@ -819,7 +849,7 @@ export default {
   .download {
     text-align: right;
   }
-  .copy-value{
+  .copy-value {
     padding: 0px 0px 0px 10px;
   }
 }
