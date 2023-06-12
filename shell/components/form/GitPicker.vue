@@ -141,6 +141,10 @@ export default Vue.extend<Data, any, any, any>({
     preparedCommits() {
       return this.normalizeArray(this.commits, (c: any) => GitUtils[this.type].normalize.commit(c));
     },
+
+    orderedCommits() {
+      return this.preparedCommits.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()) || [];
+    }
   },
 
   methods: {
@@ -191,17 +195,7 @@ export default Vue.extend<Data, any, any, any>({
             }
           });
 
-        const selectedCommit = this.commits.find((c: commit) => {
-          // Github has sha's
-          // Gitlab has id's as sha's
-          const sha = c.sha || c.id;
-
-          return sha === commit.sha;
-        });
-
-        if (selectedCommit) {
-          this.final(selectedCommit.sha || selectedCommit.id);
-        }
+        this.final(commit.sha);
       }
     },
 
@@ -269,7 +263,7 @@ export default Vue.extend<Data, any, any, any>({
     },
 
     final(commitId: string) {
-      this.selectedCommit = this.preparedCommits.find((c: { commitId?: string }) => c.commitId === commitId);
+      this.selectedCommit = this.preparedCommits.find((c: { commitId?: string }) => c.commitId === commitId) || this.orderedCommits[0];
 
       if (this.selectedAccOrOrg && this.selectedRepo && this.selectedCommit?.commitId) {
         this.$emit('change', {

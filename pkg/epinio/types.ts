@@ -78,6 +78,7 @@ export interface AppSourceGit {
   usernameOrOrg?: string,
   repo: { id?: string, name: string },
   commit: string,
+  isRevision: boolean;
   branch: { id?: string, name: string },
   url: string,
   sourceData: GitAPIData

@@ -344,7 +344,7 @@ export default class EpinioApplicationModel extends EpinioNamespacedResource {
           }, {
             label: 'Branch',
             icon:  'icon-commit',
-            value: source[source.type]?.branch.name
+            value: source[source.type]?.isRevision ? '-' : source[source.type]?.branch.name
           }, appChart, builderImage
         ]
       };

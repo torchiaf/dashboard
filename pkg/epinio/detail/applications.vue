@@ -49,12 +49,14 @@ export default Vue.extend<Data, any, any, any>({
       required: true
     },
   },
-  fetch() {
+  async fetch() {
     this.$store.dispatch(`epinio/findAll`, { type: EPINIO_TYPES.SERVICE_INSTANCE });
     this.$store.dispatch(`epinio/findAll`, { type: EPINIO_TYPES.CONFIGURATION });
 
     if (this.value.appSource.git) {
-      this.fetchRepoDetails();
+      await this.fetchRepoDetails();
+
+      this.setCommitDetails();
     }
   },
   data() {
@@ -111,15 +113,6 @@ export default Vue.extend<Data, any, any, any>({
 
       this.gitSource = GitUtils[this.gitType].normalize.repo(res);
 
-      const commit = this.value.appSourceInfo?.details.filter((ele: { label: string; }) => ele.label === 'Revision')[0]?.value;
-
-      if (commit) {
-        this.gitDeployment.deployedCommit = {
-          short: commit?.slice(0, 7),
-          long:  commit
-        };
-      }
-
       await this.fetchCommits();
     },
     async fetchCommits() {
@@ -128,6 +121,15 @@ export default Vue.extend<Data, any, any, any>({
       this.gitDeployment.commits = await this.$store.dispatch(`${ this.gitType }/fetchCommits`, {
         username: usernameOrOrg, repo, branch
       });
+    },
+    setCommitDetails() {
+      const { commit } = this.value.appSource.git;
+      const selectedCommit = this.preparedCommits.find((c: { commitId?: string }) => c.commitId === commit) || this.orderedCommits[0];
+
+      this.gitDeployment.deployedCommit = {
+        short: selectedCommit?.commitId?.slice(0, 7),
+        long:  selectedCommit.commitId
+      };
     },
     formatDate(date: string, from: boolean) {
       day.extend(relativeTime);
@@ -150,6 +152,10 @@ export default Vue.extend<Data, any, any, any>({
       const arr: any[] = isArray(commits) ? commits : [commits];
 
       return arr.map(c => GitUtils[this.gitType].normalize.commit(c));
+    },
+
+    orderedCommits() {
+      return this.preparedCommits.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()) || [];
     },
 
     commitsHeaders() {

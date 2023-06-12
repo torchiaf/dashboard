@@ -42,7 +42,8 @@ function getGitData(git: any): EPINIO_APP_GIT_SOURCE {
 
   return {
     usernameOrOrg: parts[1],
-    branch:        { name: git.branch },
+    isRevision:    !git.branch,
+    branch:        { name: git.branch || git.revision },
     commit:        git.revision,
     repo:          { name: parts[2] },
     url,
