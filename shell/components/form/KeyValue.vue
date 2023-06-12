@@ -707,12 +707,24 @@ export default {
                 spellcheck="false"
                 @input="queueUpdate"
               >
-              <FileSelector
+              <div
                 v-if="parseValueFromFile && readAllowed && !isView"
-                class="btn btn-sm role-secondary"
-                :label="'Upload'"
-                @selected="onValueFileSelected(i, $event)"
-              />
+                class="file-selector"
+              >
+                <FileSelector
+                  ref="fileSelectors"
+                  style="display: none;"
+                  :label="'Upload'"
+                  @selected="onValueFileSelected(i, $event)"
+                />
+                <button
+                  type="button"
+                  class="btn role-link "
+                  @click="$refs.fileSelectors[i].selectFile()"
+                >
+                  {{ 'Upload' }}
+                </button>
+              </div>
             </div>
           </slot>
         </div>
@@ -812,6 +824,11 @@ export default {
             -moz-column-gap: 5px;
             column-gap: 5px;
             grid-template-columns: auto 60px;
+            .file-selector {
+              .btn {
+                padding: 0;
+              }
+            }
           }
         }
       }
