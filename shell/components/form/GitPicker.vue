@@ -58,6 +58,8 @@ export default Vue.extend<Data, any, any, any>({
         commits: false,
       },
 
+      isRevision: false,
+
       repos:    [],
       branches: [],
       commits:  [] as commit[],
@@ -141,6 +143,10 @@ export default Vue.extend<Data, any, any, any>({
     preparedCommits() {
       return this.normalizeArray(this.commits, (c: any) => GitUtils[this.type].normalize.commit(c));
     },
+
+    orderedCommits() {
+      return this.preparedCommits.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()) || [];
+    }
   },
 
   methods: {
@@ -155,6 +161,7 @@ export default Vue.extend<Data, any, any, any>({
     },
 
     reset() {
+      this.isRevision = false;
       this.repos = [];
       this.selectedAccOrOrg = null;
       this.selectedRepo = null;
@@ -185,23 +192,20 @@ export default Vue.extend<Data, any, any, any>({
           })
           .then(() => {
             if (this.branches.length && !this.hasError.branch) {
-              this.selectedBranch = branch;
+              if (branch?.name) {
+                this.selectedBranch = branch;
 
-              return this.fetchCommits();
+                return this.fetchCommits();
+              } else {
+                // branch name is missing, application is create by revision -> shows the revision commit
+                this.isRevision = true;
+
+                return this.fetchRevisionCommit(commit?.sha);
+              }
             }
           });
 
-        const selectedCommit = this.commits.find((c: commit) => {
-          // Github has sha's
-          // Gitlab has id's as sha's
-          const sha = c.sha || c.id;
-
-          return sha === commit.sha;
-        });
-
-        if (selectedCommit) {
-          this.final(selectedCommit.sha || selectedCommit.id);
-        }
+        this.final(commit.sha);
       }
     },
 
@@ -262,6 +266,25 @@ export default Vue.extend<Data, any, any, any>({
       }
     },
 
+    async fetchRevisionCommit(revision: string) {
+      this.selectedCommit = {};
+
+      this.communicateReset();
+
+      try {
+        const res = await this.$store.dispatch(`${ this.type }/fetchRevisionCommit`, {
+          repo:     this.selectedRepo,
+          username: this.selectedAccOrOrg,
+          revision,
+        });
+
+        this.commits = [res] as commit[];
+        this.hasError.branch = false;
+      } catch (error) {
+        this.hasError.commits = true;
+      }
+    },
+
     normalizeArray(elem: any, normalize: (v: any) => object) {
       const arr = isArray(elem) ? elem : [elem];
 
@@ -269,7 +292,7 @@ export default Vue.extend<Data, any, any, any>({
     },
 
     final(commitId: string) {
-      this.selectedCommit = this.preparedCommits.find((c: { commitId?: string }) => c.commitId === commitId);
+      this.selectedCommit = this.preparedCommits.find((c: { commitId?: string }) => c.commitId === commitId) || this.orderedCommits[0];
 
       if (this.selectedAccOrOrg && this.selectedRepo && this.selectedCommit?.commitId) {
         this.$emit('change', {
@@ -399,7 +422,7 @@ export default Vue.extend<Data, any, any, any>({
       </div>
       <!-- Deals with Commits, display & allow to pick from it  -->
       <div
-        v-if="selectedBranch && preparedCommits.length"
+        v-if="(selectedBranch || isRevision) && preparedCommits.length"
         class="commits-table mt-20"
       >
         <SortableTable

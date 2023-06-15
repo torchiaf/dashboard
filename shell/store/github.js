@@ -22,7 +22,7 @@ export const getters = {};
 
 export const actions = {
   async apiList(ctx, {
-    username, endpoint, repo, branch
+    username, endpoint, repo, branch, revision
   }) {
     try {
       switch (endpoint) {
@@ -34,6 +34,9 @@ export const actions = {
       }
       case 'commits': {
         return await fetchGithubAPI(`repos/${ username }/${ repo }/commits?sha=${ branch }&sort=updated&per_page=${ MAX_RESULTS }`);
+      }
+      case 'revision-commit': {
+        return await fetchGithubAPI(`repos/${ username }/${ repo }/commits/${ revision }`);
       }
       case 'recentRepos': {
         return await fetchGithubAPI(`users/${ username }/repos?sort=updated&per_page=${ MAX_RESULTS }&direction=desc`);
@@ -89,6 +92,16 @@ export const actions = {
 
     return res;
   },
+
+  async fetchRevisionCommit(ctx, { repo, username, revision }) {
+    const { dispatch } = ctx;
+    const res = await dispatch('apiList', {
+      username, endpoint: 'revision-commit', repo: repo.name, revision
+    });
+
+    return res;
+  },
+
   async search({ dispatch }, { repo, username, branch }) {
     try {
       const res = await dispatch('apiList', {

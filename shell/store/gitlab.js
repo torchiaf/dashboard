@@ -43,7 +43,7 @@ export const getters = {};
 
 export const actions = {
   async apiList(ctx, {
-    username, email, endpoint, repo, branch
+    username, email, endpoint, repo, branch, revision
   }) {
     try {
       switch (endpoint) {
@@ -55,6 +55,9 @@ export const actions = {
       }
       case 'commits': {
         return await fetchGitLabAPI(`projects/${ username }%2F${ repo }/repository/commits?ref_name=${ branch }&order_by=updated_at&per_page=${ MAX_RESULTS }`);
+      }
+      case 'revision-commit': {
+        return await fetchGitLabAPI(`projects/${ username }%2F${ repo }/repository/commits/${ revision }`);
       }
       case 'recentRepos': {
         return await fetchUserOrOrganization(`${ username }/projects?order_by=updated_at&per_page=${ MAX_RESULTS }`);
@@ -137,6 +140,23 @@ export const actions = {
     }
 
     return commits;
+  },
+
+  async fetchRevisionCommit(ctx, { repo, username, revision }) {
+    const { dispatch } = ctx;
+    const commit = await dispatch('apiList', {
+      username, endpoint: 'revision-commit', repo: repo.name, revision
+    });
+
+    if (commit) {
+      const avatar = await dispatch('apiList', {
+        username, endpoint: 'avatar', email: commit.author_email
+      });
+
+      commit.avatar_url = avatar?.avatar_url;
+    }
+
+    return commit;
   },
 
   async search({ dispatch }, { repo, username, branch }) {
