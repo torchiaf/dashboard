@@ -45,6 +45,19 @@ export default {
       return spoofedRes;
     }
 
+    opt.onDownloadProgress = (progressEvent: any) => {
+      // console.log(progressEvent.srcElement.getResponseHeader('X-Content-Length'));
+
+      // console.log(progressEvent.srcElement.getResponseHeader('content-length'));
+
+      // console.log(progressEvent);
+
+      const total = progressEvent.srcElement.getResponseHeader('X-Content-Length');
+      const percentCompleted = Math.round((progressEvent.loaded * 100) / total);
+
+      console.log('completed: ', percentCompleted);
+    };
+
     // @TODO queue/defer duplicate requests
     opt.depaginate = opt.depaginate !== false;
     opt.url = opt.url.replace(/\/*$/g, '');
