@@ -4,6 +4,7 @@ import { ucFirst, randomStr } from '@shell/utils/string';
 import { _EDIT, _CONFIG, _DETAIL, _LIST } from '@shell/config/query-params';
 import { getProductFromRoute } from '@shell/middleware/authenticated';
 import { isEqual } from '@shell/utils/object';
+import isFunction from 'lodash/isFunction';
 
 function checkRouteProduct({ name, params, query }, locationConfigParam) {
   const product = getProductFromRoute({
@@ -77,8 +78,12 @@ function checkExtensionRouteBinding($route, locationConfig, context) {
           } else if (param === 'mode') {
             res = checkRouteMode($route, locationConfigParam);
           } else if (param === 'context') {
-            // Need all keys and values to match
-            res = isEqual(locationConfigParam, context);
+            if (isFunction(locationConfig[param])) {
+              res = locationConfig[param](context);
+            } else {
+              // Need all keys and values to match
+              res = isEqual(locationConfigParam, context);
+            }
           } else if (param === 'queryParam') {
             res = isEqual(locationConfigParam, $route.query);
           } else if (locationConfigParam === params[param]) {

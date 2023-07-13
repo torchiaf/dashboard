@@ -148,7 +148,7 @@ export type LocationConfig = {
    *
    * Components can provide additional context specific params that this value must match
    */
-  context?: { [key: string]: string},
+  context?: {[key: string]: string} | ((ctx: any) => boolean),
 };
 
 export interface ProductOptions {
