@@ -6,6 +6,7 @@ import { Banner } from '@components/Banner';
 import AsyncButton from '@shell/components/AsyncButton';
 import { LabeledInput } from '@components/Form/LabeledInput';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
+import { HCI as HCI_ANNOTATIONS } from '@pkg/harvester/config/labels-annotations';
 
 import { allHash } from '@shell/utils/promise';
 import { STORAGE_CLASS } from '@shell/config/types';
@@ -60,7 +61,9 @@ export default {
       const inStore = this.$store.getters['currentProduct'].inStore;
       const storages = this.$store.getters[`${ inStore }/all`](STORAGE_CLASS);
 
-      const out = storages.filter(s => !s.parameters?.backingImage).map((s) => {
+      const out = storages.filter(s => !s.parameters?.backingImage).filter((s) => {
+        return s.provisioner === this.actionResource.metadata?.annotations[HCI_ANNOTATIONS.STORAGE_PROVISIONER];
+      }).map((s) => {
         const label = s.isDefault ? `${ s.name } (${ this.t('generic.default') })` : s.name;
 
         return {
