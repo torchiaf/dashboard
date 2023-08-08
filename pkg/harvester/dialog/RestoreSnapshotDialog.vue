@@ -44,7 +44,9 @@ export default {
     if (this.showStorageClass) {
       const defaultStorage = this.$store.getters[`${ inStore }/all`](STORAGE_CLASS).find(s => s.isDefault);
 
-      this.$set(this, 'storageClassName', defaultStorage?.metadata?.name || 'longhorn');
+      const currentStorageName = this.resources[0].metadata?.annotations[HCI_ANNOTATIONS.STORAGE_CLASS];
+
+      this.$set(this, 'storageClassName', currentStorageName || defaultStorage?.metadata?.name || 'longhorn');
     }
   },
 
