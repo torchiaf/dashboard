@@ -384,7 +384,7 @@ export default {
         }
       ];
 
-      if (!this.options?.hiddenNamespaceGroupButton) {
+      if (this.$store.getters['isMultipleNamespaces'] && this.isNamespaced) {
         standard.push( {
           tooltipKey: this.groupTooltip,
           icon:       'icon-folder',

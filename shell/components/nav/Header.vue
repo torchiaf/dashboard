@@ -357,7 +357,7 @@ export default {
         :to="singleProductLogoRoute"
       >
         <BrandImage
-          v-if="isSingleProduct.supportCustomLogo"
+          v-if="isSingleProduct.logo"
           class="side-menu-logo"
           file-name="harvester.svg"
           :support-custom-logo="true"
@@ -383,7 +383,7 @@ export default {
           v-if="isSingleProduct && !isRancherInHarvester"
           class="product-name"
         >
-          <template v-if="isSingleProduct.supportCustomLogo">
+          <template v-if="isSingleProduct.logo">
             {{ vendor }}
           </template>
           <template v-else>

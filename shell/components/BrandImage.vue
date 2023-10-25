@@ -13,16 +13,13 @@ export default {
       type:    Boolean,
       default: false
     },
-    supportCustomLogo: {
-      type:    Boolean,
-      default: false
-    }
   },
   data() {
     return { managementSettings: this.$store.getters['management/all'](MANAGEMENT.SETTING) };
   },
   computed: {
     ...mapGetters({ theme: 'prefs/theme' }),
+    ...mapGetters('isSingleProduct'),
 
     brand() {
       const setting = this.managementSettings.filter((setting) => setting.id === SETTING.BRAND)[0] || {};
@@ -53,7 +50,7 @@ export default {
     },
 
     pathToBrandedImage() {
-      if (this.fileName === 'rancher-logo.svg' || this.supportCustomLogo) {
+      if (this.fileName === 'rancher-logo.svg' || this.isSingleProduct.logo) {
         if (this.theme === 'dark' && this.uiLogoDark) {
           return this.uiLogoDark;
         }
