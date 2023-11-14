@@ -29,7 +29,7 @@ export default {
   methods: {
     keysDown(key, pos) {
       this.addKeys({ key, pos });
-      this.$emit('sendKeys');
+      this.$emit('send-keys');
     },
 
     addKeys({ key, pos }) {
@@ -37,7 +37,7 @@ export default {
     },
 
     sendKeys() {
-      this.$emit('sendKeys');
+      this.$emit('send-keys');
     },
 
     getOpenStatus(key, pos) {
@@ -59,7 +59,7 @@ export default {
         <span :class="{ open: getOpenStatus(key, pos) }" class="p-10 hand" @click="addKeys({ key, pos })">{{ item.label }}</span>
 
         <template slot="popover">
-          <novnc-console-item :items="item.keys" :path="path" :pos="pos+1" @update="addKeys" @sendKeys="sendKeys" />
+          <novnc-console-item :items="item.keys" :path="path" :pos="pos+1" @update="addKeys" @send-keys="sendKeys" />
         </template>
       </v-popover>
 
