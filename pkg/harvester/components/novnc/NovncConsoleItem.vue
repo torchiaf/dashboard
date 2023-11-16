@@ -58,7 +58,7 @@ export default {
       >
         <span :class="{ open: getOpenStatus(key, pos) }" class="p-10 hand" @click="addKeys({ key, pos })">{{ item.label }}</span>
 
-        <template slot="popover">
+        <template v-slot:popover>
           <novnc-console-item :items="item.keys" :path="path" :pos="pos+1" @update="addKeys" @send-keys="sendKeys" />
         </template>
       </v-popover>
