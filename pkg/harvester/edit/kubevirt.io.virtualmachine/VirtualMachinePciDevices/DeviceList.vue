@@ -17,7 +17,7 @@ export default {
       required: true,
     },
 
-    rows: {
+    devices: {
       type:     Array,
       required: true,
     },
@@ -83,9 +83,17 @@ export default {
 
     return {
       headers,
+      rows:        [],
       parentSriov: null,
       filterRows:  []
     };
+  },
+
+  watch: {
+    devices(v) {
+      this.rows = v;
+      this.filterRows = this.rows;
+    }
   },
 
   methods: {

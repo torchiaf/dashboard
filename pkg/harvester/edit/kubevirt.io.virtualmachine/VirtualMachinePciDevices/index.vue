@@ -261,7 +261,7 @@ export default {
       </template>
       <div class="row mt-20">
         <div class="col span-12">
-          <DeviceList :schema="pciDeviceSchema" :rows="pciDevices" @submit.prevent />
+          <DeviceList :schema="pciDeviceSchema" :devices="pciDevices" @submit.prevent />
         </div>
       </div>
     </div>
