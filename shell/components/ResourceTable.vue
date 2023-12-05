@@ -149,7 +149,12 @@ export default {
     forceUpdateLiveAndDelayed: {
       type:    Number,
       default: 0
-    }
+    },
+
+    rowsPerPage: {
+      type:    Number,
+      default: null, // Default comes from the user preference
+    },
   },
 
   mounted() {
@@ -441,6 +446,7 @@ export default {
     :paging="true"
     :paging-params="pagingParams"
     :paging-label="pagingLabel"
+    :rows-per-page="rowsPerPage"
     :row-actions="rowActions"
     :table-actions="_showBulkActions"
     :overflow-x="overflowX"

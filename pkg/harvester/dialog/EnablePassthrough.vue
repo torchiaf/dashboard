@@ -38,7 +38,9 @@ export default {
 
       // if this is imported Harvester, there may be users other than 'admin
       if (!isSingleProduct) {
-        userName = this.$store.getters['auth/v3User']?.username;
+        const user = this.$store.getters['auth/v3User'];
+
+        userName = user?.username || user?.id;
       }
 
       for (let i = 0; i < this.resources.length; i++) {
