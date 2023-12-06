@@ -80,7 +80,7 @@ export default {
       {{ t('harvester.pci.noPCIPermission') }}
     </Banner>
   </div>
-  <DeviceList v-else-if="hasSchema && enabledPCI" :rows="rows" :schema="schema" />
+  <DeviceList v-else-if="hasSchema && enabledPCI" :devices="rows" :schema="schema" />
   <div v-else>
     <Banner color="warning">
       <MessageLink

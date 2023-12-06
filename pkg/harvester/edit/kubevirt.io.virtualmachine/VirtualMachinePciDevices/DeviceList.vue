@@ -90,9 +90,12 @@ export default {
   },
 
   watch: {
-    devices(v) {
-      this.rows = v;
-      this.filterRows = this.rows;
+    devices: {
+      handler(v) {
+        this.rows = v;
+        this.filterRows = this.rows;
+      },
+      immediate: true,
     }
   },
 
