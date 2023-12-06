@@ -90,7 +90,9 @@ export default class PCIDevice extends SteveModel {
 
     // if this is imported Harvester, there may be users other than admin
     if (!isSingleProduct) {
-      userName = this.$rootGetters['auth/v3User']?.username;
+      const user = this.$rootGetters['auth/v3User'];
+
+      userName = user?.username || user?.id;
     }
 
     return this.claimedBy === userName;
