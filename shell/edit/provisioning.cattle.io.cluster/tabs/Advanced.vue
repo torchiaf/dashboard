@@ -61,6 +61,26 @@ export default {
 
       return this.t('cluster.advanced.argInfo.machineSelector.titleAlt', { count: machineSelectorLength });
     },
+    showAgentConfig() {
+      return this.agentArgs['protect-kernel-defaults'] && Object.keys(this.agentConfig || {}).find((k) => k === 'protect-kernel-defaults');
+    }
+  },
+
+  methods: {
+    kubeletArgs(index) {
+      if (!this.rkeConfig.machineSelectorConfig[index]) {
+        return [];
+      }
+
+      if (!this.rkeConfig.machineSelectorConfig[index].config) {
+        this.rkeConfig.machineSelectorConfig[index].config = {};
+      }
+
+      return this.rkeConfig.machineSelectorConfig[index].config['kubelet-arg'] || [];
+    },
+    updateKubeletArgs(index, args) {
+      this.rkeConfig.machineSelectorConfig[index].config['kubelet-arg'] = args;
+    },
   },
 };
 </script>
@@ -77,7 +97,7 @@ export default {
         :can-remove="canRemoveKubeletRow"
         :default-add-value="{machineLabelSelector: { matchExpressions: [], matchLabels: {} }, config: {'kubelet-arg': []}}"
       >
-        <template #default="{row}">
+        <template #default="{row, i}">
           <template v-if="row.value.machineLabelSelector">
             <h3>{{ t('cluster.advanced.argInfo.machineSelector.title') }}</h3>
             <MatchExpressions
@@ -94,10 +114,11 @@ export default {
           </h3>
 
           <ArrayList
-            v-model="row.value.config['kubelet-arg']"
+            :value="kubeletArgs(i)"
             :mode="mode"
             :add-label="t('cluster.advanced.argInfo.machineSelector.listLabel')"
             :initial-empty-row="!!row.value.machineLabelSelector"
+            @input="updateKubeletArgs(i, $event)"
           />
         </template>
       </ArrayListGrouped>
@@ -128,7 +149,7 @@ export default {
         :title="t('cluster.advanced.argInfo.machineSelector.kubeSchedulerTitle')"
       />
     </template>
-    <template v-if="agentArgs['protect-kernel-defaults']">
+    <template v-if="showAgentConfig">
       <div class="spacer" />
 
       <div class="row">
