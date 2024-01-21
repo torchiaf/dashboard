@@ -524,23 +524,26 @@ export default {
       const networks = vm.spec.template.spec.networks || [];
       const interfaces = vm.spec.template.spec.domain.devices.interfaces || [];
 
-      const out = interfaces.map( (I, index) => {
+      const out = interfaces.map((I, index) => {
         const network = networks.find( N => I.name === N.name);
 
         const type = I.sriov ? 'sriov' : I.bridge ? 'bridge' : 'masquerade';
 
         const isPod = !!network.pod;
 
+        const bootOrder = I?.bootOrder ?? index;
+
         return {
           ...I,
           index,
+          bootOrder,
           type,
           isPod,
           newCreateId: (fromTemplate || init) ? randomStr(10) : false,
           model:       I.model,
           networkName: isPod ? MANAGEMENT_NETWORK : network?.multus?.networkName,
         };
-      });
+      }).sort((a, b) => a.bootOrder - b.bootOrder);
 
       return out;
     },
@@ -751,9 +754,9 @@ export default {
       const networks = [];
       const interfaces = [];
 
-      networkRow.forEach( (R) => {
+      networkRow.forEach( (R, index) => {
         const _network = this.parseNetwork(R);
-        const _interface = this.parseInterface(R);
+        const _interface = this.parseInterface(R, index);
 
         networks.push(_network);
         interfaces.push(_interface);
@@ -944,7 +947,7 @@ export default {
       return arr.map( id => this.getSSHValue(id)).filter( O => O !== undefined);
     },
 
-    parseInterface(R) {
+    parseInterface(R, index) {
       const _interface = {};
       const type = R.type;
 
@@ -956,6 +959,8 @@ export default {
 
       _interface.model = R.model;
       _interface.name = R.name;
+
+      _interface.bootOrder = index + 1;
 
       return _interface;
     },

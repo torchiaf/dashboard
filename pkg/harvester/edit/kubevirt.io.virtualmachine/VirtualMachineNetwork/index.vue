@@ -9,9 +9,14 @@ import { clone } from '@shell/utils/object';
 import { randomStr } from '@shell/utils/string';
 import { removeObject } from '@shell/utils/array';
 import { _VIEW } from '@shell/config/query-params';
+import BootOrder from '../../../components/BootOrder';
 
 export default {
-  components: { InfoBox, Base },
+  components: {
+    InfoBox,
+    Base,
+    BootOrder,
+  },
 
   props: {
     mode: {
@@ -135,11 +140,18 @@ export default {
       <Base
         :key="rows[i].rowKeyId"
         v-model="rows[i]"
+        class="mb-20"
         :rows="rows"
         :mode="mode"
         :is-single="isSingle"
         :network-option="networkOption"
         @update="update"
+      />
+
+      <BootOrder
+        v-model="rows"
+        :index="i"
+        :mode="mode"
       />
     </InfoBox>
 
