@@ -7,6 +7,7 @@ import UnitInput from '@shell/components/form/UnitInput';
 import { LabeledInput } from '@components/Form/LabeledInput';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import ModalWithCard from '@shell/components/ModalWithCard';
+import BootOrder from '../../../components/BootOrder';
 
 import { PVC, STORAGE_CLASS } from '@shell/config/types';
 import { HCI } from '../../../types';
@@ -20,7 +21,7 @@ import { PLUGIN_DEVELOPER, DEV } from '@shell/store/prefs';
 
 export default {
   components: {
-    Banner, BadgeStateFormatter, draggable, InfoBox, LabeledInput, UnitInput, LabeledSelect, ModalWithCard
+    Banner, BadgeStateFormatter, BootOrder, draggable, InfoBox, LabeledInput, UnitInput, LabeledSelect, ModalWithCard
   },
 
   props: {
@@ -311,21 +312,11 @@ export default {
               />
             </div>
 
-            <div class="bootOrder">
-              <div v-if="!isView" class="mr-15">
-                <button :disabled="i === 0" class="btn btn-sm role-primary" @click.prevent="changeSort(i, false)">
-                  <i class="icon icon-lg icon-chevron-up"></i>
-                </button>
-
-                <button :disabled="i === rows.length -1" class="btn btn-sm role-primary" @click.prevent="changeSort(i, true)">
-                  <i class="icon icon-lg icon-chevron-down"></i>
-                </button>
-              </div>
-
-              <div class="text-muted">
-                bootOrder: {{ i + 1 }}
-              </div>
-            </div>
+            <BootOrder
+              v-model="rows"
+              :index="i"
+              :mode="mode"
+            />
 
             <Banner v-if="volume.volumeStatus && !isCreate" class="mt-15 volume-status" color="warning" :label="volume.volumeStatus" />
           </InfoBox>
@@ -403,11 +394,6 @@ export default {
     top: 10px;
     right: 10px;
     padding: 0px;
-  }
-
-  .bootOrder {
-    display: flex;
-    align-items: center;
   }
 
   .buttons {
