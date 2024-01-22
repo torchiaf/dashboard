@@ -41,18 +41,10 @@ export default {
         return '';
       }
 
+      const bootOrders = [...this.bootOrders].sort((a, b) => a.bootOrder - b.bootOrder);
       const title = this.t('harvester.virtualMachine.bootOrder.details');
 
-      const bootOrders = this.bootOrders.sort((a, b) => a.bootOrder || 0 - b.bootOrder || 0);
-
-      return [
-        ...bootOrders
-          .filter(f => f.type === 'disk')
-          .reduce((acc, x) => `${ acc } &nbsp&nbsp&nbsp${ x.name }:  <b>${ x.bootOrder }</b><br>`, 'Disks:<br>'),
-        ...bootOrders
-          .filter(f => f.type === 'interface')
-          .reduce((acc, x) => `${ acc } &nbsp&nbsp&nbsp${ x.name }:  <b>${ x.bootOrder }</b><br>`, 'Networks:<br>')
-      ].reduce((acc, r) => `${ acc }${ r }`, `${ title }&nbsp&nbsp&nbsp<br><br>`) || '';
+      return bootOrders.reduce((acc, r) => `${ acc } <b>${ r.bootOrder }</b>:  ${ r.type === 'disk' ? 'disk' : 'network' } / ${ r.name }<br>`, `${ title }<br><br>`);
     },
   },
 

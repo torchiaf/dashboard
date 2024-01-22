@@ -653,7 +653,7 @@ harvester:
       namespaces:
         label: Namespaces
     bootOrder:
-      details: Boot Orders
+      details: Boot Order
 
   volume:
     label: Volumes
