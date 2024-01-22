@@ -652,6 +652,8 @@ harvester:
         inNamespaces: "Workloads in these namespaces"
       namespaces:
         label: Namespaces
+    bootOrder:
+      details: Boot Orders
 
   volume:
     label: Volumes
