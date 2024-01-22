@@ -534,11 +534,19 @@ export default {
           :resource-type="value.type"
           :vm="value"
           :validate-required="true"
+          :boot-orders="bootOrders"
+          @boot-order="updateBootOrders"
         />
       </Tab>
 
       <Tab name="Network" :label="t('harvester.tab.network')" :weight="-2">
-        <Network v-model="networkRows" :mode="mode" :is-single="isSingle" />
+        <Network
+          v-model="networkRows"
+          :mode="mode"
+          :is-single="isSingle"
+          :boot-orders="bootOrders"
+          @boot-order="updateBootOrders"
+        />
       </Tab>
 
       <Tab name="nodeScheduling" :label="t('workload.container.titles.nodeScheduling')" :weight="-3">

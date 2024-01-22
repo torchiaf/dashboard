@@ -9,13 +9,13 @@ import { clone } from '@shell/utils/object';
 import { randomStr } from '@shell/utils/string';
 import { removeObject } from '@shell/utils/array';
 import { _VIEW } from '@shell/config/query-params';
-import BootOrder from '../../../components/BootOrder';
+import VirtualMachineDeviceBootOrder from '../VirtualMachineDeviceBootOrder';
 
 export default {
   components: {
     InfoBox,
     Base,
-    BootOrder,
+    VirtualMachineDeviceBootOrder,
   },
 
   props: {
@@ -34,6 +34,13 @@ export default {
     isSingle: {
       type:    Boolean,
       default: true
+    },
+
+    bootOrders: {
+      type:    Array,
+      default: () => {
+        return [];
+      }
     }
   },
 
@@ -87,7 +94,8 @@ export default {
         model:       'virtio',
         type:        'bridge',
         newCreateId: randomStr(10),
-        rowKeyId:    randomStr(10)
+        rowKeyId:    randomStr(10),
+        bootOrder:   this.generateBootOrder(this.rows.length),
       };
 
       this.rows.push(neu);
@@ -121,6 +129,18 @@ export default {
       return name;
     },
 
+    generateBootOrder(pos) {
+      const bootOrders = this.bootOrders?.map(o => o.bootOrder) || [];
+
+      if (bootOrders) {
+        return Math.max(...bootOrders) + 1 || pos;
+      }
+    },
+
+    onInputBootOrder(value) {
+      this.$emit('boot-order', value);
+    },
+
     update() {
       this.$emit('input', this.rows);
     }
@@ -148,10 +168,11 @@ export default {
         @update="update"
       />
 
-      <BootOrder
-        v-model="rows"
-        :index="i"
+      <VirtualMachineDeviceBootOrder
         :mode="mode"
+        :boot-orders="bootOrders"
+        :boot-order="rows[i].bootOrder"
+        @input="onInputBootOrder"
       />
     </InfoBox>
 

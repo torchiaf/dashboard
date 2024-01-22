@@ -23,6 +23,11 @@ import { HCI as HCI_ANNOTATIONS } from '@pkg/harvester/config/labels-annotations
 import impl, { QGA_JSON, USB_TABLET } from './impl';
 import { uniq } from '@shell/utils/array';
 
+const BOOT_ORDER_TYPE = {
+  DISK:      'disk',
+  INTERFACE: 'interface'
+};
+
 export const MANAGEMENT_NETWORK = 'management Network';
 
 export const OS = [{
@@ -282,6 +287,18 @@ export default {
         topologyKeyPlaceholder: this.t('harvesterManager.affinity.topologyKey.placeholder')
       };
     },
+
+    bootOrders() {
+      const buildElem = type => el => ({
+        ...el,
+        type
+      });
+
+      return [
+        ...this.diskRows?.map(buildElem(BOOT_ORDER_TYPE.DISK)),
+        ...this.networkRows?.map(buildElem(BOOT_ORDER_TYPE.INTERFACE))
+      ];
+    }
   },
 
   async created() {
@@ -325,8 +342,13 @@ export default {
       const sshKey = this.getSSHFromAnnotation(spec) || [];
 
       const imageId = this.getRootImageId(vm) || '';
-      const diskRows = this.getDiskRows(vm);
-      const networkRows = this.getNetworkRows(vm, { fromTemplate, init });
+
+      const { disks, interfaces } = this.generateBootOrders(vm);
+
+      const diskRows = this.getDiskRows(vm, { bootOrders: disks });
+      const networkRows = this.getNetworkRows(vm, {
+        fromTemplate, init, bootOrders: interfaces
+      });
       const hasCreateVolumes = this.getHasCreatedVolumes(spec) || [];
 
       let { userData = undefined, networkData = undefined } = this.getCloudInitNoCloud(spec);
@@ -391,7 +413,7 @@ export default {
       this.refreshYamlEditor();
     },
 
-    getDiskRows(vm) {
+    getDiskRows(vm, config) {
       const namespace = vm.metadata.namespace;
       const _volumes = vm.spec.template.spec.volumes || [];
       const _disks = vm.spec.template.spec.domain.devices.disks || [];
@@ -402,6 +424,8 @@ export default {
       if (_disks.length === 0) {
         out.push({
           id:               randomStr(5),
+          index:            0,
+          bootOrder:        config?.bootOrders?.[0] || 1,
           source:           SOURCE_TYPE.IMAGE,
           name:             'disk-0',
           accessMode:       'ReadWriteMany',
@@ -477,8 +501,6 @@ export default {
 
           const bus = DISK?.disk?.bus || DISK?.cdrom?.bus;
 
-          const bootOrder = DISK?.bootOrder ? DISK?.bootOrder : index;
-
           const parseValue = parseSi(size);
 
           const formatSize = formatSi(parseValue, {
@@ -492,7 +514,8 @@ export default {
 
           return {
             id:         randomStr(5),
-            bootOrder,
+            index,
+            bootOrder:  config?.bootOrders?.[index] || index + 1,
             source,
             name:       DISK.name,
             realName,
@@ -531,12 +554,10 @@ export default {
 
         const isPod = !!network.pod;
 
-        const bootOrder = I?.bootOrder ?? index;
-
         return {
           ...I,
           index,
-          bootOrder,
+          bootOrder:   config.bootOrders?.[index] || index + 1,
           type,
           isPod,
           newCreateId: (fromTemplate || init) ? randomStr(10) : false,
@@ -584,7 +605,7 @@ export default {
       const diskNameLables = [];
       const volumeClaimTemplates = [];
 
-      disk.forEach( (R, index) => {
+      disk.forEach( (R) => {
         const prefixName = this.value.metadata?.name || '';
 
         let dataVolumeName = '';
@@ -597,7 +618,7 @@ export default {
           dataVolumeName = R.realName;
         }
 
-        const _disk = this.parseDisk(R, index);
+        const _disk = this.parseDisk(R);
         const _volume = this.parseVolume(R, dataVolumeName);
         const _dataVolumeTemplate = this.parseVolumeClaimTemplate(R, dataVolumeName);
 
@@ -754,9 +775,9 @@ export default {
       const networks = [];
       const interfaces = [];
 
-      networkRow.forEach( (R, index) => {
+      networkRow.forEach( (R) => {
         const _network = this.parseNetwork(R);
-        const _interface = this.parseInterface(R, index);
+        const _interface = this.parseInterface(R);
 
         networks.push(_network);
         interfaces.push(_interface);
@@ -872,16 +893,78 @@ export default {
       this.$set(this, 'memory', memory);
     },
 
-    parseDisk(R, index) {
-      const out = { name: R.name };
+    generateBootOrders(vm) {
+      const disks = vm.spec.template.spec.domain.devices.disks || [];
+      const interfaces = vm.spec.template.spec.domain.devices.interfaces || [];
+
+      const taken = [
+        ...disks,
+        ...interfaces
+      ].map(o => o.bootOrder ?? 0);
+
+      const ret = [...taken];
+
+      let bootOrder = 1;
+
+      for (let i = 0; i < taken.length; i++) {
+        if (!taken[i]) {
+          while (taken.includes(bootOrder)) {
+            bootOrder++;
+          }
+          ret[i] = bootOrder;
+          bootOrder++;
+        }
+      }
+
+      return {
+        disks:      ret.slice(0, disks.length),
+        interfaces: ret.slice(disks.length),
+      };
+    },
+
+    assignBootOrder(elem, bootOrder) {
+      const devices = (elem.type === BOOT_ORDER_TYPE.DISK ? this.diskRows : this.networkRows);
+
+      for (let i = 0; i < devices?.length; i++) {
+        if (devices[i].name === elem.name) {
+          this.$set(devices[i], 'bootOrder', bootOrder);
+          break;
+        }
+      }
+    },
+
+    updateBootOrders(elem) {
+      const existsElem = this.bootOrders.find(({ bootOrder }) => bootOrder === elem.neu);
+
+      this.assignBootOrder(elem, elem.neu);
+
+      if (existsElem) {
+        this.assignBootOrder(existsElem, elem.bootOrder);
+
+        const devices = (elem.type === BOOT_ORDER_TYPE.DISK ? this.diskRows : this.networkRows);
+
+        if (existsElem.type === elem.type) {
+          const temp = devices[existsElem.index];
+
+          devices[existsElem.index] = devices[elem.index];
+          devices[elem.index] = temp;
+        }
+
+        this.$set(devices, devices);
+      }
+    },
+
+    parseDisk(R) {
+      const out = {
+        name:      R.name,
+        bootOrder: R.bootOrder
+      };
 
       if (R.type === HARD_DISK) {
         out.disk = { bus: R.bus };
       } else if (R.type === CD_ROM) {
         out.cdrom = { bus: R.bus };
       }
-
-      out.bootOrder = index + 1;
 
       return out;
     },
@@ -947,7 +1030,7 @@ export default {
       return arr.map( id => this.getSSHValue(id)).filter( O => O !== undefined);
     },
 
-    parseInterface(R, index) {
+    parseInterface(R) {
       const _interface = {};
       const type = R.type;
 
@@ -960,7 +1043,7 @@ export default {
       _interface.model = R.model;
       _interface.name = R.name;
 
-      _interface.bootOrder = index + 1;
+      _interface.bootOrder = R.bootOrder;
 
       return _interface;
     },
