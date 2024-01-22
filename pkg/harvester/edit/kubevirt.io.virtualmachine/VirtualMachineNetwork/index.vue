@@ -1,4 +1,5 @@
 <script>
+import draggable from 'vuedraggable';
 import InfoBox from '@shell/components/InfoBox';
 import Base from './base';
 
@@ -9,13 +10,14 @@ import { clone } from '@shell/utils/object';
 import { randomStr } from '@shell/utils/string';
 import { removeObject } from '@shell/utils/array';
 import { _VIEW } from '@shell/config/query-params';
-import BootOrder from '../../../components/BootOrder';
+import VirtualMachineDeviceBootOrder from '../VirtualMachineDeviceBootOrder';
 
 export default {
   components: {
+    draggable,
     InfoBox,
     Base,
-    BootOrder,
+    VirtualMachineDeviceBootOrder,
   },
 
   props: {
@@ -34,6 +36,13 @@ export default {
     isSingle: {
       type:    Boolean,
       default: true
+    },
+
+    bootOrders: {
+      type:    Array,
+      default: () => {
+        return [];
+      }
     }
   },
 
@@ -72,8 +81,12 @@ export default {
   },
 
   watch: {
-    value(neu) {
-      this.rows = neu;
+    value: {
+      handler(neu) {
+        this.rows = neu;
+      },
+      deep:      true,
+      immediate: true
     },
   },
 
@@ -82,12 +95,14 @@ export default {
       const name = this.generateName();
 
       const neu = {
+        index:       this.rows.length,
         name,
         networkName: '',
         model:       'virtio',
         type:        'bridge',
         newCreateId: randomStr(10),
-        rowKeyId:    randomStr(10)
+        rowKeyId:    randomStr(10),
+        bootOrder:   this.generateBootOrder(this.rows.length),
       };
 
       this.rows.push(neu);
@@ -121,8 +136,41 @@ export default {
       return name;
     },
 
-    update() {
-      this.$emit('input', this.rows);
+    generateBootOrder(pos) {
+      const bootOrders = this.bootOrders?.map(o => o.bootOrder) || [];
+
+      if (bootOrders) {
+        return Math.max(...bootOrders) + 1 || pos;
+      }
+    },
+
+    onInputBootOrder(value) {
+      this.$emit('boot-order', value);
+    },
+
+    drag(v) {
+      const oldElem = this.bootOrders.find(o => o.bootOrder === this.rows[v.oldIndex].bootOrder);
+      const neuElem = this.bootOrders.find(o => o.bootOrder === this.rows[v.newIndex].bootOrder);
+
+      const emit = {
+        ...oldElem,
+        neu: neuElem.bootOrder,
+      };
+
+      this.onInputBootOrder(emit);
+
+      this.update(true);
+    },
+
+    update(sort = false) {
+      let rows = [...this.rows];
+
+      if (sort) {
+        if (rows?.length) {
+          rows = this.rows.sort((a, b) => a.bootOrder - b.bootOrder);
+        }
+      }
+      this.$emit('input', rows);
     }
   }
 };
@@ -130,31 +178,37 @@ export default {
 
 <template>
   <div>
-    <InfoBox v-for="(row, i) in rows" :key="i" class="infoBox">
-      <button v-if="!isView" type="button" class="role-link remove-vol" @click="remove(row)">
-        <i class="icon icon-x" />
-      </button>
+    <draggable v-model="rows" :disabled="isView" @end="drag">
+      <transition-group>
+        <div v-for="(row, i) in rows" :key="i">
+          <InfoBox class="infoBox">
+            <button v-if="!isView" type="button" class="role-link remove-vol" @click="remove(row)">
+              <i class="icon icon-x" />
+            </button>
 
-      <h3> {{ t('harvester.virtualMachine.network.title') }} </h3>
+            <h3> {{ t('harvester.virtualMachine.network.title') }} </h3>
 
-      <Base
-        :key="rows[i].rowKeyId"
-        v-model="rows[i]"
-        class="mb-20"
-        :rows="rows"
-        :mode="mode"
-        :is-single="isSingle"
-        :network-option="networkOption"
-        @update="update"
-      />
+            <Base
+              :key="rows[i].rowKeyId"
+              v-model="rows[i]"
+              class="mb-20"
+              :rows="rows"
+              :mode="mode"
+              :is-single="isSingle"
+              :network-option="networkOption"
+              @update="update"
+            />
 
-      <BootOrder
-        v-model="rows"
-        :index="i"
-        :mode="mode"
-      />
-    </InfoBox>
-
+            <VirtualMachineDeviceBootOrder
+              :mode="mode"
+              :boot-orders="bootOrders"
+              :boot-order="rows[i].bootOrder"
+              @input="onInputBootOrder"
+            />
+          </InfoBox>
+        </div>
+      </transition-group>
+    </draggable>
     <button v-if="!isView" type="button" class="btn btn-sm bg-primary" @click="add">
       {{ t('harvester.virtualMachine.network.addNetwork') }}
     </button>

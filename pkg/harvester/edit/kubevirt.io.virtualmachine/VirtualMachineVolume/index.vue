@@ -7,7 +7,7 @@ import UnitInput from '@shell/components/form/UnitInput';
 import { LabeledInput } from '@components/Form/LabeledInput';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import ModalWithCard from '@shell/components/ModalWithCard';
-import BootOrder from '../../../components/BootOrder';
+import VirtualMachineDeviceBootOrder from '../VirtualMachineDeviceBootOrder';
 
 import { PVC, STORAGE_CLASS } from '@shell/config/types';
 import { HCI } from '../../../types';
@@ -21,7 +21,7 @@ import { PLUGIN_DEVELOPER, DEV } from '@shell/store/prefs';
 
 export default {
   components: {
-    Banner, BadgeStateFormatter, BootOrder, draggable, InfoBox, LabeledInput, UnitInput, LabeledSelect, ModalWithCard
+    Banner, BadgeStateFormatter, draggable, InfoBox, LabeledInput, UnitInput, LabeledSelect, ModalWithCard, VirtualMachineDeviceBootOrder
   },
 
   props: {
@@ -72,6 +72,13 @@ export default {
     resourceType: {
       type:    String,
       default: ''
+    },
+
+    bootOrders: {
+      type:    Array,
+      default: () => {
+        return [];
+      }
     }
   },
 
@@ -160,6 +167,7 @@ export default {
     addVolume(type) {
       const name = this.generateName();
       const neu = {
+        index:       this.rows.length,
         id:          randomStr(5),
         name,
         source:      type,
@@ -170,6 +178,7 @@ export default {
         volumeName:  '',
         bus:         'virtio',
         newCreateId: randomStr(10), // judge whether it is a disk that has been created
+        bootOrder:   this.generateBootOrder(this.rows.length),
       };
 
       if (type === SOURCE_TYPE.NEW) {
@@ -194,6 +203,14 @@ export default {
       }
 
       return name;
+    },
+
+    generateBootOrder(pos) {
+      const bootOrders = this.bootOrders?.map(o => o.bootOrder) || [];
+
+      if (bootOrders) {
+        return Math.max(...bootOrders) + 1 || pos;
+      }
     },
 
     removeVolume(vol) {
@@ -232,8 +249,29 @@ export default {
       }[type];
     },
 
-    update() {
-      this.$emit('input', this.rows);
+    drag(v) {
+      const oldElem = this.bootOrders.find(o => o.bootOrder === this.rows[v.oldIndex].bootOrder);
+      const neuElem = this.bootOrders.find(o => o.bootOrder === this.rows[v.newIndex].bootOrder);
+
+      const emit = {
+        ...oldElem,
+        neu: neuElem.bootOrder,
+      };
+
+      this.onInputBootOrder(emit);
+
+      this.update(true);
+    },
+
+    update(sort = false) {
+      let rows = [...this.rows];
+
+      if (sort) {
+        if (rows?.length) {
+          rows = this.rows.sort((a, b) => a.bootOrder - b.bootOrder);
+        }
+      }
+      this.$emit('input', rows);
     },
 
     deleteVolume() {
@@ -246,14 +284,12 @@ export default {
       this.$refs.deleteTip.hide();
     },
 
-    changeSort(idx, type) {
-      // true: down, false: up
-      this.rows.splice(type ? idx : idx - 1, 1, ...this.rows.splice(type ? idx + 1 : idx, 1, this.rows[type ? idx : idx - 1]));
-      this.update();
-    },
-
     getImageDisplayName(id) {
       return this.$store.getters['harvester/all'](HCI.IMAGE).find(image => image.id === id)?.spec?.displayName;
+    },
+
+    onInputBootOrder(value) {
+      this.$emit('boot-order', value);
     }
   },
 };
@@ -262,7 +298,7 @@ export default {
 <template>
   <div>
     <Banner v-if="!isView" color="info" label-key="harvester.virtualMachine.volume.dragTip" />
-    <draggable v-model="rows" :disabled="isView" @end="update">
+    <draggable v-model="rows" :disabled="isView" @end="drag">
       <transition-group>
         <div v-for="(volume, i) in rows" :key="volume.id">
           <InfoBox class="box">
@@ -312,10 +348,11 @@ export default {
               />
             </div>
 
-            <BootOrder
-              v-model="rows"
-              :index="i"
+            <VirtualMachineDeviceBootOrder
               :mode="mode"
+              :boot-orders="bootOrders"
+              :boot-order="rows[i].bootOrder"
+              @input="onInputBootOrder"
             />
 
             <Banner v-if="volume.volumeStatus && !isCreate" class="mt-15 volume-status" color="warning" :label="volume.volumeStatus" />

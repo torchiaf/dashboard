@@ -168,11 +168,16 @@ export default {
           :namespace="value.metadata.namespace"
           :vm="value"
           :resource-type="value.type"
+          :boot-orders="bootOrders"
         />
       </Tab>
 
       <Tab name="networks" :label="t('harvester.virtualMachine.detail.tabs.networks')" class="bordered-table" :weight="5">
-        <Network v-model="networkRows" mode="view" />
+        <Network
+          v-model="networkRows"
+          :boot-orders="bootOrders"
+          mode="view"
+        />
       </Tab>
 
       <Tab name="keypairs" :label="t('harvester.virtualMachine.detail.tabs.keypairs')" class="bordered-table" :weight="3">
