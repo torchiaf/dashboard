@@ -20,6 +20,7 @@ const VMI_WAITING_MESSAGE =
   'The virtual machine is waiting for resources to become available.';
 const VM_ERROR = 'VM error';
 const STOPPING = 'Stopping';
+const UNSCHEDULABLE = 'Unschedulable';
 const WAITING = 'Waiting';
 const NOT_READY = 'Not Ready';
 const AGENT_CONNECTED = 'AgentConnected';
@@ -632,6 +633,21 @@ export default class VirtVm extends HarvesterResource {
     return null;
   }
 
+  get isUnschedulable() {
+    if (this.isBeingStopped) {
+      const condition = this.status?.conditions?.find(c => c.reason === UNSCHEDULABLE);
+
+      if (!!condition) {
+        return {
+          status:  UNSCHEDULABLE,
+          message: condition.message || '',
+        };
+      }
+    }
+
+    return null;
+  }
+
   get otherState() {
     const state = (this.vmi &&
       [VMIPhase.Scheduling, VMIPhase.Scheduled].includes(
@@ -698,6 +714,7 @@ export default class VirtVm extends HarvesterResource {
     }
 
     const state =
+      this.isUnschedulable?.status ||
       this.isPaused?.status ||
       this.isVMError?.status ||
       this.isBeingStopped?.status ||
