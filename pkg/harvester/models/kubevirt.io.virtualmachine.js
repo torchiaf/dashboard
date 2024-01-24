@@ -634,13 +634,13 @@ export default class VirtVm extends HarvesterResource {
   }
 
   get isUnschedulable() {
-    if (this.isBeingStopped) {
+    if (this.isBeingStopped || this.isStarting) {
       const condition = this.status?.conditions?.find(c => c.reason === UNSCHEDULABLE);
 
       if (!!condition) {
         return {
           status:  UNSCHEDULABLE,
-          message: condition.message || '',
+          message: condition.message || 'VM is unschedulable',
         };
       }
     }
