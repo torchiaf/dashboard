@@ -1,7 +1,7 @@
 <script>
 import Vue from 'vue';
 import draggable from 'vuedraggable';
-import { Card } from '@components/Card';
+import BootOrderCard from '../../../components/BootOrderCard';
 import { _VIEW } from '@shell/config/query-params';
 import { clone } from '@shell/utils/object';
 import { BOOT_ORDER_TYPE } from '../../../mixins/harvester-vm';
@@ -9,7 +9,7 @@ import { BOOT_ORDER_TYPE } from '../../../mixins/harvester-vm';
 export default {
   components: {
     draggable,
-    Card
+    BootOrderCard
   },
 
   props: {
@@ -18,6 +18,11 @@ export default {
       default: () => {
         return [];
       }
+    },
+
+    mode: {
+      type:     String,
+      required: true
     },
   },
 
@@ -125,87 +130,51 @@ export default {
 <template>
   <div class="container">
     <div class="boot-order">
-      <Card
-        v-for="(row, index) in bootOrders"
+      <div
+        v-for="(pos, index) in bootOrders"
         :key="index"
-        :show-highlight-border="false"
+        class="position-container"
       >
-        <template #body>
-          <span>{{ row }}</span>
-        </template>
-
-        <template #actions>
-          <span></span>
-        </template>
-      </Card>
+        <span>{{ pos }}</span>
+      </div>
     </div>
     <div class="devices">
-      <draggable v-model="ordered" :disabled="isView" group="rows" class="list-group" @end="orderedDragEnd">
-        <transition-group :id="'ordered'">
-          <div v-for="(row, index) in ordered" :key="index">
-            <Card
-              :show-highlight-border="false"
-            >
-              <template #title>
-                <div class="card-title-slot">
-                  <h4
-                    v-clean-html="row.type + ' / ' + row.name"
-                    class="text-default-text"
-                  />
-                  <div v-if="!isView" class="buttons actions">
-                    <div class="buttons-container mr-15">
-                      <button :disabled="index === 0" class="btn btn-sm role-primary" @click.prevent="swap(index, index -1)">
-                        <i class="icon icon-lg icon-chevron-up"></i>
-                      </button>
-
-                      <button :disabled="index === ordered.length - 1" class="btn btn-sm role-primary" @click.prevent="swap(index, index + 1)">
-                        <i class="icon icon-lg icon-chevron-down"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </template>
-
-              <template #body>
-                <span>{{ row.bootOrder }}</span>
-              </template>
-
-              <template #actions>
-                <span></span>
-              </template>
-            </Card>
-          </div>
-        </transition-group>
+      <draggable
+        :id="'ordered'"
+        v-model="ordered"
+        :disabled="isView"
+        group="rows"
+        class="list-group ordered"
+        @end="orderedDragEnd"
+      >
+        <div v-for="(row, index) in ordered" :key="index">
+          <BootOrderCard
+            class="card"
+            :value="row"
+            :index="index"
+            :count="ordered.length"
+            :mode="mode"
+            @input="swap(index, index + $event)"
+          />
+        </div>
       </draggable>
 
-      <hr>
-      <hr>
-
-      <draggable v-model="unordered" :disabled="isView" group="rows" class="list-group" @end="unorderedDragEnd">
-        <transition-group :id="'unordered'" tag="div">
-          <div v-for="(row, index) in unordered" :key="index">
-            <Card
-              :show-highlight-border="false"
-            >
-              <template #title>
-                <div class="card-title-slot">
-                  <h4
-                    v-clean-html="row.type + ' / ' + row.name"
-                    class="text-default-text"
-                  />
-                </div>
-              </template>
-
-              <template #body>
-                <span></span>
-              </template>
-
-              <template #actions>
-                <span></span>
-              </template>
-            </Card>
-          </div>
-        </transition-group>
+      <draggable
+        :id="'unordered'"
+        v-model="unordered"
+        :disabled="isView"
+        group="rows"
+        class="list-group unordered"
+        @end="unorderedDragEnd"
+      >
+        <div v-for="(row, index) in unordered" :key="index">
+          <BootOrderCard
+            class="card"
+            :value="row"
+            :showButtons="false"
+            :mode="mode"
+          />
+        </div>
       </draggable>
     </div>
   </div>
@@ -217,13 +186,21 @@ export default {
     flex-direction: row;
 
     .boot-order {
-      .card-container {
-        width: 60px;
+      .position-container {
+        min-height: 60px;
+        width: 30px;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
       }
     }
 
     .devices {
       width: inherit;
+
+      .card {
+        margin-bottom: 5px;
+      }
 
       .card-title-slot {
         display: flex;
@@ -239,6 +216,10 @@ export default {
 
 .card-container {
   min-height: 130px;
+}
+
+.unordered {
+  margin-top: 50px;
 }
 
 .list-group:empty,
