@@ -17,6 +17,7 @@ import Reserved from './VirtualMachineReserved';
 import SSHKey from './VirtualMachineSSHKey';
 import Volume from './VirtualMachineVolume';
 import Network from './VirtualMachineNetwork';
+import BootOrder from './VirtualMachineBootOrder';
 import CpuMemory from './VirtualMachineCpuMemory';
 import CloudConfig from './VirtualMachineCloudConfig';
 import NodeScheduling from '@shell/components/form/NodeScheduling';
@@ -43,6 +44,7 @@ export default {
   name: 'HarvesterEditVM',
 
   components: {
+    BootOrder,
     Tab,
     Tabbed,
     Checkbox,
@@ -429,6 +431,11 @@ export default {
 
       return out;
     },
+
+    onBootOrderChange({ diskRows, networkRows }) {
+      this.diskRows = diskRows;
+      this.networkRows = networkRows;
+    }
   },
 };
 </script>
@@ -539,6 +546,14 @@ export default {
 
       <Tab name="Network" :label="t('harvester.tab.network')" :weight="-2">
         <Network v-model="networkRows" :mode="mode" :is-single="isSingle" />
+      </Tab>
+
+      <Tab name="BootOrder" :label="t('harvester.tab.boot-order')" :weight="-2">
+        <BootOrder
+          :value="bootOrderDevices"
+          :mode="mode"
+          @input="onBootOrderChange"
+        />
       </Tab>
 
       <Tab name="nodeScheduling" :label="t('workload.container.titles.nodeScheduling')" :weight="-3">

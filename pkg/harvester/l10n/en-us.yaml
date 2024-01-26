@@ -185,6 +185,7 @@ harvester:
   tab:
     volume: Volumes
     network: Networks
+    boot-order: Boot Order
     advanced: Advanced Options
     accessCredentials: Access Credentials
     pciDevices: PCI Devices
