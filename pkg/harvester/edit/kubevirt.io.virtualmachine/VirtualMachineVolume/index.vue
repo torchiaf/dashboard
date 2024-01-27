@@ -125,6 +125,10 @@ export default {
     pvcs() {
       return this.$store.getters['harvester/all'](PVC) || [];
     },
+
+    bootOrders() {
+      return this.value.map(r => r.bootOrder);
+    }
   },
 
   watch: {
@@ -311,20 +315,8 @@ export default {
               />
             </div>
 
-            <div class="bootOrder">
-              <div v-if="!isView" class="mr-15">
-                <button :disabled="i === 0" class="btn btn-sm role-primary" @click.prevent="changeSort(i, false)">
-                  <i class="icon icon-lg icon-chevron-up"></i>
-                </button>
-
-                <button :disabled="i === rows.length -1" class="btn btn-sm role-primary" @click.prevent="changeSort(i, true)">
-                  <i class="icon icon-lg icon-chevron-down"></i>
-                </button>
-              </div>
-
-              <div class="text-muted">
-                bootOrder: {{ i + 1 }}
-              </div>
+            <div v-if="bootOrders[i]" class="text-muted">
+              bootOrder: {{ bootOrders[i] }}
             </div>
 
             <Banner v-if="volume.volumeStatus && !isCreate" class="mt-15 volume-status" color="warning" :label="volume.volumeStatus" />
@@ -403,11 +395,6 @@ export default {
     top: 10px;
     right: 10px;
     padding: 0px;
-  }
-
-  .bootOrder {
-    display: flex;
-    align-items: center;
   }
 
   .buttons {

@@ -64,6 +64,10 @@ export default {
 
       return out;
     },
+
+    bootOrders() {
+      return this.value.map(r => r.bootOrder);
+    }
   },
 
   watch: {
@@ -141,6 +145,10 @@ export default {
         :network-option="networkOption"
         @update="update"
       />
+
+      <div v-if="bootOrders[i]" class="text-muted mt-20">
+        bootOrder: {{ bootOrders[i] }}
+      </div>
     </InfoBox>
 
     <button v-if="!isView" type="button" class="btn btn-sm bg-primary" @click="add">

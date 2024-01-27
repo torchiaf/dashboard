@@ -33,7 +33,8 @@ export default {
     return {
       ordered,
       unordered,
-      bootOrders: ordered.map(r => r.bootOrder)
+      bootOrders: ordered.map(r => r.bootOrder),
+      hideLast:   false
     };
   },
 
@@ -98,6 +99,7 @@ export default {
       } else {
         this.update();
       }
+      this.hideLast = false;
     },
 
     unorderedDragEnd(v) {
@@ -107,6 +109,49 @@ export default {
           this.getNextBootOrder()
         ].sort();
       }
+      this.hideLast = false;
+    },
+
+    onMove(v) {
+      if (v.from.id === 'ordered' && v.to.id === 'unordered') {
+        this.hideLast = true;
+      } else {
+        this.hideLast = false;
+      }
+    },
+
+    swapUnordered() {
+      this.bootOrders = [
+        ...this.bootOrders,
+        this.getNextBootOrder()
+      ].sort();
+
+      this.ordered.push(this.unordered[0]);
+      this.unordered.splice(0, 1);
+    },
+
+    swapUnorderedAll() {
+      this.unordered.forEach(() => {
+        this.bootOrders = [
+          ...this.bootOrders,
+          this.getNextBootOrder()
+        ].sort();
+      });
+      this.ordered.push(...this.unordered);
+      this.unordered = [];
+    },
+
+    swapOrdered() {
+      this.bootOrders.pop();
+
+      this.unordered.push(this.ordered[this.ordered.length - 1]);
+      this.ordered.splice(this.ordered.length - 1, 1);
+    },
+
+    swapOrderedAll() {
+      this.unordered.push(...this.ordered);
+      this.ordered = [];
+      this.bootOrders = [];
     },
 
     update() {
@@ -135,7 +180,7 @@ export default {
         :key="index"
         class="position-container"
       >
-        <span>{{ pos }}</span>
+        <span v-if="!(hideLast && index === bootOrders.length - 1)">{{ pos }}</span>
       </div>
     </div>
     <div class="devices">
@@ -145,19 +190,39 @@ export default {
         :disabled="isView"
         group="rows"
         class="list-group ordered"
+        :move="onMove"
         @end="orderedDragEnd"
       >
         <div v-for="(row, index) in ordered" :key="index">
           <BootOrderCard
             class="card"
             :value="row"
-            :index="index"
-            :count="ordered.length"
+            :showButtons="false"
             :mode="mode"
             @input="swap(index, index + $event)"
           />
         </div>
       </draggable>
+
+      <div class="buttons actions">
+        <div class="buttons-container mr-15">
+          <button :disabled="unordered.length === 0" class="btn btn-sm role-primary" @click.prevent="swapUnorderedAll">
+            <i class="icon icon-lg icon-chevron-beginning"></i>
+          </button>
+
+          <button :disabled="unordered.length === 0" class="btn btn-sm role-primary" @click.prevent="swapUnordered">
+            <i class="icon icon-lg icon-chevron-up"></i>
+          </button>
+
+          <button :disabled="ordered.length === 0" class="btn btn-sm role-primary" @click.prevent="swapOrdered">
+            <i class="icon icon-lg icon-chevron-down"></i>
+          </button>
+
+          <button :disabled="ordered.length === 0" class="btn btn-sm role-primary" @click.prevent="swapOrderedAll">
+            <i class="icon icon-lg icon-chevron-end"></i>
+          </button>
+        </div>
+      </div>
 
       <draggable
         :id="'unordered'"
@@ -176,6 +241,20 @@ export default {
           />
         </div>
       </draggable>
+    </div>
+
+    <div>
+      <div v-for="(row, index) in ordered" :key="index" class="buttons actions">
+        <div v-if="!(hideLast && index === bootOrders.length - 1)" class="buttons-container mr-15">
+          <button :disabled="index === 0" class="btn btn-sm role-primary" @click.prevent="swap(index, index - 1)">
+            <i class="icon icon-lg icon-chevron-up"></i>
+          </button>
+
+          <button :disabled="index === ordered.length - 1" class="btn btn-sm role-primary" @click.prevent="swap(index, index + 1)">
+            <i class="icon icon-lg icon-chevron-down"></i>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -197,6 +276,7 @@ export default {
 
     .devices {
       width: inherit;
+              max-width: 500px;
 
       .card {
         margin-bottom: 5px;
@@ -214,12 +294,30 @@ export default {
     }
   }
 
+.icon-chevron-beginning, .icon-chevron-end {
+transform: rotate(90deg);
+}
+
+.actions {
+  min-height: 60px;
+  margin-bottom: 5px;
+}
+
+.buttons-container {
+  height: 30px;
+  display: flex;
+  .btn {
+    margin-top: 5px;
+    margin-left: 5px;
+  }
+}
+
 .card-container {
   min-height: 130px;
 }
 
 .unordered {
-  margin-top: 50px;
+  margin-top: 10px;
 }
 
 .list-group:empty,
