@@ -27,13 +27,10 @@ export default {
   },
 
   data() {
-    const ordered = this.value.filter(f => f.bootOrder).sort((a, b) => a.bootOrder - b.bootOrder);
-    const unordered = this.value.filter(f => !f.bootOrder);
-
     return {
-      ordered,
-      unordered,
-      bootOrders: ordered.map(r => r.bootOrder),
+      ordered:    [],
+      unordered:  [],
+      bootOrders: [],
       hideLast:   false
     };
   },
@@ -45,10 +42,20 @@ export default {
   },
 
   watch: {
-    bootOrders: {
-      handler() {
-        this.update();
+    value: {
+      handler(neu) {
+        const value = clone(neu);
+
+        const ordered = value.filter(f => f.bootOrder).sort((a, b) => a.bootOrder - b.bootOrder);
+        const unordered = value.filter(f => !f.bootOrder);
+        const bootOrders = ordered.map(r => r.bootOrder);
+
+        Vue.set(this, 'ordered', ordered);
+        Vue.set(this, 'unordered', unordered);
+        Vue.set(this, 'bootOrders', bootOrders);
       },
+      immediate: true,
+      deep:      true,
     },
   },
 
@@ -80,6 +87,14 @@ export default {
       return bootOrder;
     },
 
+    onMove(v) {
+      if (v.from.id === 'ordered' && v.to.id === 'unordered') {
+        this.hideLast = true;
+      } else {
+        this.hideLast = false;
+      }
+    },
+
     swap(index1, index2) {
       const ordered = clone(this.ordered);
 
@@ -100,6 +115,8 @@ export default {
         this.update();
       }
       this.hideLast = false;
+
+      this.update();
     },
 
     unorderedDragEnd(v) {
@@ -110,14 +127,8 @@ export default {
         ].sort();
       }
       this.hideLast = false;
-    },
 
-    onMove(v) {
-      if (v.from.id === 'ordered' && v.to.id === 'unordered') {
-        this.hideLast = true;
-      } else {
-        this.hideLast = false;
-      }
+      this.update();
     },
 
     swapUnordered() {
@@ -128,6 +139,8 @@ export default {
 
       this.ordered.push(this.unordered[0]);
       this.unordered.splice(0, 1);
+
+      this.update();
     },
 
     swapUnorderedAll() {
@@ -139,6 +152,8 @@ export default {
       });
       this.ordered.push(...this.unordered);
       this.unordered = [];
+
+      this.update();
     },
 
     swapOrdered() {
@@ -146,12 +161,16 @@ export default {
 
       this.unordered.push(this.ordered[this.ordered.length - 1]);
       this.ordered.splice(this.ordered.length - 1, 1);
+
+      this.update();
     },
 
     swapOrderedAll() {
       this.unordered.push(...this.ordered);
       this.ordered = [];
       this.bootOrders = [];
+
+      this.update();
     },
 
     update() {

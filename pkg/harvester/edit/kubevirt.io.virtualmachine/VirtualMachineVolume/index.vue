@@ -127,14 +127,14 @@ export default {
     },
 
     bootOrders() {
-      return this.value.map(r => r.bootOrder);
+      return this.rows.map(r => r.bootOrder);
     }
   },
 
   watch: {
     value: {
       handler(neu) {
-        const rows = neu.map((V) => {
+        const rows = clone(neu).map((V) => {
           if (!this.isCreate && V.source !== SOURCE_TYPE.CONTAINER && !V.newCreateId) {
             V.to = {
               name:   `${ HARVESTER_PRODUCT }-c-cluster-resource-namespace-id`,
@@ -150,7 +150,7 @@ export default {
           }
 
           return V;
-        });
+        }).sort((a, b) => (a.bootOrder || 999999) - (b.bootOrder || 999999));
 
         this.$set(this, 'rows', rows);
       },

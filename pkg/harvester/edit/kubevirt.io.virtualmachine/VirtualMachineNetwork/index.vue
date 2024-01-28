@@ -1,4 +1,5 @@
 <script>
+import Vue from 'vue';
 import InfoBox from '@shell/components/InfoBox';
 import Base from './base';
 
@@ -66,21 +67,28 @@ export default {
     },
 
     bootOrders() {
-      return this.value.map(r => r.bootOrder);
+      return this.rows.map(r => r.bootOrder);
     }
   },
 
   watch: {
-    value(neu) {
-      this.rows = neu;
-    },
+    value: {
+      handler(neu) {
+        const rows = clone(neu).sort((a, b) => (a.bootOrder || 999999) - (b.bootOrder || 999999));
+
+        Vue.set(this, 'rows', rows);
+      },
+      immediate: true,
+      deep:      true,
+    }
   },
 
   methods: {
-    add(type) {
+    add() {
       const name = this.generateName();
 
       const neu = {
+        index:       this.rows.length + 1,
         name,
         networkName: '',
         model:       'virtio',
