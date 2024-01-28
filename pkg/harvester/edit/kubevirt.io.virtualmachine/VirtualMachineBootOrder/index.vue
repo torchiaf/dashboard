@@ -70,16 +70,6 @@ export default {
       );
     },
 
-    updateRows(bootOrderGetter) {
-      return (r, index) => {
-        const el = this.findElem(r);
-
-        el.bootOrder = bootOrderGetter(index);
-
-        return el;
-      };
-    },
-
     getNextBootOrder() {
       let bootOrder = 1;
 
@@ -111,7 +101,15 @@ export default {
       }
     },
 
-    swap(index1, index2) {
+    onMouseDownOrdered(index) {
+      this.hideButtons = index;
+    },
+
+    onMouseUpOrdered() {
+      this.hideButtons = null;
+    },
+
+    swapOrdered(index1, index2) {
       const ordered = clone(this.ordered);
 
       const temp = ordered[index1];
@@ -124,41 +122,7 @@ export default {
       this.update();
     },
 
-    hideDragElementButtons(index) {
-      this.hideButtons = index;
-    },
-
-    showDragElementButtons() {
-      this.hideButtons = null;
-    },
-
-    orderedDragEnd(v) {
-      if (v.to.id === 'unordered') {
-        this.bootOrders.pop();
-      } else {
-        this.update();
-      }
-      this.hideLast = false;
-      this.showNext = null;
-      this.hideButtons = null;
-
-      this.update();
-    },
-
-    unorderedDragEnd(v) {
-      if (v.to.id === 'ordered') {
-        this.bootOrders = [
-          ...this.bootOrders,
-          this.getNextBootOrder()
-        ].sort();
-      }
-      this.hideLast = false;
-      this.showNext = null;
-
-      this.update();
-    },
-
-    swapUnordered() {
+    swapToUnordered() {
       this.bootOrders = [
         ...this.bootOrders,
         this.getNextBootOrder()
@@ -170,7 +134,7 @@ export default {
       this.update();
     },
 
-    swapUnorderedAll() {
+    swapToUnorderedAll() {
       this.unordered.forEach(() => {
         this.bootOrders = [
           ...this.bootOrders,
@@ -183,7 +147,7 @@ export default {
       this.update();
     },
 
-    swapOrdered() {
+    swapToOrdered() {
       this.bootOrders.pop();
 
       this.unordered.push(this.ordered[this.ordered.length - 1]);
@@ -192,12 +156,48 @@ export default {
       this.update();
     },
 
-    swapOrderedAll() {
+    swapToOrderedAll() {
       this.unordered.push(...this.ordered);
       this.ordered = [];
       this.bootOrders = [];
 
       this.update();
+    },
+
+    dragEndOrdered(v) {
+      if (v.to.id === 'unordered') {
+        this.bootOrders.pop();
+      } else {
+        this.update();
+      }
+      this.hideLast = false;
+      this.showNext = null;
+      this.hideButtons = null;
+
+      this.update();
+    },
+
+    dragEndUnordered(v) {
+      if (v.to.id === 'ordered') {
+        this.bootOrders = [
+          ...this.bootOrders,
+          this.getNextBootOrder()
+        ].sort();
+      }
+      this.hideLast = false;
+      this.showNext = null;
+
+      this.update();
+    },
+
+    updateRows(bootOrderGetter) {
+      return (r, index) => {
+        const el = this.findElem(r);
+
+        el.bootOrder = bootOrderGetter(index);
+
+        return el;
+      };
     },
 
     update() {
@@ -227,7 +227,7 @@ export default {
           :key="index"
           class="position-container"
         >
-          <span>{{ pos }}</span>
+          <h4>{{ pos }}</h4>
         </div>
       </div>
       <div v-else>
@@ -236,7 +236,9 @@ export default {
           :key="index"
           class="position-container"
         >
-          <span v-if="!(hideLast && index === bootOrders.length - 1)">{{ pos }}</span>
+          <h4 v-if="!(hideLast && index === bootOrders.length - 1)">
+            {{ pos }}
+          </h4>
         </div>
       </div>
     </div>
@@ -248,7 +250,7 @@ export default {
         group="rows"
         class="list-group ordered"
         :move="onMoveOrdered"
-        @end="orderedDragEnd"
+        @end="dragEndOrdered"
       >
         <div v-for="(row, index) in ordered" :key="index">
           <BootOrderCard
@@ -258,9 +260,9 @@ export default {
             :index="index"
             :count="ordered.length"
             :mode="mode"
-            @input="swap(index, index + $event)"
-            @mousedown="hideDragElementButtons(index)"
-            @mouseup="showDragElementButtons"
+            @input="swapOrdered(index, index + $event)"
+            @mousedown="onMouseDownOrdered(index)"
+            @mouseup="onMouseUpOrdered"
           />
         </div>
       </draggable>
@@ -268,19 +270,19 @@ export default {
 
     <div class="swap-buttons actions ml-15">
       <div class="buttons-container">
-        <button :disabled="unordered.length === 0" class="btn btn-sm role-primary ml-5" @click.prevent="swapUnorderedAll">
+        <button :disabled="unordered.length === 0" class="btn btn-sm role-primary ml-5" @click.prevent="swapToUnorderedAll">
           <i class="icon icon-lg icon-chevron-beginning"></i>
         </button>
 
-        <button :disabled="unordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapUnordered">
+        <button :disabled="unordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapToUnordered">
           <i class="icon icon-lg icon-chevron-up"></i>
         </button>
 
-        <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-20 ml-5" @click.prevent="swapOrdered">
+        <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-20 ml-5" @click.prevent="swapToOrdered">
           <i class="icon icon-lg icon-chevron-down"></i>
         </button>
 
-        <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapOrderedAll">
+        <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapToOrderedAll">
           <i class="icon icon-lg icon-chevron-end"></i>
         </button>
       </div>
@@ -294,7 +296,7 @@ export default {
         group="rows"
         class="list-group unordered"
         :move="onMoveUnordered"
-        @end="unorderedDragEnd"
+        @end="dragEndUnordered"
       >
         <div v-for="(row, index) in unordered" :key="index">
           <BootOrderCard
@@ -322,12 +324,16 @@ export default {
         margin-bottom: 5px;
         display: flex;
         align-items: center;
+
+        h4 {
+          margin: 0;
+        }
       }
     }
 
     .devices {
       width: inherit;
-            max-width: 500px;
+      max-width: 500px;
 
       .card {
         margin-bottom: 5px;

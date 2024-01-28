@@ -50,10 +50,6 @@ export default Vue.extend({
       type:    Boolean,
       default: false,
     },
-    disabled: {
-      type:    Boolean,
-      default: false,
-    },
   }
 });
 </script>
@@ -61,7 +57,7 @@ export default Vue.extend({
 <template>
   <div
     class="card-container"
-    :class="{'highlight-border': showHighlightBorder, 'card-sticky': sticky, 'disabled': disabled }"
+    :class="{'highlight-border': showHighlightBorder, 'card-sticky': sticky}"
     data-testid="card"
   >
     <div class="card-wrap">
@@ -166,11 +162,6 @@ export default Vue.extend({
         flex: 1;
       }
     }
-   }
-
-   &.disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
    }
  }
 </style>

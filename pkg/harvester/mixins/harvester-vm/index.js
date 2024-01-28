@@ -23,7 +23,6 @@ import { HCI as HCI_ANNOTATIONS } from '@pkg/harvester/config/labels-annotations
 import impl, { QGA_JSON, USB_TABLET } from './impl';
 import { uniq } from '@shell/utils/array';
 
-// TODO remove unused properies
 function asBootOrderDevice(type) {
   return el => ({
     ...el,
