@@ -264,7 +264,7 @@ export default {
 
 <template>
   <div>
-    <Banner v-if="!isView" color="info" label-key="harvester.virtualMachine.volume.dragTip" />
+    <Banner v-if="!isView" color="info" label-key="harvester.virtualMachine.volume.bootOrderTip" />
     <draggable v-model="rows" :disabled="isView" @end="update">
       <transition-group>
         <div v-for="(volume, i) in rows" :key="volume.id">

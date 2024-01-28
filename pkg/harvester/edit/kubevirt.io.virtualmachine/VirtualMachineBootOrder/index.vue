@@ -2,6 +2,8 @@
 import Vue from 'vue';
 import draggable from 'vuedraggable';
 import BootOrderCard from '../../../components/BootOrderCard';
+import { Banner } from '@components/Banner';
+
 import { _VIEW } from '@shell/config/query-params';
 import { clone } from '@shell/utils/object';
 import { BOOT_ORDER_TYPE } from '../../../mixins/harvester-vm';
@@ -9,6 +11,7 @@ import { BOOT_ORDER_TYPE } from '../../../mixins/harvester-vm';
 export default {
   components: {
     draggable,
+    Banner,
     BootOrderCard
   },
 
@@ -192,77 +195,42 @@ export default {
 </script>
 
 <template>
-  <div class="container">
-    <div class="boot-order">
-      <div
-        v-for="(pos, index) in bootOrders"
-        :key="index"
-        class="position-container"
-      >
-        <span v-if="!(hideLast && index === bootOrders.length - 1)">{{ pos }}</span>
-      </div>
-    </div>
-    <div class="devices">
-      <draggable
-        :id="'ordered'"
-        v-model="ordered"
-        :disabled="isView"
-        group="rows"
-        class="list-group ordered"
-        :move="onMove"
-        @end="orderedDragEnd"
-      >
-        <div v-for="(row, index) in ordered" :key="index">
-          <BootOrderCard
-            class="card"
-            :value="row"
-            :showButtons="false"
-            :mode="mode"
-            @input="swap(index, index + $event)"
-          />
-        </div>
-      </draggable>
-
-      <div class="buttons actions">
-        <div class="buttons-container mr-15">
-          <button :disabled="unordered.length === 0" class="btn btn-sm role-primary" @click.prevent="swapUnorderedAll">
-            <i class="icon icon-lg icon-chevron-beginning"></i>
-          </button>
-
-          <button :disabled="unordered.length === 0" class="btn btn-sm role-primary" @click.prevent="swapUnordered">
-            <i class="icon icon-lg icon-chevron-up"></i>
-          </button>
-
-          <button :disabled="ordered.length === 0" class="btn btn-sm role-primary" @click.prevent="swapOrdered">
-            <i class="icon icon-lg icon-chevron-down"></i>
-          </button>
-
-          <button :disabled="ordered.length === 0" class="btn btn-sm role-primary" @click.prevent="swapOrderedAll">
-            <i class="icon icon-lg icon-chevron-end"></i>
-          </button>
+  <div>
+    <!-- <Banner v-if="!isView" color="info" label-key="harvester.virtualMachine.bootOrder.dragTip" class="tip" /> -->
+    <div class="container">
+      <div class="boot-order">
+        <div
+          v-for="(pos, index) in bootOrders"
+          :key="index"
+          class="position-container"
+        >
+          <span v-if="!(hideLast && index === bootOrders.length - 1)">{{ pos }}</span>
         </div>
       </div>
+      <div class="devices">
+        <draggable
+          :id="'ordered'"
+          v-model="ordered"
+          :disabled="isView"
+          group="rows"
+          class="list-group ordered"
+          :move="onMove"
+          @end="orderedDragEnd"
+        >
+          <div v-for="(row, index) in ordered" :key="index">
+            <BootOrderCard
+              class="card"
+              :value="row"
+              :index="index"
+              :count="ordered.length"
+              :mode="mode"
+              @input="swap(index, index + $event)"
+            />
+          </div>
+        </draggable>
+      </div>
 
-      <draggable
-        :id="'unordered'"
-        v-model="unordered"
-        :disabled="isView"
-        group="rows"
-        class="list-group unordered"
-        @end="unorderedDragEnd"
-      >
-        <div v-for="(row, index) in unordered" :key="index">
-          <BootOrderCard
-            class="card"
-            :value="row"
-            :showButtons="false"
-            :mode="mode"
-          />
-        </div>
-      </draggable>
-    </div>
-
-    <div>
+      <!-- <div>
       <div v-for="(row, index) in ordered" :key="index" class="buttons actions">
         <div v-if="!(hideLast && index === bootOrders.length - 1)" class="buttons-container mr-15">
           <button :disabled="index === 0" class="btn btn-sm role-primary" @click.prevent="swap(index, index - 1)">
@@ -274,6 +242,47 @@ export default {
           </button>
         </div>
       </div>
+    </div> -->
+
+      <div class="swap-buttons actions ml-15">
+        <div class="buttons-container">
+          <button :disabled="unordered.length === 0" class="btn btn-sm role-primary ml-5" @click.prevent="swapUnorderedAll">
+            <i class="icon icon-lg icon-chevron-beginning"></i>
+          </button>
+
+          <button :disabled="unordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapUnordered">
+            <i class="icon icon-lg icon-chevron-up"></i>
+          </button>
+
+          <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-20 ml-5" @click.prevent="swapOrdered">
+            <i class="icon icon-lg icon-chevron-down"></i>
+          </button>
+
+          <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapOrderedAll">
+            <i class="icon icon-lg icon-chevron-end"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="devices">
+        <draggable
+          :id="'unordered'"
+          v-model="unordered"
+          :disabled="isView"
+          group="rows"
+          class="list-group unordered"
+          @end="unorderedDragEnd"
+        >
+          <div v-for="(row, index) in unordered" :key="index">
+            <BootOrderCard
+              class="card"
+              :value="row"
+              :showButtons="false"
+              :mode="mode"
+            />
+          </div>
+        </draggable>
+      </div>
     </div>
   </div>
 </template>
@@ -284,8 +293,9 @@ export default {
     flex-direction: row;
 
     .boot-order {
+      width: 30px;
       .position-container {
-        min-height: 60px;
+        min-height: 65px;
         width: 30px;
         margin-bottom: 5px;
         display: flex;
@@ -295,7 +305,7 @@ export default {
 
     .devices {
       width: inherit;
-              max-width: 500px;
+      max-width: 500px;
 
       .card {
         margin-bottom: 5px;
@@ -313,40 +323,48 @@ export default {
     }
   }
 
-.icon-chevron-beginning, .icon-chevron-end {
-transform: rotate(90deg);
+.icon-chevron-up, .icon-chevron-down {
+  transform: rotate(-90deg);
+}
+
+.swap-buttons {
+  display: flex;
+  flex-direction: column;
+
+  margin: 20px 20px 0 15px;
+
+  .buttons-container {
+    display: flex;
+    flex-direction: column;
+    vertical-align: middle;
+    min-height: 150px;
+  }
 }
 
 .actions {
-  min-height: 60px;
+  min-height: 65px;
   margin-bottom: 5px;
+  padding-top: 0;
 }
 
 .buttons-container {
   height: 30px;
   display: flex;
-  .btn {
-    margin-top: 5px;
-    margin-left: 5px;
-  }
 }
 
 .card-container {
   min-height: 130px;
 }
 
-.unordered {
-  margin-top: 10px;
-}
-
 .list-group:empty,
 .list-group > div:empty {
-    padding:1rem;
-    text-align:center;
+  margin-top: 20px;
+  padding:1rem;
+  text-align:center;
 }
 
 .list-group:empty:before,
 .list-group > div:empty:before {
-    content: 'Drop files here';
+  content: 'Drop devices here';
 }
 </style>

@@ -51,13 +51,14 @@ export default {
   >
     <div class="content">
       <div class="body">
-        <span>{{ value.type + ' / ' + value.name }}</span>
+        <h3>{{ value.name }}</h3>
       </div>
-      <div class="description">
+      <div class="description text-muted">
+        <span>{{ value.type }}</span>
       </div>
     </div>
     <div v-if="!isView && showButtons" class="buttons actions">
-      <div class="buttons-container mr-15">
+      <div class="buttons-container">
         <button :disabled="index === 0" class="btn btn-sm role-primary" @click.prevent="swap(-1)">
           <i class="icon icon-lg icon-chevron-up"></i>
         </button>
@@ -72,24 +73,30 @@ export default {
 
 <style lang="scss" scoped>
   .boot-order-card {
-    display: grid;
-    grid-template-columns: auto 300px;
-    min-height: 60px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
     border: 1px solid var(--tabbed-border);
     box-shadow: 0 0 10px var(--shadow);
     border-radius: var(--border-radius);
 
+    height: 65px;
+    padding: 10px;
+
     .content {
       display: flex;
       flex-direction: column;
-      gap: 15px;
-      flex-grow: 1;
+      justify-content: space-between;
+
       .body {
-          max-width: 500px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          margin: 0 0 5px 0;
+        max-width: 500px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        h3 {
+          margin: 0;
+        }
       }
       .description {
         max-width: 550px;
@@ -101,8 +108,9 @@ export default {
 
     .actions {
       display: flex;
+      padding-top: 6px;
       .btn {
-        margin-left: 5px;
+        margin-left: 4px;
       }
     }
   }

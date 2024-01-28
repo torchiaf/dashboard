@@ -2,6 +2,7 @@
 import Vue from 'vue';
 import InfoBox from '@shell/components/InfoBox';
 import Base from './base';
+import { Banner } from '@components/Banner';
 
 import { NETWORK_ATTACHMENT } from '@shell/config/types';
 import { HCI as HCI_ANNOTATIONS } from '../../../config/labels-annotations';
@@ -12,7 +13,9 @@ import { removeObject } from '@shell/utils/array';
 import { _VIEW } from '@shell/config/query-params';
 
 export default {
-  components: { InfoBox, Base },
+  components: {
+    InfoBox, Base, Banner
+  },
 
   props: {
     mode: {
@@ -137,6 +140,7 @@ export default {
 
 <template>
   <div>
+    <Banner v-if="!isView" color="info" label-key="harvester.virtualMachine.network.bootOrderTip" />
     <InfoBox v-for="(row, i) in rows" :key="i" class="infoBox">
       <button v-if="!isView" type="button" class="role-link remove-vol" @click="remove(row)">
         <i class="icon icon-x" />
