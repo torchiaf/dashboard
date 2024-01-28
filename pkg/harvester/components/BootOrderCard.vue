@@ -41,6 +41,12 @@ export default {
     swap(dir) {
       this.$emit('input', dir);
     },
+    onMouseDown() {
+      this.$emit('mousedown');
+    },
+    onMouseUp() {
+      this.$emit('mouseup');
+    },
   }
 };
 </script>
@@ -48,6 +54,8 @@ export default {
 <template>
   <div
     class="boot-order-card"
+    @mousedown="onMouseDown"
+    @mouseup="onMouseUp"
   >
     <div class="content">
       <div class="body">
@@ -57,23 +65,25 @@ export default {
         <span>{{ value.type }}</span>
       </div>
     </div>
-    <div v-if="!isView && showButtons" class="buttons actions">
-      <div class="buttons-container">
-        <button :disabled="index === 0" class="btn btn-sm role-primary" @click.prevent="swap(-1)">
-          <i class="icon icon-lg icon-chevron-up"></i>
-        </button>
+    <slot name="buttons">
+      <div v-if="!isView && showButtons" class="buttons actions" @mousedown.stop @mouseup.stop>
+        <div class="buttons-container">
+          <button :disabled="index === 0" class="btn btn-sm role-primary" @click.prevent="swap(-1)">
+            <i class="icon icon-lg icon-chevron-up"></i>
+          </button>
 
-        <button :disabled="index === count - 1" class="btn btn-sm role-primary" @click.prevent="swap(1)">
-          <i class="icon icon-lg icon-chevron-down"></i>
-        </button>
+          <button :disabled="index === count - 1" class="btn btn-sm role-primary" @click.prevent="swap(1)">
+            <i class="icon icon-lg icon-chevron-down"></i>
+          </button>
+        </div>
       </div>
-    </div>
+    </slot>
   </div>
 </template>
 
 <style lang="scss" scoped>
   .boot-order-card {
-    display: flex;
+        display: flex;
     flex-direction: row;
     justify-content: space-between;
 
@@ -109,8 +119,11 @@ export default {
     .actions {
       display: flex;
       padding-top: 6px;
-      .btn {
-        margin-left: 4px;
+
+      .buttons-container {
+        .btn {
+          margin-left: 4px;
+                  }
       }
     }
   }
