@@ -223,7 +223,10 @@ export default {
 </script>
 
 <template>
-  <div class="container">
+  <div v-if="value.length === 0">
+    <span>No devices</span>
+  </div>
+  <div v-else class="base-container">
     <div class="boot-order">
       <div v-if="showNext">
         <div
@@ -245,98 +248,125 @@ export default {
           </h4>
         </div>
       </div>
-    </div>
-    <div class="devices">
-      <draggable
-        :id="'ordered'"
-        v-model="ordered"
-        :disabled="isView"
-        group="rows"
-        class="list-group ordered"
-        :move="onMoveOrdered"
-        @end="dragEndOrdered"
-      >
-        <div v-for="(row, index) in ordered" :key="index">
-          <BootOrderCard
-            class="card"
-            :value="row"
-            :show-buttons="hideButtons !== index"
-            :index="index"
-            :count="ordered.length"
-            :mode="mode"
-            @input="swapOrdered(index, index + $event)"
-            @mousedown="onMouseDownOrdered(index)"
-            @mouseup="onMouseUpOrdered"
-          />
+      <!-- <div v-if="isView" class="mt-25">
+        <div
+          v-for="(pos, index) in unordered"
+          :key="index"
+          class="position-container"
+        >
+          <h4 class="text-muted">
+            &mdash;
+          </h4>
         </div>
-      </draggable>
+      </div> -->
     </div>
-
-    <div class="swap-buttons actions ml-15">
-      <div class="buttons-container">
-        <button :disabled="unordered.length === 0" class="btn btn-sm role-primary ml-5" @click.prevent="swapToUnorderedAll">
-          <i class="icon icon-lg icon-chevron-beginning"></i>
-        </button>
-
-        <button :disabled="unordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapToUnordered">
-          <i class="icon icon-lg icon-chevron-up"></i>
-        </button>
-
-        <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-20 ml-5" @click.prevent="swapToOrdered">
-          <i class="icon icon-lg icon-chevron-down"></i>
-        </button>
-
-        <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapToOrderedAll">
-          <i class="icon icon-lg icon-chevron-end"></i>
-        </button>
+    <div class="container" :class="{ 'is-view': isView }">
+      <div class="devices">
+        <draggable
+          :id="'ordered'"
+          v-model="ordered"
+          :disabled="isView"
+          group="rows"
+          class="list-group ordered"
+          :move="onMoveOrdered"
+          @end="dragEndOrdered"
+        >
+          <div v-for="(row, index) in ordered" :key="index">
+            <BootOrderCard
+              class="card"
+              :value="row"
+              :show-buttons="hideButtons !== index"
+              :index="index"
+              :count="ordered.length"
+              :mode="mode"
+              @input="swapOrdered(index, index + $event)"
+              @mousedown="onMouseDownOrdered(index)"
+              @mouseup="onMouseUpOrdered"
+            />
+          </div>
+        </draggable>
       </div>
-    </div>
 
-    <div class="devices">
-      <draggable
-        :id="'unordered'"
-        v-model="unordered"
-        :disabled="isView"
-        group="rows"
-        class="list-group unordered"
-        :move="onMoveUnordered"
-        @end="dragEndUnordered"
-      >
-        <div v-for="(row, index) in unordered" :key="index">
-          <BootOrderCard
-            class="card"
-            :value="row"
-            :showButtons="false"
-            :mode="mode"
-          />
+      <div v-if="!isView" class="swap-buttons actions ml-15">
+        <div class="buttons-container">
+          <button :disabled="unordered.length === 0" class="btn btn-sm role-primary ml-5" @click.prevent="swapToUnorderedAll">
+            <i class="icon icon-lg icon-chevron-beginning"></i>
+          </button>
+
+          <button :disabled="unordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapToUnordered">
+            <i class="icon icon-lg icon-chevron-up"></i>
+          </button>
+
+          <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-20 ml-5" @click.prevent="swapToOrdered">
+            <i class="icon icon-lg icon-chevron-down"></i>
+          </button>
+
+          <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapToOrderedAll">
+            <i class="icon icon-lg icon-chevron-end"></i>
+          </button>
         </div>
-      </draggable>
+      </div>
+
+      <div class="devices">
+        <draggable
+          :id="'unordered'"
+          v-model="unordered"
+          :disabled="isView"
+          group="rows"
+          class="list-group unordered"
+          :move="onMoveUnordered"
+          @end="dragEndUnordered"
+        >
+          <div v-for="(row, index) in unordered" :key="index">
+            <BootOrderCard
+              class="card"
+              :value="row"
+              :showButtons="false"
+              :mode="mode"
+              :disabled="isView"
+            />
+          </div>
+        </draggable>
+      </div>
     </div>
   </div>
 </template>
 
 <style lang='scss' scoped>
+
+  .base-container {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .boot-order {
+    width: 30px;
+    .position-container {
+      min-height: 65px;
+      width: 30px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+
+      h4 {
+        margin: 0;
+      }
+    }
+  }
+
   .container {
     display: flex;
     flex-direction: row;
+    padding-left: 0;
 
-    .boot-order {
-      width: 30px;
-      .position-container {
-        min-height: 65px;
-        width: 30px;
-        margin-bottom: 5px;
-        display: flex;
-        align-items: center;
-
-        h4 {
-          margin: 0;
-        }
-      }
+    &.is-view {
+      flex-direction: column;
+      gap: 20px;
     }
 
     .devices {
       width: inherit;
+      min-width: 200px;
       max-width: 500px;
 
       .card {

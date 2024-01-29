@@ -29,6 +29,11 @@ export default {
       type:     String,
       required: true
     },
+
+    disabled: {
+      type:    Boolean,
+      default: false
+    }
   },
 
   computed: {
@@ -54,6 +59,7 @@ export default {
 <template>
   <div
     class="boot-order-card"
+    :class="{ disabled: disabled }"
     @mousedown="onMouseDown"
     @mouseup="onMouseUp"
   >
@@ -83,7 +89,7 @@ export default {
 
 <style lang="scss" scoped>
   .boot-order-card {
-        display: flex;
+    display: flex;
     flex-direction: row;
     justify-content: space-between;
 
@@ -93,6 +99,13 @@ export default {
 
     height: 65px;
     padding: 10px;
+
+    &.disabled {
+      cursor: not-allowed;
+      h3 {
+        color: var(--muted) !important;
+      }
+    }
 
     .content {
       display: flex;
@@ -123,7 +136,7 @@ export default {
       .buttons-container {
         .btn {
           margin-left: 4px;
-                  }
+        }
       }
     }
   }
