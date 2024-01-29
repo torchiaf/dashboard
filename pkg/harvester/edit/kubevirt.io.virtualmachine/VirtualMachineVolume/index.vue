@@ -249,12 +249,6 @@ export default {
       this.$refs.deleteTip.hide();
     },
 
-    changeSort(idx, type) {
-      // true: down, false: up
-      this.rows.splice(type ? idx : idx - 1, 1, ...this.rows.splice(type ? idx + 1 : idx, 1, this.rows[type ? idx : idx - 1]));
-      this.update();
-    },
-
     getImageDisplayName(id) {
       return this.$store.getters['harvester/all'](HCI.IMAGE).find(image => image.id === id)?.spec?.displayName;
     }
