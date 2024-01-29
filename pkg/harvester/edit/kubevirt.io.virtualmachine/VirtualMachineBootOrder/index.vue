@@ -7,6 +7,10 @@ import { _VIEW } from '@shell/config/query-params';
 import { clone } from '@shell/utils/object';
 import { BOOT_ORDER_TYPE } from '../../../mixins/harvester-vm';
 
+function getId(elem) {
+  return `${ elem.type }_${ elem.index }_${ elem.id }`;
+}
+
 export default {
   components: {
     draggable,
@@ -50,7 +54,10 @@ export default {
         const value = clone(neu);
 
         const ordered = value.filter(f => f.bootOrder).sort((a, b) => a.bootOrder - b.bootOrder);
-        const unordered = value.filter(f => !f.bootOrder);
+
+        const oldUnorderedIds = this.unordered.map(getId);
+        const unordered = value.filter(f => !f.bootOrder).sort((a, b) => oldUnorderedIds.indexOf(getId(a)) - oldUnorderedIds.indexOf(getId(b)));
+
         const bootOrders = ordered.map(r => r.bootOrder);
 
         Vue.set(this, 'ordered', ordered);
@@ -64,10 +71,7 @@ export default {
 
   methods: {
     findElem(elem) {
-      return this.value.find(f => f.type === elem.type &&
-        ((f.index !== undefined && f.index === elem.index) ||
-        (f.id !== undefined && f.id === elem.id))
-      );
+      return this.value.find(f => getId(f) === getId(elem));
     },
 
     getNextBootOrder() {
