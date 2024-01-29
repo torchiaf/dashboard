@@ -84,6 +84,13 @@ export default {
       return bootOrder;
     },
 
+    addBootOrder() {
+      this.bootOrders = [
+        ...this.bootOrders,
+        this.getNextBootOrder()
+      ].sort();
+    },
+
     onMoveOrdered(v) {
       if (v.from.id === 'ordered' && v.to.id === 'unordered') {
         this.hideLast = true;
@@ -121,37 +128,28 @@ export default {
       ordered[index1] = ordered[index2];
       ordered[index2] = temp;
 
-      Vue.set(this, 'ordered', ordered);
+      this.ordered = ordered;
 
       this.update();
     },
 
-    swapToUnordered() {
-      this.bootOrders = [
-        ...this.bootOrders,
-        this.getNextBootOrder()
-      ].sort();
-
+    swapToOrdered() {
+      this.addBootOrder();
       this.ordered.push(this.unordered[0]);
       this.unordered.splice(0, 1);
 
       this.update();
     },
 
-    swapToUnorderedAll() {
-      this.unordered.forEach(() => {
-        this.bootOrders = [
-          ...this.bootOrders,
-          this.getNextBootOrder()
-        ].sort();
-      });
+    swapToOrderedAll() {
+      this.unordered.forEach(this.addBootOrder);
       this.ordered.push(...this.unordered);
       this.unordered = [];
 
       this.update();
     },
 
-    swapToOrdered() {
+    swapToUnordered() {
       this.bootOrders.pop();
 
       this.unordered.push(this.ordered[this.ordered.length - 1]);
@@ -160,10 +158,11 @@ export default {
       this.update();
     },
 
-    swapToOrderedAll() {
+    swapToUnorderedAll() {
+      this.bootOrders = [];
+
       this.unordered.push(...this.ordered);
       this.ordered = [];
-      this.bootOrders = [];
 
       this.update();
     },
@@ -171,9 +170,8 @@ export default {
     dragEndOrdered(v) {
       if (v.to.id === 'unordered') {
         this.bootOrders.pop();
-      } else {
-        this.update();
       }
+
       this.hideLast = false;
       this.showNext = null;
       this.hideButtons = null;
@@ -183,10 +181,7 @@ export default {
 
     dragEndUnordered(v) {
       if (v.to.id === 'ordered') {
-        this.bootOrders = [
-          ...this.bootOrders,
-          this.getNextBootOrder()
-        ].sort();
+        this.addBootOrder();
       }
       this.hideLast = false;
       this.showNext = null;
@@ -248,17 +243,6 @@ export default {
           </h4>
         </div>
       </div>
-      <!-- <div v-if="isView" class="mt-25">
-        <div
-          v-for="(pos, index) in unordered"
-          :key="index"
-          class="position-container"
-        >
-          <h4 class="text-muted">
-            &mdash;
-          </h4>
-        </div>
-      </div> -->
     </div>
     <div class="container" :class="{ 'is-view': isView }">
       <div class="devices">
@@ -289,19 +273,19 @@ export default {
 
       <div v-if="!isView" class="swap-buttons actions ml-15">
         <div class="buttons-container">
-          <button :disabled="unordered.length === 0" class="btn btn-sm role-primary ml-5" @click.prevent="swapToUnorderedAll">
+          <button :disabled="unordered.length === 0" class="btn btn-sm role-primary ml-5" @click.prevent="swapToOrderedAll">
             <i class="icon icon-lg icon-chevron-beginning"></i>
           </button>
 
-          <button :disabled="unordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapToUnordered">
+          <button :disabled="unordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapToOrdered">
             <i class="icon icon-lg icon-chevron-up"></i>
           </button>
 
-          <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-20 ml-5" @click.prevent="swapToOrdered">
+          <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-20 ml-5" @click.prevent="swapToUnordered">
             <i class="icon icon-lg icon-chevron-down"></i>
           </button>
 
-          <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapToOrderedAll">
+          <button :disabled="ordered.length === 0" class="btn btn-sm role-primary mt-5 ml-5" @click.prevent="swapToUnorderedAll">
             <i class="icon icon-lg icon-chevron-end"></i>
           </button>
         </div>
