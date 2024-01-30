@@ -405,20 +405,16 @@ export default {
 
   methods: {
     filterNamespaces(namespaces) {
-      if (this.$store.getters['prefs/get'](ALL_NAMESPACES)) {
-        // If all namespaces options are turned on in the user preferences,
-        // return all namespaces including system namespaces and RBAC
-        // management namespaces.
-        return namespaces;
-      }
+      const clusterId = this.$store.getters['clusterId'];
 
-      return namespaces.filter((namespace) => {
-        // Otherwise only filter out obscure namespaces, such as namespaces
-        // that Rancher uses to manage RBAC for projects, which should not be
-        // edited or deleted by Rancher users.
-        return !namespace.isObscure;
-      });
+      const allProjects = this.$store.getters['management/all'](MANAGEMENT.PROJECT);
+      const projectsInOtherClusters = allProjects.filter((p) => p.spec.clusterName !== clusterId);
+
+      return namespaces
+        .filter((ns) => this.$store.getters['prefs/get'](ALL_NAMESPACES) ? true : !ns.isObscure) // Filter out Rancher system namespaces
+        .filter((ns) => !projectsInOtherClusters.find((p) => p.shortId === ns.id)); // Filter namespace created
     },
+
     // Layout the content in the dropdown box to best use the space to show the selection
     layout() {
       this.$nextTick(() => {

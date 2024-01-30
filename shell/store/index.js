@@ -177,9 +177,13 @@ const getActiveNamespaces = (state, getters, readonly = false) => {
   const hasNamespaces = Array.isArray(state.allNamespaces) && state.allNamespaces.length > 0;
   const allNamespaces = hasNamespaces ? state.allNamespaces : getters[`${ inStore }/all`](NAMESPACE);
 
+  const allProjects = getters['management/all'](MANAGEMENT.PROJECT);
+  const projectsInOtherClusters = allProjects.filter((p) => p.spec.clusterName !== clusterId);
+
   const allowedNamespaces = allNamespaces
     .filter((ns) => state.prefs.data['all-namespaces'] ? true : !ns.isObscure) // Filter out Rancher system namespaces
-    .filter((ns) => product.hideSystemResources ? !ns.isSystem : true); // Filter out Fleet system namespaces
+    .filter((ns) => product.hideSystemResources ? !ns.isSystem : true) // Filter out Fleet system namespaces
+    .filter((ns) => !projectsInOtherClusters.find((p) => p.shortId === ns.id));
 
   // Retrieve all the filters selected by the user
   const filters = state.namespaceFilters.filter(
