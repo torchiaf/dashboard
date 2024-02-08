@@ -1130,6 +1130,15 @@ harvester:
     nvidiaDriverToolkit:
       titles:
         basic: Controller
+        image: Image
+        driver: Driver
+      image:
+        tag: Image Tag
+        repository: Image Repository
+      driver:
+        location: Driver Location
+      parsingSpecError:
+        The field 'spec.valuesContent' has invalid format.
 
   loadBalancer:
     label: Load Balancers
