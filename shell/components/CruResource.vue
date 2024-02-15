@@ -191,6 +191,7 @@ export default {
   },
 
   computed: {
+    // DEMO-21-02 advantages of removing model validations from CRU resource
     canDiff() {
       return this.initialYaml !== this.resourceYaml;
     },
@@ -433,6 +434,7 @@ export default {
     >
       {{ description }}
     </p>
+    <!-- DEMO-21-02 ValidationObserver -->
     <ValidationObserver
       ref="validator"
       v-slot="veeTokenValidationContext"

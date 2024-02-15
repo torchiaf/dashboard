@@ -464,6 +464,7 @@ export default {
         :min-height="30"
         :required="nameRequired"
         :vee-token-rules="veeTokenRules.name"
+        :veeLog="false"
       />
     </div>
 
@@ -480,7 +481,6 @@ export default {
         :label="t(descriptionLabel)"
         :placeholder="t(descriptionPlaceholder)"
         :min-height="30"
-        :vee-token-rules="veeTokenRules.description"
       />
     </div>
 

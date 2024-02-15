@@ -31,14 +31,18 @@ export default Vue.extend<Data, any, any, any>({
 
         const unreportedRule = rules.find((id) => !Object.keys(this.$refs.validator.fields).includes(id));
 
-        if (unreportedRule) {
-          const selectedRule = Object.values(veeTokenRules).find((r) => r.id === unreportedRule);
+        // DEMO-21-02 unreported rules check
 
-          const rule = await this.veeTokenValidate(neu, selectedRule);
+        // console.log(rules);
 
-          // each rule has errors
-          Vue.set(this, 'veeTokenErrors', uniq(rule.errors[0]));
-        }
+        // if (unreportedRule) {
+        //   const selectedRule = Object.values(veeTokenRules).find((r) => r.id === unreportedRule);
+
+        //   const rule = await this.veeTokenValidate(neu, selectedRule);
+
+        //   // each rule has errors
+        //   Vue.set(this, 'veeTokenErrors', uniq(rule.errors[0]));
+        // }
       },
       deep:      true,
       immediate: true

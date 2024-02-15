@@ -3,6 +3,8 @@ import Vue from 'vue';
 import ErrorMessage from '@components/ErrorMessage/ErrorMessage.vue';
 import { ValidationProvider } from 'vee-validate';
 
+// DEMO-21-02 Validation component to wrap input fields
+
 interface Data {}
 
 export default Vue.extend<Data, any, any, any>({
@@ -11,6 +13,14 @@ export default Vue.extend<Data, any, any, any>({
     rules: {
       type:     [String, Object],
       required: true,
+    },
+    focused: {
+      type:    Boolean,
+      default: false,
+    },
+    contextChanged: {
+      type:    Boolean,
+      default: false,
     },
     showError: {
       type:    Boolean,
@@ -33,19 +43,32 @@ export default Vue.extend<Data, any, any, any>({
       return this.rules.id;
     }
   },
+  methods: {
+    veeTokenContext(v: any) {
+      return {
+        ...v,
+        rules:        this.rules,
+        cmpError:     ((!this.focused && v.touched) || this.contextChanged) && v.invalid,
+        cmpShowError: v.errors.length && (v.touched || this.contextChanged || this.focused),
+        cmpValid:     !!this.rules && !this.focused && v.touched && v.valid && v.changed,
+      };
+    }
+  }
 });
 </script>
 <template>
+  <!-- DEMO-21-02 ValidationProvider -->
   <!-- vee-validate component -->
   <ValidationProvider
     v-slot="v"
     :name="fieldName"
     slim
+    :immediate="true"
     :rules="veeTokenRules"
     class="validation"
   >
     <!-- Field to validate-->
-    <slot :veeTokenValidationContext="v" />
+    <slot :veeTokenValidationContext="veeTokenContext(v)" />
 
     <!-- Error messages -->
     <div v-if="showError">

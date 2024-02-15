@@ -6,6 +6,8 @@ interface LabeledFormElement {
   raised: boolean;
   focused: boolean;
   blurred: number | null;
+  initContext: string,
+  contextChanged: boolean,
 }
 
 export default Vue.extend({
@@ -87,21 +89,65 @@ export default Vue.extend({
     requireDirty: {
       default: true,
       type:    Boolean
+    },
+
+    /**
+     * Validations rules
+     * ToDo change name
+     */
+    veeTokenRules: {
+      type:    [String, Object],
+      default: ''
+    },
+
+    context: {
+      type:    String,
+      default: ''
     }
   },
 
   data(): LabeledFormElement {
     return {
-      raised:  this.mode === _VIEW || !!`${ this.value }`,
-      focused: false,
-      blurred: null,
+      raised:         this.mode === _VIEW || !!`${ this.value }`,
+      focused:        false,
+      blurred:        null,
+      initContext:    '',
+      contextChanged: false,
     };
   },
 
+  watch: {
+
+    // DEMO-21-02 additional condition to show errors on change tab
+
+    context(neu) {
+      if (!this.initContext && neu) {
+        this.initContext = neu;
+
+        return;
+      }
+
+      if (this.initContext !== neu) {
+        this.contextChanged = this.initContext !== neu;
+      }
+    }
+  },
+
   computed: {
+    // requiredField(): boolean {
+    //   // using "any" for a type on "rule" here is dirty but the use of the optional chaining operator makes it safe for what we're doing here.
+    //   return (this.required || this.rules.some((rule: any): boolean => rule?.name === 'required'));
+    // },
     requiredField(): boolean {
-      // using "any" for a type on "rule" here is dirty but the use of the optional chaining operator makes it safe for what we're doing here.
-      return (this.required || this.rules.some((rule: any): boolean => rule?.name === 'required'));
+      return false;
+    },
+    veeTokenValidationRequiredLabel(): string | null {
+      if (this.veeTokenRules) {
+        // TODO add label field to validation rule
+        return this.veeTokenRules.rules === 'required' ? 'required' : 'custom';
+      }
+
+      return null;
     },
     empty(): boolean {
       return !!`${ this.value }`;
@@ -177,6 +223,7 @@ export default Vue.extend({
     onFocusLabeled() {
       this.raised = true;
       this.focused = true;
+      this.contextChanged = false;
     },
 
     onBlur() {
@@ -193,6 +240,10 @@ export default Vue.extend({
       }
 
       this.blurred = Date.now();
+    },
+
+    veeTokenValidationMessageFormatted(veeTokenErrors: string[]) {
+      return veeTokenErrors.join(', ');
     }
   }
 });

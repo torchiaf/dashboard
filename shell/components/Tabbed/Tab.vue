@@ -41,6 +41,14 @@ export default {
       required: false,
       type:     Number
     },
+    requiredFieldsLabel: {
+      type:    Boolean,
+      default: false
+    },
+    requiredFieldsAsterisk: {
+      type:    Boolean,
+      default: false
+    },
   },
 
   data() {

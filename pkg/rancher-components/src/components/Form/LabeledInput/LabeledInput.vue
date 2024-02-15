@@ -94,14 +94,10 @@ export default (
       default: 0
     },
 
-    /**
-     * Validations rules
-     * ToDo change name
-     */
-    veeTokenRules: {
-      type:    [String, Object],
-      default: ''
-    }
+    veeLog: {
+      type:    Boolean,
+      default: false
+    },
   },
 
   data() {
@@ -253,7 +249,13 @@ export default (
       this.onBlurLabeled();
     },
 
-    escapeHtml
+    escapeHtml,
+
+    onLog(v: any) {
+      if (this.veeLog) {
+        console.log(v);
+      }
+    }
   }
 });
 </script>
@@ -262,10 +264,15 @@ export default (
   <VeeTokenValidation
     v-slot="{ veeTokenValidationContext }"
     :rules="veeTokenRules"
+    :focused="focused"
+    :context-changed="contextChanged"
   >
+    <!-- {{ veeTokenValidationContext.errors }} -->
     <div
       :class="{
         'labeled-input': true,
+        'labeled-input-error': veeTokenValidationContext.cmpError,
+        'labeled-input-valid': veeTokenValidationContext.cmpValid,
         focused,
         [mode]: true,
         disabled: isDisabled,
@@ -277,16 +284,31 @@ export default (
       }"
     >
       <slot name="label">
-        <label v-if="hasLabel">
+        <label
+          v-if="hasLabel"
+          class="input-label"
+        >
           <t
             v-if="labelKey"
             :k="labelKey"
           />
-          <template v-else-if="label">{{ label }}</template>
+          <span
+            v-else-if="label"
+            :class="{
+              'error': veeTokenValidationContext.cmpError,
+              'valid': veeTokenValidationContext.cmpValid
+            }"
+          >
+            {{ label }}
+          </span>
 
           <span
-            v-if="requiredField"
+            v-if="veeTokenValidationRequiredLabel"
             class="required"
+            :class="{
+              'error': veeTokenValidationContext.cmpError,
+              'valid': veeTokenValidationContext.cmpValid
+            }"
           >*</span>
         </label>
       </slot>
@@ -336,10 +358,36 @@ export default (
         :status="status"
       />
       <LabeledTooltip
-        v-if="veeTokenValidationContext.touched && veeTokenValidationContext.invalid"
+        v-if="veeTokenValidationContext.cmpError"
         :hover="hoverTooltip"
         :value="veeTokenValidationContext.errors.join(', ')"
+        :status="'error'"
       />
+      <LabeledTooltip
+        v-if="veeTokenValidationContext.cmpValid"
+        :hover="hoverTooltip"
+        :value="veeTokenValidationContext.errors.join(', ')"
+        :status="'valid'"
+      />
+      <label
+        v-if="veeTokenValidationRequiredLabel"
+        class="sub-label required-label"
+        :class="{
+          'error': veeTokenValidationContext.cmpError
+        }"
+      >
+        <div v-if="veeTokenValidationContext.cmpShowError">
+          <span
+            class="message"
+          > {{ veeTokenValidationMessageFormatted(veeTokenValidationContext.errors) }}</span>
+        </div>
+        <div v-else>
+          <span class="asterisk">*</span>
+          <span
+            class="message"
+          > {{ veeTokenValidationRequiredLabel }} field</span>
+        </div>
+      </label>
       <label
         v-if="cronHint"
         class="cron-label"

@@ -1,4 +1,5 @@
 <script>
+// DEMO-21-02 advantages of removing validation mixins from each resource model
 import CreateEditView from '@shell/mixins/create-edit-view';
 import FormValidation from '@shell/mixins/form-validation';
 import WorkLoadMixin from '@shell/edit/workload/mixins/workload';
@@ -19,7 +20,10 @@ export default {
     },
   },
   data() {
-    return { selectedName: null };
+    return {
+      selectedName: null,
+      context:      null,
+    };
   },
   computed: {
     veeTokenExtraRules() {
@@ -33,10 +37,15 @@ export default {
     }
   },
   methods: {
-    changed(tab) {
+    onChangeSideTab(tab) {
+      this.context = tab.selectedName;
+    },
+
+    onChangeHeaderTab(tab) {
       const key = this.idKey;
 
       this.selectedName = tab.selectedName;
+      this.context = tab.selectedName;
       const container = this.containerOptions.find( (c) => c[key] === tab.selectedName);
 
       if ( container ) {
@@ -87,6 +96,7 @@ export default {
 </script>
 
 <template>
+  <!-- DEMO-21-02 advantages in removing all error input fields from CruResource for each page -->
   <Loading v-if="$fetchState.pending" />
   <form
     v-else
@@ -164,7 +174,7 @@ export default {
         :show-tabs-add-remove="true"
         :default-tab="defaultTab"
         :flat="true"
-        @changed="changed"
+        @changed="onChangeHeaderTab"
       >
         <Tab
           v-for="(tab, i) in allContainers"
@@ -173,16 +183,19 @@ export default {
           :name="tab[idKey]"
           :weight="tab.weight"
           :error="!!tab.error"
+          :requiredFieldsAsterisk="requiredFieldsAsterisk"
         >
           <Tabbed
             :side-tabs="true"
             :weight="99"
+            @changed="onChangeSideTab"
           >
             <Tab
               :label="t('workload.container.titles.general')"
               name="general"
               :weight="tabWeightMap['general']"
               :error="tabErrors.general"
+              :requiredFieldsLabel="requiredFieldsLabel"
             >
               <template
                 #tab-header-right
@@ -208,6 +221,7 @@ export default {
                       :mode="mode"
                       :label="t('workload.container.containerName')"
                       :vee-token-rules="veeTokenRules.containerName"
+                      :context="context || ''"
                     />
                   </div>
                   <div class="col span-6">
@@ -229,6 +243,8 @@ export default {
                       :mode="mode"
                       :label="t('workload.container.image')"
                       :placeholder="t('generic.placeholder', {text: 'nginx:latest'}, true)"
+                      :vee-token-rules="veeTokenRules.veeImage"
+                      :context="context || ''"
                     />
                   </div>
                   <div class="col span-6">

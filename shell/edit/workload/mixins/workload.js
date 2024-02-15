@@ -1,6 +1,7 @@
 import { mapGetters } from 'vuex';
 import omitBy from 'lodash/omitBy';
 import { cleanUp } from '@shell/utils/object';
+import { validate } from 'vee-validate';
 import {
   CONFIG_MAP,
   SECRET,
@@ -289,16 +290,25 @@ export default {
           rules:          'containerImages',
           translationKey: 'workload.container.image',
           path:           'spec'
+        },
+        veeImage: {
+          id:             'vee.container.image',
+          rules:          'required',
+          translationKey: 'workload.container.image',
         }
       },
 
-      isNamespaceNew: false,
-      idKey:          ID_KEY,
-      tabErrors:      { general: false },
+      isNamespaceNew:         false,
+      idKey:                  ID_KEY,
+      tabErrors:              { general: false },
+      requiredFieldsLabel:    true,
+      requiredFieldsAsterisk: true,
     };
   },
 
   mounted() {
+    // DEMO-21-02 define extra rules
+
     /**
      * Define extra rule
      */
@@ -617,14 +627,18 @@ export default {
       this.$set(this.value, 'type', neu);
       delete this.value.apiVersion;
     },
-    'container.image': {
-      async handler() {
-        const res = await veeTokenValidateUtil(this.value, this.veeTokenRuleSets.image, this.$store.getters);
+    container: {
+      async handler(container) {
+        // DEMO-21-02 async validation
 
-        this.tabErrors.general = !res.valid;
-        this.container.error = !res.valid;
+        const containerImage = await validate(container.image, 'required');
+        const containerName = await validate(container.name, 'container-name');
+
+        this.tabErrors.general = !containerImage.valid || !containerName.valid;
+        this.container.error = !containerImage.valid || !containerName.valid;
       },
-      immediate: true
+      immediate: true,
+      deep:      true,
     }
   },
 

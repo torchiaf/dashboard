@@ -15,6 +15,7 @@ export default Vue.extend<Data, any, any, any>({
      * To check if rules IDs are uniq. Show errors if any
      */
     veeTokenRules() {
+      // DEMO-21-02 this could be simplified
       return {
         ...(this.veeTokenRuleSets || {}),
         ...(this.value?.veeTokenCustomValidationRules || {}),

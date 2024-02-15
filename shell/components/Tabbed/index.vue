@@ -262,7 +262,7 @@ export default {
           role="tab"
           @click.prevent="select(tab.name, $event)"
         >
-          <span>{{ tab.labelDisplay }}</span>
+          <span :class="{ 'error': tab.error && !tab.active }">{{ tab.labelDisplay }}</span>
           <span
             v-if="tab.badge"
             class="tab-badge"
@@ -272,7 +272,21 @@ export default {
             v-clean-tooltip="t('validation.tab')"
             class="conditions-alert-icon icon-error"
           />
+          <span
+            v-if="tab.requiredFieldsAsterisk && (tab.active || !tab.error)"
+            class="asterisk ml-5"
+          >*</span>
         </a>
+        <label
+          v-if="tab.requiredFieldsLabel"
+          class="sub-label"
+          :class="{ 'error': tab.error && !tab.active }"
+        >
+          <span class="asterisk">*</span>
+          <span
+            class="message"
+          > required fields</span>
+        </label>
       </li>
       <li
         v-if="sideTabs && !sortedTabs.length"
@@ -518,5 +532,35 @@ export default {
     flex-grow: 1;
     background-color: var(--body-bg);
   }
+
+  .sub-label {
+    transform: translate(0, -8px) scale(1);
+    transform-origin: top left;
+
+    padding-left: 15px;
+    margin: 0;
+    height: 0;
+
+    &.error {
+      color: var(--error);
+    }
+
+    .message {
+      font-size: 12px;
+    }
+  }
+}
+
+.asterisk {
+  font-size: 16px;
+  font-weight: bolder;
+  display: inline-block;
+  vertical-align: middle;
+  outline: none !important;
+  line-height: 2px;
+}
+
+.error {
+  color: var(--error);
 }
 </style>
