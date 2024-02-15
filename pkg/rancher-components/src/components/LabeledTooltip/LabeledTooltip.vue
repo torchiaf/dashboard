@@ -30,7 +30,7 @@ export default Vue.extend({
   },
   computed: {
     iconClass() {
-      return this.status === 'error' ? 'icon-warning' : 'icon-info';
+      return this.status === 'error' ? 'icon-error' : 'icon-info';
     }
   }
 });

@@ -39,8 +39,40 @@
     transform: none !important;
   }
 
+  .input-label {
+    .error {
+      color: var(--error);
+    }
+  }
+
   .required {
-    color: var(--error);
+    &.error {
+      color: var(--error);
+    }
+    font-size: 16px;
+    font-weight: bolder;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .sub-label {
+    &.required-label {
+      padding: 2px;
+
+      &.error {
+        color: var(--error);
+      }
+
+      .asterisk {
+        font-size: 16px;
+        font-weight: bolder;
+        display: inline-block;
+        vertical-align: middle;
+      }
+      .message {
+        font-size: 12px;
+      }
+    }
   }
 
   INPUT, SELECT {
@@ -130,6 +162,8 @@
     color: var(--error);
   }
 
+}
 
-
+.labeled-input-error {
+  border-color: var(--error);
 }

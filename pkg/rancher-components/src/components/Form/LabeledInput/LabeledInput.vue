@@ -93,15 +93,6 @@ export default (
       type:    Number,
       default: 0
     },
-
-    /**
-     * Validations rules
-     * ToDo change name
-     */
-    veeTokenRules: {
-      type:    [String, Object],
-      default: ''
-    }
   },
 
   data() {
@@ -266,7 +257,8 @@ export default (
     <div
       :class="{
         'labeled-input': true,
-        focused,
+        'labeled-input-error': veeTokenValidationContext.touched && veeTokenValidationContext.invalid,
+        focused: focused && !(veeTokenValidationContext.touched && veeTokenValidationContext.invalid),
         [mode]: true,
         disabled: isDisabled,
         [status]: status,
@@ -277,16 +269,25 @@ export default (
       }"
     >
       <slot name="label">
-        <label v-if="hasLabel">
+        <label
+          v-if="hasLabel"
+          class="input-label"
+        >
           <t
             v-if="labelKey"
             :k="labelKey"
           />
-          <template v-else-if="label">{{ label }}</template>
+          <span
+            v-else-if="label"
+            :class="{ 'error': veeTokenValidationContext.touched && veeTokenValidationContext.invalid }"
+          >
+            {{ label }}
+          </span>
 
           <span
-            v-if="requiredField"
+            v-if="veeTokenValidationRequiredLabel"
             class="required"
+            :class="{ 'error': veeTokenValidationContext.touched && veeTokenValidationContext.invalid }"
           >*</span>
         </label>
       </slot>
@@ -340,6 +341,23 @@ export default (
         :hover="hoverTooltip"
         :value="veeTokenValidationContext.errors.join(', ')"
       />
+      <label
+        v-if="veeTokenValidationRequiredLabel"
+        class="sub-label required-label"
+        :class="{ 'error': veeTokenValidationContext.touched && veeTokenValidationContext.invalid }"
+      >
+        <div v-if="veeTokenValidationContext.errors.length">
+          <span
+            class="message"
+          > {{ veeTokenValidationMessageFormatted(veeTokenValidationContext.errors) }}</span>
+        </div>
+        <div v-else>
+          <span class="asterisk">*</span>
+          <span
+            class="message"
+          > {{ veeTokenValidationRequiredLabel }} field</span>
+        </div>
+      </label>
       <label
         v-if="cronHint"
         class="cron-label"

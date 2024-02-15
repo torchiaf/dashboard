@@ -87,6 +87,15 @@ export default Vue.extend({
     requireDirty: {
       default: true,
       type:    Boolean
+    },
+
+    /**
+     * Validations rules
+     * ToDo change name
+     */
+    veeTokenRules: {
+      type:    [String, Object],
+      default: ''
     }
   },
 
@@ -99,9 +108,20 @@ export default Vue.extend({
   },
 
   computed: {
+    // requiredField(): boolean {
+    //   // using "any" for a type on "rule" here is dirty but the use of the optional chaining operator makes it safe for what we're doing here.
+    //   return (this.required || this.rules.some((rule: any): boolean => rule?.name === 'required'));
+    // },
     requiredField(): boolean {
-      // using "any" for a type on "rule" here is dirty but the use of the optional chaining operator makes it safe for what we're doing here.
-      return (this.required || this.rules.some((rule: any): boolean => rule?.name === 'required'));
+      return false;
+    },
+    veeTokenValidationRequiredLabel(): string | null {
+      if (this.veeTokenRules) {
+        // TODO add label field to validation rule
+        return this.veeTokenRules.rules === 'required' ? 'required' : 'custom';
+      }
+
+      return null;
     },
     empty(): boolean {
       return !!`${ this.value }`;
@@ -193,6 +213,10 @@ export default Vue.extend({
       }
 
       this.blurred = Date.now();
+    },
+
+    veeTokenValidationMessageFormatted(veeTokenErrors: string[]) {
+      return veeTokenErrors.join(', ');
     }
   }
 });
