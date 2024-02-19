@@ -363,7 +363,7 @@ export default (
           'error': veeTokenValidationContext.cmpError
         }"
       >
-        <div v-if="!focused && veeTokenValidationContext.errors.length">
+        <div v-if="veeTokenValidationContext.errors.length">
           <span
             class="message"
           > {{ veeTokenValidationMessageFormatted(veeTokenValidationContext.errors) }}</span>
