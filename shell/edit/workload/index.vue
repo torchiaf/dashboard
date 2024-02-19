@@ -183,6 +183,7 @@ export default {
               name="general"
               :weight="tabWeightMap['general']"
               :error="tabErrors.general"
+              :requiredFieldsLabel="requiredFieldsLabel"
             >
               <template
                 #tab-header-right

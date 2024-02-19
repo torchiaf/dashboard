@@ -273,6 +273,16 @@ export default {
             class="conditions-alert-icon icon-error"
           />
         </a>
+        <label
+          v-if="tab.requiredFieldsLabel"
+          class="sub-label"
+          :class="{ 'error': tab.error && !tab.active }"
+        >
+          <span class="asterisk">*</span>
+          <span
+            class="message"
+          > required fields</span>
+        </label>
       </li>
       <li
         v-if="sideTabs && !sortedTabs.length"
@@ -517,6 +527,31 @@ export default {
     width: calc(100% - #{$sideways-tabs-width});
     flex-grow: 1;
     background-color: var(--body-bg);
+  }
+
+  .sub-label {
+
+    transform: translate(0, -8px) scale(1);
+    transform-origin: top left;
+
+    padding-left: 15px;
+    margin: 0;
+    height: 0;
+
+      &.error {
+        color: var(--error);
+      }
+
+      .asterisk {
+        font-size: 16px;
+        font-weight: bolder;
+        display: inline-block;
+        vertical-align: middle;
+      }
+      .message {
+        font-size: 12px;
+      }
+
   }
 }
 </style>
