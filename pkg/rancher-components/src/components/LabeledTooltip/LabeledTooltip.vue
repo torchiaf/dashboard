@@ -30,7 +30,15 @@ export default Vue.extend({
   },
   computed: {
     iconClass() {
-      return this.status === 'error' ? 'icon-error' : 'icon-info';
+      switch (this.status) {
+      case 'error':
+        return 'icon-error';
+      case 'valid':
+        return 'icon-dot';
+
+      default:
+        return 'icon-info';
+      }
     }
   }
 });
@@ -123,6 +131,15 @@ export default Vue.extend({
 
     &.error {
         @include tooltipColors(var(--error));
+
+        .status-icon {
+          top: 7px;
+          right: 5px;
+        }
+    }
+
+    &.valid {
+        @include tooltipColors(var(--success));
 
         .status-icon {
           top: 7px;

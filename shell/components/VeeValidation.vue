@@ -12,6 +12,10 @@ export default Vue.extend<Data, any, any, any>({
       type:     [String, Object],
       required: true,
     },
+    focused: {
+      type:    Boolean,
+      default: false,
+    },
     showError: {
       type:    Boolean,
       default: false,
@@ -33,6 +37,17 @@ export default Vue.extend<Data, any, any, any>({
       return this.rules.id;
     }
   },
+  methods: {
+    veeTokenContext(v: any) {
+      return {
+        ...v,
+        rules:      this.rules,
+        cmpError:   !this.focused && v.touched && v.invalid,
+        cmpValid:   !!this.rules && !this.focused && v.touched && v.valid && v.changed,
+        cmpFocused: this.focused && !(v.touched && v.invalid)
+      };
+    }
+  }
 });
 </script>
 <template>
@@ -45,7 +60,7 @@ export default Vue.extend<Data, any, any, any>({
     class="validation"
   >
     <!-- Field to validate-->
-    <slot :veeTokenValidationContext="v" />
+    <slot :veeTokenValidationContext="veeTokenContext(v)" />
 
     <!-- Error messages -->
     <div v-if="showError">
