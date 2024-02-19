@@ -1,6 +1,7 @@
 import { mapGetters } from 'vuex';
 import omitBy from 'lodash/omitBy';
 import { cleanUp } from '@shell/utils/object';
+import { validate } from 'vee-validate';
 import {
   CONFIG_MAP,
   SECRET,
@@ -289,6 +290,11 @@ export default {
           rules:          'containerImages',
           translationKey: 'workload.container.image',
           path:           'spec'
+        },
+        veeImage: {
+          id:             'vee.container.image',
+          rules:          'required',
+          translationKey: 'workload.container.image',
         }
       },
 
@@ -617,14 +623,16 @@ export default {
       this.$set(this.value, 'type', neu);
       delete this.value.apiVersion;
     },
-    'container.image': {
-      async handler() {
-        const res = await veeTokenValidateUtil(this.value, this.veeTokenRuleSets.image, this.$store.getters);
+    container: {
+      async handler(container) {
+        const containerImage = await veeTokenValidateUtil(this.value, this.veeTokenRuleSets.image, this.$store.getters);
+        const containerName = await validate(container.name, 'container-name');
 
-        this.tabErrors.general = !res.valid;
-        this.container.error = !res.valid;
+        this.tabErrors.general = !containerImage.valid || !containerName.valid;
+        this.container.error = !containerImage.valid || !containerName.valid;
       },
-      immediate: true
+      immediate: true,
+      deep:      true,
     }
   },
 

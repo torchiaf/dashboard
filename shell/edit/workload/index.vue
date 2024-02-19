@@ -229,6 +229,7 @@ export default {
                       :mode="mode"
                       :label="t('workload.container.image')"
                       :placeholder="t('generic.placeholder', {text: 'nginx:latest'}, true)"
+                      :vee-token-rules="veeTokenRules.veeImage"
                     />
                   </div>
                   <div class="col span-6">
