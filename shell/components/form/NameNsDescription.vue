@@ -480,7 +480,6 @@ export default {
         :label="t(descriptionLabel)"
         :placeholder="t(descriptionPlaceholder)"
         :min-height="30"
-        :vee-token-rules="veeTokenRules.description"
       />
     </div>
 
