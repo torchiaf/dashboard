@@ -298,10 +298,11 @@ export default {
         }
       },
 
-      isNamespaceNew:      false,
-      idKey:               ID_KEY,
-      tabErrors:           { general: false },
-      requiredFieldsLabel: true,
+      isNamespaceNew:         false,
+      idKey:                  ID_KEY,
+      tabErrors:              { general: false },
+      requiredFieldsLabel:    true,
+      requiredFieldsAsterisk: true,
     };
   },
 

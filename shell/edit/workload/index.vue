@@ -173,6 +173,7 @@ export default {
           :name="tab[idKey]"
           :weight="tab.weight"
           :error="!!tab.error"
+          :requiredFieldsAsterisk="requiredFieldsAsterisk"
         >
           <Tabbed
             :side-tabs="true"

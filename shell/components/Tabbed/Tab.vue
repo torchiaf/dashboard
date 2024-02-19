@@ -45,6 +45,10 @@ export default {
       type:    Boolean,
       default: false
     },
+    requiredFieldsAsterisk: {
+      type:    Boolean,
+      default: false
+    },
   },
 
   data() {
