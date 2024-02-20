@@ -19,6 +19,7 @@ export function containerImages(spec, getters, errors) {
   podSpec.containers.forEach((container) => {
     if (container && !container.image) {
       errors.push(getters['i18n/t']('workload.validation.containerImage', { name: container.name }));
+      // debugger;
     }
   });
 }

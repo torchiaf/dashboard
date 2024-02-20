@@ -1,7 +1,16 @@
-import { extend as veeExtend } from 'vee-validate';
+import { extend as veeExtend, setInteractionMode } from 'vee-validate';
 import * as veeRules from 'vee-validate/dist/rules';
 import formRulesGenerator from '@shell/utils/validators/formRules/index';
 import CustomValidators from '@shell/utils/custom-validators';
+
+// setInteractionMode('pippo', (ctx) => {
+//   console.log(ctx);
+
+//   return {
+//     on:       ['input'],
+//     debounce: 2000
+//   };
+// });
 
 export function extend(rule) {
   const veeRule = (veeRules || [])[rule];

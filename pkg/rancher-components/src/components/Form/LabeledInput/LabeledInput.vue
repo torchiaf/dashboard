@@ -93,6 +93,11 @@ export default (
       type:    Number,
       default: 0
     },
+
+    veeLog: {
+      type:    Boolean,
+      default: false
+    },
   },
 
   data() {
@@ -244,7 +249,13 @@ export default (
       this.onBlurLabeled();
     },
 
-    escapeHtml
+    escapeHtml,
+
+    onLog(v: any) {
+      if (this.veeLog) {
+        console.log(v);
+      }
+    }
   }
 });
 </script>
@@ -256,6 +267,7 @@ export default (
     :focused="focused"
     :context-changed="contextChanged"
   >
+    <!-- {{ veeTokenValidationContext.errors }} -->
     <div
       :class="{
         'labeled-input': true,

@@ -464,6 +464,7 @@ export default {
         :min-height="30"
         :required="nameRequired"
         :vee-token-rules="veeTokenRules.name"
+        :veeLog="false"
       />
     </div>
 
