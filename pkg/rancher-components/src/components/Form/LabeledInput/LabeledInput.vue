@@ -254,6 +254,7 @@ export default (
     v-slot="{ veeTokenValidationContext }"
     :rules="veeTokenRules"
     :focused="focused"
+    :context-changed="contextChanged"
   >
     <div
       :class="{
@@ -363,12 +364,12 @@ export default (
           'error': veeTokenValidationContext.cmpError
         }"
       >
-        <div v-if="veeTokenValidationContext.errors.length">
+        <div v-if="veeTokenValidationContext.cmpShowError">
           <span
             class="message"
           > {{ veeTokenValidationMessageFormatted(veeTokenValidationContext.errors) }}</span>
         </div>
-        <div v-else-if="!veeTokenValidationContext.cmpValid">
+        <div v-else>
           <span class="asterisk">*</span>
           <span
             class="message"

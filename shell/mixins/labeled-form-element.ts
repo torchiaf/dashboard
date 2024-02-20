@@ -6,6 +6,8 @@ interface LabeledFormElement {
   raised: boolean;
   focused: boolean;
   blurred: number | null;
+  initContext: string,
+  contextChanged: boolean,
 }
 
 export default Vue.extend({
@@ -96,15 +98,36 @@ export default Vue.extend({
     veeTokenRules: {
       type:    [String, Object],
       default: ''
+    },
+
+    context: {
+      type:    String,
+      default: ''
     }
   },
 
   data(): LabeledFormElement {
     return {
-      raised:  this.mode === _VIEW || !!`${ this.value }`,
-      focused: false,
-      blurred: null,
+      raised:         this.mode === _VIEW || !!`${ this.value }`,
+      focused:        false,
+      blurred:        null,
+      initContext:    '',
+      contextChanged: false,
     };
+  },
+
+  watch: {
+    context(neu) {
+      if (!this.initContext && neu) {
+        this.initContext = neu;
+
+        return;
+      }
+
+      if (this.initContext !== neu) {
+        this.contextChanged = this.initContext !== neu;
+      }
+    }
   },
 
   computed: {
@@ -197,6 +220,7 @@ export default Vue.extend({
     onFocusLabeled() {
       this.raised = true;
       this.focused = true;
+      this.contextChanged = false;
     },
 
     onBlur() {

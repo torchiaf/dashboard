@@ -16,6 +16,10 @@ export default Vue.extend<Data, any, any, any>({
       type:    Boolean,
       default: false,
     },
+    contextChanged: {
+      type:    Boolean,
+      default: false,
+    },
     showError: {
       type:    Boolean,
       default: false,
@@ -41,10 +45,10 @@ export default Vue.extend<Data, any, any, any>({
     veeTokenContext(v: any) {
       return {
         ...v,
-        rules:      this.rules,
-        cmpError:   !this.focused && v.touched && v.invalid,
-        cmpValid:   !!this.rules && !this.focused && v.touched && v.valid && v.changed,
-        cmpFocused: this.focused && !(v.touched && v.invalid)
+        rules:        this.rules,
+        cmpError:     ((!this.focused && v.touched) || this.contextChanged) && v.invalid,
+        cmpShowError: v.errors.length && (v.touched || this.contextChanged || this.focused),
+        cmpValid:     !!this.rules && !this.focused && v.touched && v.valid && v.changed,
       };
     }
   }
@@ -56,6 +60,7 @@ export default Vue.extend<Data, any, any, any>({
     v-slot="v"
     :name="fieldName"
     slim
+    :immediate="true"
     :rules="veeTokenRules"
     class="validation"
   >
