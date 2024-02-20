@@ -627,7 +627,7 @@ export default {
     },
     container: {
       async handler(container) {
-        const containerImage = await veeTokenValidateUtil(this.value, this.veeTokenRuleSets.image, this.$store.getters);
+        const containerImage = await validate(container.image, 'required');
         const containerName = await validate(container.name, 'container-name');
 
         this.tabErrors.general = !containerImage.valid || !containerName.valid;
