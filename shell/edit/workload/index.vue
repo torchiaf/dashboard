@@ -1,4 +1,5 @@
 <script>
+// DEMO-21-02 advantages of removing validation mixins from each resource model
 import CreateEditView from '@shell/mixins/create-edit-view';
 import FormValidation from '@shell/mixins/form-validation';
 import WorkLoadMixin from '@shell/edit/workload/mixins/workload';
@@ -95,6 +96,7 @@ export default {
 </script>
 
 <template>
+  <!-- DEMO-21-02 advantages in removing all error input fields from CruResource for each page -->
   <Loading v-if="$fetchState.pending" />
   <form
     v-else

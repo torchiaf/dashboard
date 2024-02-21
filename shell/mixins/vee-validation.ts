@@ -31,6 +31,8 @@ export default Vue.extend<Data, any, any, any>({
 
         const unreportedRule = rules.find((id) => !Object.keys(this.$refs.validator.fields).includes(id));
 
+        // DEMO-21-02 unreported rules check
+
         // console.log(rules);
 
         // if (unreportedRule) {

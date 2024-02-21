@@ -1,9 +1,11 @@
+// DEMO-21-02 rules definition and legacy porting
+
 import { extend as veeExtend, setInteractionMode } from 'vee-validate';
 import * as veeRules from 'vee-validate/dist/rules';
 import formRulesGenerator from '@shell/utils/validators/formRules/index';
 import CustomValidators from '@shell/utils/custom-validators';
 
-// setInteractionMode('pippo', (ctx) => {
+// setInteractionMode('test', (ctx) => {
 //   console.log(ctx);
 
 //   return {
@@ -86,41 +88,5 @@ Object.keys(CustomValidators).forEach((rule) => {
 });
 
 /**
- * Importing all rules (see docs)
- */
-// for (const [rule, validation] of Object.entries(rules)) {
-//   if (rule === 'required') {
-//     extend(rule, {
-//       ...validation,
-//       params:  ['message'],
-//       message: '{message}'
-//     });
-//   }
-// }
-
-// extend('example', {
-//   validate(value, { min, max }) {
-//     debugger;
-
-//     return value.length >= min && value.length <= max;
-//   },
-//   params:  ['min', 'max'],
-//   message: 'The {_field_} field must have at least {min} characters and {max} characters at most'
-// });
-
-// extend(rule, {
-//   ...validation,
-//   validate(value, { message }) {
-//     const isValid = validation.validate(value);
-
-//     console.log(message);
-
-//     return isValid.valid;
-//   },
-//   params:  ['message'],
-//   message: '{message}'
-// });
-
-/**
- * Custom Rules
+ * Custom Rules TODO
  */

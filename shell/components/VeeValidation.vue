@@ -3,6 +3,8 @@ import Vue from 'vue';
 import ErrorMessage from '@components/ErrorMessage/ErrorMessage.vue';
 import { ValidationProvider } from 'vee-validate';
 
+// DEMO-21-02 Validation component to wrap input fields
+
 interface Data {}
 
 export default Vue.extend<Data, any, any, any>({
@@ -55,6 +57,7 @@ export default Vue.extend<Data, any, any, any>({
 });
 </script>
 <template>
+  <!-- DEMO-21-02 ValidationProvider -->
   <!-- vee-validate component -->
   <ValidationProvider
     v-slot="v"

@@ -117,6 +117,9 @@ export default Vue.extend({
   },
 
   watch: {
+
+    // DEMO-21-02 additional condition to show errors on change tab
+
     context(neu) {
       if (!this.initContext && neu) {
         this.initContext = neu;

@@ -307,6 +307,8 @@ export default {
   },
 
   mounted() {
+    // DEMO-21-02 define extra rules
+
     /**
      * Define extra rule
      */
@@ -627,6 +629,8 @@ export default {
     },
     container: {
       async handler(container) {
+        // DEMO-21-02 async validation
+
         const containerImage = await validate(container.image, 'required');
         const containerName = await validate(container.name, 'container-name');
 

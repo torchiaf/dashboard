@@ -1,6 +1,8 @@
 import { getAllValues } from '@shell/utils/object';
 import formRulesGenerator from '@shell/utils/validators/formRules/index';
 
+// DEMO-21-02 legacy mixin
+
 export default {
   data() {
     return {

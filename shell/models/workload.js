@@ -227,6 +227,7 @@ export default class Workload extends WorkloadService {
     return containers.length > 1 || initContainers.length;
   }
 
+  // DEMO-21-02 custom model's validation rule
   get veeTokenCustomValidationRules() {
     return {
       name: {
