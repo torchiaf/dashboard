@@ -369,7 +369,7 @@ export default {
         :disabled="!externalLinks.grafana.enabled"
         :href="externalLinks.grafana.link"
         target="_blank"
-        rel="noopener noreferrer"
+        rel="noopener nofollow"
         class="subtype-banner m-0 mt-10 mb-10"
       >
         <div class="subtype-content">
