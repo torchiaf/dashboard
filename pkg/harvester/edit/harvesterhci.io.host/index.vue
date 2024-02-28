@@ -337,7 +337,7 @@ export default {
         tagDisks = this.newDisks.filter(d => d.blockDevice && !isEqual(d.blockDevice.spec.tags, d.tags));
 
         if (tagDisks.length === 0) {
-        return Promise.resolve();
+          return Promise.resolve();
         }
       } else if (addDisks.length !== 0 && removeDisks.length === 0) {
         const updatedDisks = addDisks.filter((d) => {
@@ -493,16 +493,17 @@ export default {
     async saveLonghornNode() {
       const inStore = this.$store.getters['currentProduct'].inStore;
 
-      const disks = this.longhornNode?.spec?.disks || {};
-
-      this.newDisks.map((disk) => {
-        (disks[disk.name] || {}).tags = disk.tags;
-      });
+      const storageTags = clone(this.longhornNode?.spec?.tags);
 
       let count = 0;
 
       const retrySave = async() => {
         try {
+          this.longhornNode.spec.tags = storageTags;
+          this.newDisks.forEach((disk) => {
+            (this.longhornNode?.spec?.disks?.[disk.name] || {}).tags = disk.tags;
+          });
+
           await this.longhornNode.save();
         } catch (err) {
           if ((err.status === 409 || err.status === 403) && count < 3) {
