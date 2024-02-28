@@ -1,4 +1,5 @@
 <script>
+import { isEqual } from 'lodash';
 import { mapGetters } from 'vuex';
 import Tabbed from '@shell/components/Tabbed';
 import Tab from '@shell/components/Tabbed/Tab';
@@ -101,6 +102,7 @@ export default {
           provisioner:        d?.spec?.provisioner?.lvm ? LVM_DRIVER : LONGHORN_DRIVER,
           provisionerVersion: d?.spec?.provisioner?.longhorn?.engineVersion || LONGHORN_VERSION_V1,
           lvmVolumeGroup:     d?.spec?.provisioner?.lvm?.vgName,
+          tags:               d?.spec?.tags || [],
         };
       });
 
@@ -342,6 +344,7 @@ export default {
         provisioner:        LONGHORN_DRIVER,
         provisionerVersion: LONGHORN_VERSION_V1,
         lvmVolumeGroup:     null,
+        tags:               []
       });
     },
 
@@ -349,9 +352,14 @@ export default {
       const inStore = this.$store.getters['currentProduct'].inStore;
       const addDisks = this.newDisks.filter(d => d.isNew);
       const removeDisks = this.disks.filter(d => !findBy(this.newDisks, 'name', d.name) && d.blockDevice);
+      let tagDisks = [];
 
       if (addDisks.length === 0 && removeDisks.length === 0) {
+        tagDisks = this.newDisks.filter(d => d.blockDevice && !isEqual(d.blockDevice.spec.tags, d.tags));
+
+        if (tagDisks.length === 0) {
         return Promise.resolve();
+        }
       } else if (addDisks.length !== 0 && removeDisks.length === 0) {
         const updatedDisks = addDisks.filter((d) => {
           const blockDevice = this.$store.getters[`${ inStore }/byId`](HCI.BLOCK_DEVICE, `${ LONGHORN_SYSTEM }/${ d.name }`);
@@ -372,6 +380,7 @@ export default {
 
           blockDevice.spec.provision = true;
           blockDevice.spec.fileSystem.forceFormatted = d.forceFormatted;
+          blockDevice.spec.tags = d.tags;
 
           switch (d.provisioner) {
           case LONGHORN_DRIVER:
@@ -389,6 +398,14 @@ export default {
           const blockDevice = this.$store.getters[`${ inStore }/byId`](HCI.BLOCK_DEVICE, `${ LONGHORN_SYSTEM }/${ d.name }`);
 
           blockDevice.spec.provision = false;
+
+          return blockDevice.save();
+        }));
+
+        await Promise.all(tagDisks.map((d) => {
+          const blockDevice = this.$store.getters[`${ inStore }/byId`](HCI.BLOCK_DEVICE, `${ LONGHORN_SYSTEM }/${ d.name }`);
+
+          blockDevice.spec.tags = d.tags;
 
           return blockDevice.save();
         }));
