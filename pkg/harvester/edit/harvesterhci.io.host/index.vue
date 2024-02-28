@@ -32,7 +32,6 @@ import HarvesterSeeder from './HarvesterSeeder';
 import Tags from '../../components/DiskTags';
 import { LONGHORN_DRIVER, LONGHORN_VERSION_V1, LONGHORN_VERSION_V2 } from '@shell/models/persistentvolume';
 import { LVM_DRIVER } from '../../models/harvester/storage.k8s.io.storageclass';
-import isEqual from 'lodash/isEqual';
 
 export const LONGHORN_SYSTEM = 'longhorn-system';
 
@@ -358,7 +357,7 @@ export default {
         tagDisks = this.newDisks.filter(d => d.blockDevice && !isEqual(d.blockDevice.spec.tags, d.tags));
 
         if (tagDisks.length === 0) {
-        return Promise.resolve();
+          return Promise.resolve();
         }
       } else if (addDisks.length !== 0 && removeDisks.length === 0) {
         const updatedDisks = addDisks.filter((d) => {
@@ -520,17 +519,19 @@ export default {
     async saveLonghornNode() {
       const inStore = this.$store.getters['currentProduct'].inStore;
 
-      const disks = this.longhornNode?.spec?.disks || {};
+      const storageTags = clone(this.longhornNode?.spec?.tags);
 
-      // update each disk tags and scheduling
-      this.newDisks.map((disk) => {
-        (disks[disk.name] || {}).tags = disk.tags;
-        (disks[disk.name] || {}).allowScheduling = disk.allowScheduling;
-      });
       let count = 0;
 
       const retrySave = async() => {
         try {
+          this.longhornNode.spec.tags = storageTags;
+
+          this.newDisks.forEach((disk) => {
+            (this.longhornNode?.spec?.disks?.[disk.name] || {}).tags = disk.tags;
+            (this.longhornNode?.spec?.disks?.[disk.name] || {}).allowScheduling = disk.allowScheduling;
+          });
+
           await this.longhornNode.save();
         } catch (err) {
           if ((err.status === 409 || err.status === 403) && count < 3) {
