@@ -229,7 +229,7 @@ export default {
     getRootImageId(vm) {
       const volume = this.getVolumeClaimTemplates(vm);
 
-      return volume[0]?.metadata?.annotations?.[HCI_ANNOTATIONS.IMAGE_ID] || '';
+      return volume?.[0]?.metadata?.annotations?.[HCI_ANNOTATIONS.IMAGE_ID] || '';
     },
 
     getSSHFromAnnotation(spec) {
