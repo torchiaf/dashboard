@@ -313,7 +313,10 @@ export default class VirtVm extends HarvesterResource {
         label:     this.nameDisplay,
         icon:      'file',
         component: 'ContainerLogs',
-        attrs:     { pod: this.podResource }
+        attrs:     {
+          pod:              this.podResource,
+          initialContainer: this.podResource.metadata.annotations['kubectl.kubernetes.io/default-container']
+        }
       },
       { root: true }
     );
