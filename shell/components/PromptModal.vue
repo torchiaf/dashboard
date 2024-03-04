@@ -1,6 +1,7 @@
 <script>
 import { mapState } from 'vuex';
 import { isArray } from '@shell/utils/array';
+import AppModal from '@shell/components/AppModal.vue';
 
 /**
  * @name PromptModal
@@ -8,6 +9,8 @@ import { isArray } from '@shell/utils/array';
  */
 export default {
   name: 'PromptModal',
+
+  components: { AppModal },
 
   data() {
     return { opened: false, backgroundClosing: null };
@@ -47,13 +50,7 @@ export default {
 
   watch: {
     showModal(show) {
-      if (show) {
-        this.opened = true;
-        this.$modal.show('promptModal');
-      } else {
-        this.opened = false;
-        this.$modal.hide('promptModal');
-      }
+      this.opened = show;
     },
   },
 
@@ -68,6 +65,8 @@ export default {
       if (this.backgroundClosing) {
         this.backgroundClosing();
       }
+
+      this.opened = false;
     },
 
     // We're using register instead of just making use of $refs because the $refs is always undefined when referencing the component
@@ -79,23 +78,24 @@ export default {
 </script>
 
 <template>
-  <modal
+  <app-modal
+    v-if="opened && component"
     class="promptModal-modal"
     name="promptModal"
     :styles="`background-color: var(--nav-bg); border-radius: var(--border-radius); ${stickyProps} max-height: 95vh; ${cssProps}`"
     height="auto"
+    :width="modalWidth"
     :scrollable="true"
     @closed="close()"
   >
     <component
       v-bind="modalData.componentProps || {}"
       :is="component"
-      v-if="opened && component"
       :resources="resources"
       :register-background-closing="registerBackgroundClosing"
       @close="close()"
     />
-  </modal>
+  </app-modal>
 </template>
 
 <style lang='scss'>
