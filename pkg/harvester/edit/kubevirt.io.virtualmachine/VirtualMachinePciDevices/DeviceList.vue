@@ -17,7 +17,7 @@ export default {
       required: true,
     },
 
-    rows: {
+    devices: {
       type:     Array,
       required: true,
     },
@@ -83,9 +83,20 @@ export default {
 
     return {
       headers,
+      rows:        [],
       parentSriov: null,
       filterRows:  []
     };
+  },
+
+  watch: {
+    devices: {
+      handler(v) {
+        this.rows = v;
+        this.filterRows = this.rows;
+      },
+      immediate: true,
+    }
   },
 
   methods: {
@@ -126,7 +137,14 @@ export default {
 </script>
 
 <template>
-  <ResourceTable :headers="headers" :schema="schema" :rows="filterRows" :use-query-params-for-simple-filtering="true" :sort-generation-fn="sortGenerationFn">
+  <ResourceTable
+    :headers="headers"
+    :schema="schema"
+    :rows="filterRows"
+    :use-query-params-for-simple-filtering="true"
+    :sort-generation-fn="sortGenerationFn"
+    :rows-per-page="10"
+  >
     <template #group-by="{group}">
       <div :ref="group.key" v-trim-whitespace class="group-tab">
         <button v-if="groupIsAllEnabled(group.rows)" type="button" class="btn btn-sm role-secondary mr-5" @click="e=>{disableGroup(group.rows); e.target.blur()}">
