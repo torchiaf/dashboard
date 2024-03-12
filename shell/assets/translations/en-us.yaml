@@ -1312,6 +1312,9 @@ cluster:
       placeholder: 'Namespace/Name'
       cluster: Imported Harvester Cluster
       installGuestAgent: Install guest agent
+      vGpu:
+        label: VGPU type
+        placeholder: 'Please select a VGPU'
   description:
     label: Cluster Description
     placeholder: Any text you want that better describes this cluster
@@ -2065,6 +2068,8 @@ clusterIndexPage:
       etcd: Etcd
       scheduler: Scheduler
       controller-manager: Controller Manager
+      cattle: Cattle
+      fleet: Fleet
     certs:
       label: Certificates
 

@@ -239,6 +239,10 @@ export default {
         } catch (err) {
           this.allNodeObjects = [];
         }
+
+        this.allNodeObjects.forEach((node) => {
+          this.vGpuOptions.push('NVIDIA-1');
+        });
       }
 
       if (isEmpty(this.value.cpuCount)) {
@@ -363,6 +367,7 @@ export default {
       namespaces:         [],
       namespaceOptions:   [],
       networkOptions:     [],
+      vGpuOptions:        [],
       userDataOptions:    [],
       networkDataOptions: [],
       allNodeObjects:     [],
@@ -378,7 +383,8 @@ export default {
       userDataIsBase64,
       networkDataIsBase64,
       vmAffinityIsBase64,
-      SOURCE_TYPE
+      SOURCE_TYPE,
+      vGpu:               ''
     };
   },
 
@@ -455,6 +461,7 @@ export default {
       if (!this.isEdit) {
         this.imageOptions = [];
         this.networkOptions = [];
+        this.vGpuOptions = [];
         this.namespaces = [];
         this.storageClass = [];
         this.namespaceOptions = [];
@@ -1262,6 +1269,22 @@ export default {
       </button>
 
       <portal :to="'advanced-'+uuid">
+        <h3 class="mt-20">
+          {{ 'VGPU' }}
+        </h3>
+        <div>
+          <LabeledSelect
+            v-model="vGpu"
+            :mode="mode"
+            :disabled="disabled"
+            :options="vGpuOptions"
+            :clearable="true"
+            label-key="cluster.credential.harvester.vGpu.label"
+            :placeholder="t('cluster.credential.harvester.vGpu.placeholder')"
+            @input="update"
+          />
+        </div>
+
         <h3 class="mt-20">
           {{ t("cluster.credential.harvester.userData.title") }}
         </h3>

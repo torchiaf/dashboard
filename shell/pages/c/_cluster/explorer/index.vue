@@ -56,10 +56,22 @@ const K8S_METRICS_SUMMARY_URL = '/api/v1/namespaces/cattle-monitoring-system/ser
 const ETCD_METRICS_DETAIL_URL = '/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy/d/rancher-etcd-nodes-1/rancher-etcd-nodes?orgId=1';
 const ETCD_METRICS_SUMMARY_URL = '/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy/d/rancher-etcd-1/rancher-etcd?orgId=1';
 
-const COMPONENT_STATUS = [
+const SERVICE_STATUS = {
+  HEALTHY:     'healthy',
+  WARNING:     'warning',
+  UNHEALTHY:   'unhealthy',
+  UNAVAILABLE: 'unavailable'
+};
+
+const COMPONENTS = [
   'etcd',
   'scheduler',
   'controller-manager',
+];
+
+const AGENTS = [
+  // 'cattle',
+  'fleet',
 ];
 
 export default {
@@ -84,8 +96,9 @@ export default {
 
   mixins: [metricPoller],
 
-  fetch() {
-    fetchClusterResources(this.$store, NODE);
+  async fetch() {
+    await fetchClusterResources(this.$store, NODE);
+    await fetchClusterResources(this.$store, WORKLOAD_TYPES.DEPLOYMENT);
 
     if (this.currentCluster) {
       setPromiseResult(
@@ -140,6 +153,7 @@ export default {
       K8S_METRICS_SUMMARY_URL,
       ETCD_METRICS_DETAIL_URL,
       ETCD_METRICS_SUMMARY_URL,
+      SERVICE_STATUS,
       clusterCounts,
       selectedTab:        'cluster-events',
       extensionCards:     getApplicableExtensionEnhancements(this, ExtensionPoint.CARD, CardLocation.CLUSTER_DASHBOARD_CARD, this.$route),
@@ -154,6 +168,7 @@ export default {
     this.$store.dispatch('cluster/forgetType', ENDPOINTS); // Used by AlertTable to get alerts when v2 monitoring is installed
     this.$store.dispatch('cluster/forgetType', METRIC.NODE);
     this.$store.dispatch('cluster/forgetType', MANAGEMENT.NODE);
+    this.$store.dispatch('cluster/forgetType', WORKLOAD_TYPES.DEPLOYMENT);
   },
 
   computed: {
@@ -166,6 +181,18 @@ export default {
 
     mgmtNodes() {
       return this.$store.getters['management/all'](MANAGEMENT.CLUSTER);
+    },
+
+    fleet() {
+      return this.$store.getters['cluster/byId'](WORKLOAD_TYPES.DEPLOYMENT, `cattle-fleet${ this.currentCluster.isLocal ? '-local' : '' }-system/fleet-agent`);
+    },
+
+    cattle() {
+      if (this.currentCluster.isLocal) {
+        return null;
+      }
+
+      return this.$store.getters['cluster/byId'](WORKLOAD_TYPES.DEPLOYMENT, 'cattle-system/cattle-cluster-agent');
     },
 
     hasV1Monitoring() {
@@ -212,18 +239,21 @@ export default {
       return allowedResources.filter((resource) => this.$store.getters['cluster/schemaFor'](resource));
     },
 
-    componentServices() {
-      const status = [];
-
-      COMPONENT_STATUS.forEach((cs) => {
-        status.push({
+    clusterServices() {
+      return [
+        ...COMPONENTS.map((cs) => ({
           name:     cs,
-          healthy:  this.isComponentStatusHealthy(cs),
+          status:   this.getComponentStatus(cs),
           labelKey: `clusterIndexPage.sections.componentStatus.${ cs }`,
-        });
-      });
-
-      return status;
+        })),
+        ...AGENTS
+          .map((as) => ({
+            name:     as,
+            status:   this.getAgentStatus(this.fleet),
+            labelKey: `clusterIndexPage.sections.componentStatus.${ as }`,
+          }))
+          .filter((f) => f.status !== SERVICE_STATUS.UNAVAILABLE)
+      ];
     },
 
     totalCountGaugeInput() {
@@ -372,13 +402,12 @@ export default {
   },
 
   methods: {
-    // Ported from Ember
-    isComponentStatusHealthy(field) {
+    getComponentStatus(field) {
       const matching = (this.currentCluster?.status?.componentStatuses || []).filter((s) => s.name.startsWith(field));
 
       // If there's no matching component status, it's "healthy"
       if ( !matching.length ) {
-        return true;
+        return SERVICE_STATUS.HEALTHY;
       }
 
       const count = matching.reduce((acc, status) => {
@@ -387,7 +416,31 @@ export default {
         return !conditions ? acc : acc + 1;
       }, 0);
 
-      return count === 0;
+      if (!count) {
+        return SERVICE_STATUS.UNHEALTHY;
+      }
+
+      return SERVICE_STATUS.HEALTHY;
+    },
+
+    getAgentStatus(agent) {
+      // const agent = this[name];
+
+      console.log(agent);
+
+      if (!agent) {
+        return SERVICE_STATUS.UNAVAILABLE;
+      }
+
+      if (agent.status.conditions.find((c) => c.status !== 'True')) {
+        return SERVICE_STATUS.UNHEALTHY;
+      }
+
+      if (agent.spec.replicas !== agent.status.readyReplicas || agent.status.unavailableReplicas > 0) {
+        return SERVICE_STATUS.WARNING;
+      }
+
+      return SERVICE_STATUS.HEALTHY;
     },
 
     showActions() {
@@ -547,22 +600,22 @@ export default {
       />
     </div>
 
-    <div v-if="!hasV1Monitoring && componentServices">
+    <div v-if="!hasV1Monitoring && clusterServices">
       <div
-        v-for="status in componentServices"
-        :key="status.name"
+        v-for="service in clusterServices"
+        :key="service.name"
         class="k8s-component-status"
-        :class="{'k8s-component-status-healthy': status.healthy, 'k8s-component-status-unhealthy': !status.healthy}"
+        :class="{[service.status]: true }"
       >
         <i
-          v-if="status.healthy"
+          v-if="service.status === SERVICE_STATUS.HEALTHY"
           class="icon icon-checkmark"
         />
         <i
           v-else
           class="icon icon-warning"
         />
-        <div>{{ t(status.labelKey) }}</div>
+        <div>{{ t(service.labelKey) }}</div>
       </div>
     </div>
 
@@ -767,7 +820,7 @@ export default {
     border-right: 1px solid var(--border);
   }
 
-  &.k8s-component-status-unhealthy {
+  &.unhealthy {
     border-color: var(--error-border);
 
     > I {
@@ -775,7 +828,15 @@ export default {
     }
   }
 
-  &.k8s-component-status-healthy {
+  &.warning {
+    border-color: var(--border);
+
+    > I {
+      color: var(--warning)
+    }
+  }
+
+  &.healthy {
     border-color: var(--border);
 
     > I {
