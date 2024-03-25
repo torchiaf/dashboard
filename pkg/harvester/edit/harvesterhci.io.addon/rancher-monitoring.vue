@@ -168,7 +168,7 @@ export default {
           iconSrc:     grafanaSrc,
           label:       'monitoring.overview.linkedList.grafana.label',
           description: 'monitoring.overview.linkedList.grafana.description',
-          link:        `/k8s/clusters/${ currentCluster.id }/api/v1/namespaces/${ CATTLE_MONITORING_NAMESPACE }/services/http:rancher-monitoring-grafana:80/proxy/?orgId=1`,
+          link:        `/k8s/clusters/${ currentCluster.id }/api/v1/namespaces/${ CATTLE_MONITORING_NAMESPACE }/services/http:rancher-monitoring-grafana:80/proxy`,
         },
         prometheus: {
           enabled:     false,
