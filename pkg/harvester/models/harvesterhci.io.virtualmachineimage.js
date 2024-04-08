@@ -104,11 +104,17 @@ export default class HciVmImage extends HarvesterResource {
     if (imported?.status === 'Unknown') {
       if (this.spec.sourceType === 'download') {
         return 'Downloading';
-      } else if (this.spec.sourceType === 'upload') {
-        return 'Uploading';
-      } else {
-        return 'Exporting';
       }
+
+      if (this.spec.sourceType === 'upload') {
+        if (this.uploadError) {
+          return 'Failed';
+        }
+
+        return 'Uploading';
+      }
+
+      return 'Exporting';
     }
 
     if (initialized?.message || imported?.message) {
@@ -119,6 +125,10 @@ export default class HciVmImage extends HarvesterResource {
   }
 
   get imageMessage() {
+    if (this.uploadError) {
+      return ucFirst(this.uploadError);
+    }
+
     const conditions = this?.status?.conditions || [];
     const initialized = conditions.find( cond => cond.type === 'Initialized');
     const imported = conditions.find( cond => cond.type === 'Imported');
@@ -169,7 +179,7 @@ export default class HciVmImage extends HarvesterResource {
     const initialized = this.getStatusConditionOfType('Initialized');
     const imported = this.getStatusConditionOfType('Imported');
 
-    if ([initialized?.status, imported?.status].includes('False')) {
+    if ([initialized?.status, imported?.status].includes('False') || this.uploadError) {
       state.error = true;
     }
 
@@ -201,6 +211,8 @@ export default class HciVmImage extends HarvesterResource {
           params: { size: file.size },
         });
       } catch (err) {
+        this.$ctx.commit('harvester-common/uploadError', { name: this.name, message: err.message }, { root: true });
+
         this.$ctx.commit('harvester-common/uploadEnd', this.metadata.name, { root: true });
 
         return Promise.reject(err);
@@ -208,6 +220,10 @@ export default class HciVmImage extends HarvesterResource {
 
       this.$ctx.commit('harvester-common/uploadEnd', this.metadata.name, { root: true });
     };
+  }
+
+  get uploadError() {
+    return this.$rootGetters['harvester-common/uploadingImageError'](this.name);
   }
 
   get imageSuffix() {
