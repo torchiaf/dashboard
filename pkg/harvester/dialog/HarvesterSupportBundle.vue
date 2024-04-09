@@ -6,6 +6,7 @@ import { LabeledInput } from '@components/Form/LabeledInput';
 import AsyncButton from '@shell/components/AsyncButton';
 import GraphCircle from '@shell/components/graph/Circle';
 import { Banner } from '@components/Banner';
+import AppModal from '@shell/components/AppModal.vue';
 
 export default {
   name: 'SupportBundle',
@@ -13,6 +14,7 @@ export default {
   components: {
     LabeledInput,
     GraphCircle,
+    AppModal,
     AsyncButton,
     Banner,
   },
@@ -22,6 +24,7 @@ export default {
       url:         '',
       description: '',
       errors:      [],
+      showModal:   false,
     };
   },
 
@@ -44,10 +47,10 @@ export default {
       handler(show) {
         if (show) {
           this.$nextTick(() => {
-            this.$modal.show('bundle-modal');
+            this.show(true);
           });
         } else {
-          this.$modal.hide('bundle-modal');
+          this.show(false);
           this.url = '';
           this.description = '';
         }
@@ -58,6 +61,10 @@ export default {
 
   methods: {
     stringify,
+
+    show(show) {
+      this.showModal = show;
+    },
 
     close() {
       this.$store.commit('harvester-common/toggleBundleModal', false);
@@ -103,12 +110,14 @@ export default {
 
 <template>
   <div class="bundleModal">
-    <modal
+    <app-modal
+      v-if="showModal"
       name="bundle-modal"
       :click-to-close="false"
       :width="550"
       :height="390"
       class="remove-modal support-modal"
+      @close="show(false)"
     >
       <div class="p-20">
         <h2>
@@ -176,7 +185,7 @@ export default {
           />
         </div>
       </div>
-    </modal>
+    </app-modal>
   </div>
 </template>
 

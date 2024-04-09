@@ -4,9 +4,12 @@ import AsyncButton from '@shell/components/AsyncButton';
 import { Card } from '@components/Card';
 import { Banner } from '@components/Banner';
 import { exceptionToErrorsArray } from '@shell/utils/error';
+import AppModal from '@shell/components/AppModal.vue';
+
 export default {
   components: {
     Card,
+    AppModal,
     AsyncButton,
     Banner,
   },
@@ -42,7 +45,7 @@ export default {
 </script>
 
 <template>
-  <modal
+  <app-modal
     class="restart-modal"
     name="restartDialog"
     :width="600"
@@ -74,7 +77,7 @@ export default {
         </div>
       </div>
     </Card>
-  </modal>
+  </app-modal>
 </template>
 <style lang='scss' scoped>
   .restart-modal {
