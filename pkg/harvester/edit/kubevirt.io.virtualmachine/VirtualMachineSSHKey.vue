@@ -10,6 +10,8 @@ import { HCI } from '../../types';
 import { clone } from '@shell/utils/object';
 import { _VIEW } from '@shell/config/query-params';
 
+import { NAMESPACE } from '@shell/config/types';
+
 const _NEW = '_NEW';
 
 export default {
@@ -40,6 +42,11 @@ export default {
     namespace: {
       type:    String,
       default: ''
+    },
+
+    createNamespace: {
+      type:    Boolean,
+      default: false,
     },
 
     searchable: {
@@ -136,6 +143,42 @@ export default {
       this.$modal.hide(this.randomStr);
     },
 
+    async createNamespaceIfNeeded() {
+      if (!this.createNamespace || this.disableCreate) {
+        return;
+      }
+
+      try {
+        const namespaces = await this.$store.dispatch('harvester/findAll', { type: NAMESPACE });
+
+        const exists = namespaces?.find(n => n.name === this.namespace);
+
+        if (!exists) {
+          const ns = await this.$store.dispatch('harvester/createNamespace', { name: this.namespace }, { root: true });
+
+          ns.applyDefaults();
+          await ns.save();
+        }
+      } catch {}
+    },
+
+    async createSSHKey() {
+      const sshValue = await this.$store.dispatch('harvester/create', {
+        metadata: {
+          name:      this.sshName,
+          namespace: this.namespace
+        },
+        spec: { publicKey: this.publicKey },
+        type: HCI.SSH
+      });
+
+      const res = await sshValue.save();
+
+      if (res.id) {
+        this.checkedSsh.push(`${ this.namespace }/${ this.sshName }`);
+      }
+    },
+
     async save(buttonCb) {
       this.errors = [];
 
@@ -166,20 +209,9 @@ export default {
       }
 
       try {
-        const sshValue = await this.$store.dispatch('harvester/create', {
-          metadata: {
-            name:      this.sshName,
-            namespace: this.namespace
-          },
-          spec: { publicKey: this.publicKey },
-          type: HCI.SSH
-        });
+        await this.createNamespaceIfNeeded();
 
-        const res = await sshValue.save();
-
-        if (res.id) {
-          this.checkedSsh.push(`${ this.namespace }/${ this.sshName }`);
-        }
+        await this.createSSHKey();
 
         buttonCb(true);
         this.cancel();

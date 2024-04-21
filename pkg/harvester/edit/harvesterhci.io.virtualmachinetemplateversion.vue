@@ -242,7 +242,14 @@ export default {
         <CpuMemory :cpu="cpu" :memory="memory" :disabled="isConfig" @updateCpuMemory="updateCpuMemory" />
 
         <div class="mb-20">
-          <SSHKey v-model="sshKey" :namespace="templateValue.metadata.namespace" :disable-create="isView" :mode="mode" @update:sshKey="updateSSHKey" />
+          <SSHKey
+            v-model="sshKey"
+            :create-namespace="true"
+            :namespace="templateValue.metadata.namespace"
+            :disable-create="isView"
+            :mode="mode"
+            @update:sshKey="updateSSHKey"
+          />
         </div>
       </Tab>
 
