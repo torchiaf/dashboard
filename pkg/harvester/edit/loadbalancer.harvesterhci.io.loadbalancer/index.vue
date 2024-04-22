@@ -196,6 +196,12 @@ export default {
         };
       }
     }, 250, { leading: true }),
+
+    healthCheckEnabled(v) {
+      if (!v) {
+        this.value.spec.healthCheck = {};
+      }
+    }
   },
 
   watch: {
@@ -302,6 +308,7 @@ export default {
           v-model="value.spec.healthCheck"
           :mode="mode"
           :model="value"
+          @enabled="healthCheckEnabled"
         />
       </Tab>
     </ResourceTabs>

@@ -43,6 +43,12 @@ export default {
       return ports.filter(p => p.port && p.protocol === 'TCP').map(p => p.backendPort) || [];
     },
   },
+
+  methods: {
+    onToggle(value) {
+      this.$emit('enabled', value);
+    }
+  }
 };
 </script>
 
@@ -57,6 +63,7 @@ export default {
           :labels="[t('generic.disabled'),t('generic.enabled')]"
           :options="[false, true]"
           :disabled="disabled"
+          @input="onToggle"
         />
       </div>
     </div>
