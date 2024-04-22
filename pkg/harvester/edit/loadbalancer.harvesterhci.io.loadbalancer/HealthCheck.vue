@@ -40,7 +40,7 @@ export default {
     portOptions() {
       const ports = this.model?.spec?.listeners || [];
 
-      return ports.filter(p => p.port && p.protocol === 'TCP').map(p => p.port) || [];
+      return ports.filter(p => p.port && p.protocol === 'TCP').map(p => p.backendPort) || [];
     },
   },
 };
