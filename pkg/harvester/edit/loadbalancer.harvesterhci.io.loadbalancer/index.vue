@@ -159,6 +159,17 @@ export default {
 
       return { activelyRemove };
     },
+
+    healthCheckPortInUseWarning() {
+      const healthCheckPort = this.value?.spec?.healthCheck?.port;
+      const portInUse = this.value?.spec?.listeners?.find(l => l.backendPort === healthCheckPort);
+
+      if (healthCheckPort && portInUse) {
+        return this.t('harvester.loadBalancer.healthCheck.warning.portInUse', { port: portInUse.backendPort }, true);
+      }
+
+      return '';
+    }
   },
 
   methods: {
@@ -270,6 +281,12 @@ export default {
         :weight="98"
         class="bordered-table"
       >
+        <Banner
+          v-if="healthCheckPortInUseWarning"
+          color="warning"
+        >
+          <span v-clean-html="healthCheckPortInUseWarning" />
+        </Banner>
         <Listeners
           v-model="value.spec.listeners"
           class="col span-12"
