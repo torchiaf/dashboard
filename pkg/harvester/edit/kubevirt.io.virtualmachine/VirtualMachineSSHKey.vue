@@ -148,18 +148,16 @@ export default {
         return;
       }
 
-      try {
-        const namespaces = await this.$store.dispatch('harvester/findAll', { type: NAMESPACE });
+      const namespaces = await this.$store.dispatch('harvester/findAll', { type: NAMESPACE });
 
-        const exists = namespaces?.find(n => n.name === this.namespace);
+      const exists = namespaces?.find(n => n.name === this.namespace);
 
-        if (!exists) {
-          const ns = await this.$store.dispatch('harvester/createNamespace', { name: this.namespace }, { root: true });
+      if (!exists) {
+        const ns = await this.$store.dispatch('harvester/createNamespace', { name: this.namespace }, { root: true });
 
-          ns.applyDefaults();
-          await ns.save();
-        }
-      } catch {}
+        ns.applyDefaults();
+        await ns.save();
+      }
     },
 
     async createSSHKey() {
