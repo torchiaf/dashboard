@@ -1153,6 +1153,9 @@ harvester:
           }
     backendServers:
       label: Backend Servers
+    healthCheck:
+      warning:
+        portInUse: Warning, Backend Port {port} is in use in Health Check settings; in case of updating the port, update the Health Check settings accordingly.
 
   ipPool:
     label: IP Pools
