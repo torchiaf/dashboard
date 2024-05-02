@@ -195,7 +195,7 @@ export interface ProductOptions {
   /**
    * Only load the product if the feature is present
    */
-  ifFeature?: string | RegExp;
+  ifFeature?: string | string[] | RegExp;
 
   /**
    * Only load the product if the type is present
