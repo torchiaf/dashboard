@@ -96,7 +96,7 @@ export default class HciVmTemplateVersion extends HarvesterResource {
                 },
                 features: { acpi: { enabled: true } },
               },
-              evictionStrategy: 'LiveMigrate',
+              evictionStrategy: 'LiveMigrateIfPossible',
               hostname:         '',
               networks:         [{
                 name: 'default',
