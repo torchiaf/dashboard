@@ -33,6 +33,7 @@ export const HCI = {
   DYNAMIC_SSHKEYS_USERS:        'harvesterhci.io/dynamic-ssh-key-users',
   IMAGE_SUFFIX:                 'harvesterhci.io/image-type',
   OS_TYPE:                      'harvesterhci.io/os-type',
+  STORAGE_PROVISIONER:          'harvesterhci.io/storageProvisioner',
   HOST_REQUEST:                 'management.cattle.io/pod-requests',
   STORAGE_CLASS:                'harvesterhci.io/storageClassName',
   STORAGE_NETWORK:              'storage-network.settings.harvesterhci.io',
