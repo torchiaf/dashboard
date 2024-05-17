@@ -2,6 +2,7 @@ name: Build Dashboard (Branch)
 on:
   push:
     branches:
+      - github-actions-*
       - master
       - 'release-*'
       - '*-dev'
