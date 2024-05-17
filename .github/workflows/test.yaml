@@ -2,10 +2,12 @@ name: Tests
 on:
   push:
     branches:
+      - github-actions-*
       - master
       - 'release-*'
   pull_request:
     branches:
+      - github-actions-*
       - master
       - 'release-*'
   workflow_dispatch:
@@ -14,17 +16,6 @@ on:
         description: 'Environment to run tests against'
         type: environment
         required: true
-
-env:
-  TEST_USERNAME: admin
-  TEST_PASSWORD: password
-  CATTLE_BOOTSTRAP_PASSWORD: password
-  TEST_BASE_URL: https://127.0.0.1:8005
-  API: https://127.0.0.1
-  TEST_PROJECT_ID: rancher-dashboard
-  CYPRESS_API_URL: http://139.59.134.103:1234/
-  TEST_RUN_ID: ${{github.run_number}}-${{github.run_attempt}}-${{github.event.pull_request.title || github.event.head_commit.message}}
-  CYPRESS_coverage: true
 
 jobs:
   # e2e-test:
