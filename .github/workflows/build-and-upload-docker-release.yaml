@@ -1,0 +1,55 @@
+name: Docker (Branch)
+
+on:
+  push:
+    tags:
+      - v[2-9].*
+
+env:
+  CI_BRANCH: ${{github.ref_name}}
+  GIT_REPO: ${{github.repository}}
+  GIT_COMMIT: ${{github.sha}}
+  REPO: ${{github.event.repository.name || ''}}
+  # dev-only, to remove registry (use docker hub)
+  REGISTRY: ghcr.io
+
+jobs:
+  build-validation:
+    name: Build Test
+    uses: ./.github/workflows/build-test.yaml
+  build-and-upload-docker-image:
+    name: Build & Upload
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    needs:
+      - build-validation
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - id: upload-gate
+        name: Upload Gate
+        run: ./scripts/build-upload-gate
+
+      - id: login-docker
+        name: Docker Log in
+        uses: docker/login-action@v3
+        with:
+          # dev-only, to remove registry
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: push-docker
+        name: Docker Build
+        uses: docker/build-push-action@v5
+        with:
+          provenance: false
+          context: .
+          push: true
+          # dev-only, to remove registry
+          tags: ${{ env.REGISTRY }}/${{ env.GIT_REPO }}:${{ env.CI_BRANCH }}

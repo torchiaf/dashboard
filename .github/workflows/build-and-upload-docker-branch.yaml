@@ -18,13 +18,18 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  build-validation:
+    name: Build Test
+    uses: ./.github/workflows/build-test.yaml
   build-and-upload-docker-image:
     name: Build & Upload
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-      pull-requests: write
+      id-token: write
+    needs:
+      - build-validation
     steps:
       - uses: actions/checkout@v4
         with:
