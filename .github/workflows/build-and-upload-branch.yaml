@@ -6,7 +6,7 @@ on:
       # dev-only to remove github-actions-*
       - github-actions-*
       - master
-      - 'release-*'
+      - 'release-harvester-v*'
       - '*-dev'
 
 jobs:
@@ -19,7 +19,8 @@ jobs:
     needs:
       - build-validation
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      packages: write
+      id-token: write
     with:
       CI_BRANCH: ${{github.ref_name}}

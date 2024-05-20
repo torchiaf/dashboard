@@ -21,7 +21,7 @@ env:
 
 jobs:
   build-and-upload-docker-image:
-    name: Build & Upload
+    name: Build & Upload Docker
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -78,11 +78,6 @@ jobs:
         name: Upload Gate (superseded by a newer build?)
         run: ./scripts/build-upload-gate
 
-      #   # Build a directory containing the dashboard that can be used with ui-dashboard-index
-      # - id: print-env
-      #   name: Build Hosted
-      #   run: echo ${{ steps.build-hosted.outputs.BUILD_HOSTED_LOCATION }}
-  
   #     - name: Get gcs auth
   #       uses: rancher-eio/read-vault-secrets@main
   #       with:
