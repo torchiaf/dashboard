@@ -23,14 +23,3 @@ jobs:
       id-token: 'write'
     with:
       CI_BRANCH: ${{github.ref_name}}
-  build-and-upload-docker-image:
-    name: Build and Upload Docker
-    uses: ./.github/workflows/build-and-upload-docker.yaml
-    needs:
-      - build-validation
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-    with:
-      CI_BRANCH: ${{github.ref_name}}
