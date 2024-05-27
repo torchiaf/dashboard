@@ -1,6 +1,6 @@
 import { clone } from '@shell/utils/object';
 import { HCI } from '../../types';
-import NetworkAttachmentDef from '@shell/models/k8s.cni.cncf.io.networkattachmentdefinition';
+import NetworkAttachmentDef from '@pkg/harvester/models/k8s.cni.cncf.io.networkattachmentdefinition';
 import { PRODUCT_NAME as HARVESTER_PRODUCT } from '../../config/harvester';
 
 const NOT_READY = 'Not Ready';
@@ -56,7 +56,7 @@ export default class HarvesterNetworkAttachmentDef extends NetworkAttachmentDef 
   get clusterNetworkResource() {
     const clusterNetworks = this.$rootGetters[`${ this.inStore }/all`](HCI.CLUSTER_NETWORK);
 
-    return clusterNetworks.find(c => c.id === this.clusterNetwork);
+    return clusterNetworks.find((c) => c.id === this.clusterNetwork);
   }
 
   get clusterNetworkErrorMessage() {

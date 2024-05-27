@@ -126,9 +126,9 @@ export default {
     },
 
     abnormalNetwork() {
-      const notReadyCrd = this.hostNetworks.filter( O => !O.isReady);
+      const notReadyCrd = this.hostNetworks.filter( (O) => !O.isReady);
 
-      return notReadyCrd.map( O => O.linkMessage);
+      return notReadyCrd.map( (O) => O.linkMessage);
     },
 
     filterRows() {
@@ -153,9 +153,9 @@ export default {
         :key="item.name"
         color="error"
       >
-        <nuxt-link :to="item.to">
+        <router-link :to="item.to">
           {{ item.name }}:
-        </nuxt-link>
+        </router-link>
         {{ item.message }}
       </Banner>
     </template>
