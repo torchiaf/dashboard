@@ -60,6 +60,7 @@ export default {
       newUsername:  '',
       randomStr:    randomStr(5).toLowerCase(),
       errors:       [],
+      isOpen:       false,
     };
   },
 
@@ -121,11 +122,11 @@ export default {
     },
 
     show() {
-      this.$modal.show(this.randomStr);
+      this.isOpen = true;
     },
 
     hide() {
-      this.$modal.hide(this.randomStr);
+      this.isOpen = false;
     },
 
     cancel() {
@@ -153,7 +154,7 @@ export default {
     />
 
     <ModalWithCard
-      :ref="randomStr"
+      v-if="isOpen"
       :name="randomStr"
       width="40%"
       :errors="errors"

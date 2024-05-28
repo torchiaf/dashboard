@@ -68,7 +68,8 @@ export default {
       randomStr:  randomStr(5).toLowerCase(),
       errors:     [],
       isAll:      false,
-      checkAll:   false
+      checkAll:   false,
+      isOpen:     false,
     };
   },
 
@@ -80,7 +81,7 @@ export default {
     },
 
     isCreatable() {
-      if ( this.schema && !this.schema?.collectionMethods.find(x => ['blocked-post', 'post'].includes(x.toLowerCase())) ) {
+      if ( this.schema && !this.schema?.collectionMethods.find((x) => ['blocked-post', 'post'].includes(x.toLowerCase())) ) {
         return false;
       }
 
@@ -134,11 +135,11 @@ export default {
 
   methods: {
     show() {
-      this.$modal.show(this.randomStr);
+      this.isOpen = true;
     },
 
     hide() {
-      this.$modal.hide(this.randomStr);
+      this.isOpen = false;
     },
 
     async createNamespaceIfNeeded() {
@@ -148,7 +149,7 @@ export default {
 
       const namespaces = await this.$store.dispatch('harvester/findAll', { type: NAMESPACE });
 
-      const exists = namespaces?.find(n => n.name === this.namespace);
+      const exists = namespaces?.find((n) => n.name === this.namespace);
 
       if (!exists) {
         const ns = await this.$store.dispatch('harvester/createNamespace', { name: this.namespace }, { root: true });
@@ -250,7 +251,7 @@ export default {
     />
 
     <ModalWithCard
-      :ref="randomStr"
+      v-if="isOpen"
       :name="randomStr"
       width="40%"
       :errors="errors"

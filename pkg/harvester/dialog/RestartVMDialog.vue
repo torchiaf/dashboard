@@ -42,28 +42,49 @@ export default {
 </script>
 
 <template>
-  <modal
+  <app-modal
     class="restart-modal"
     name="restartDialog"
     :width="600"
     height="auto"
     :click-to-close="false"
-    @closed="close"
+    @close="close"
   >
-    <Card class="prompt-restart" :show-highlight-border="false">
-      <h4 slot="title" v-clean-html="t('harvester.modal.restart.title')" class="text-default-text" />
+    <Card
+      class="prompt-restart"
+      :show-highlight-border="false"
+    >
+      <h4
+        slot="title"
+        v-clean-html="t('harvester.modal.restart.title')"
+        class="text-default-text"
+      />
 
       <template slot="body">
         <slot name="body">
-          <div v-clean-html="t('harvester.modal.restart.tip')" class="pl-10 pr-10">
+          <div
+            v-clean-html="t('harvester.modal.restart.tip')"
+            class="pl-10 pr-10"
+          >
           </div>
         </slot>
       </template>
 
-      <div slot="actions" class="bottom">
-        <Banner v-for="(err, i) in errors" :key="i" color="error" :label="err" />
+      <div
+        slot="actions"
+        class="bottom"
+      >
+        <Banner
+          v-for="(err, i) in errors"
+          :key="i"
+          color="error"
+          :label="err"
+        />
         <div class="buttons">
-          <button class="btn role-secondary mr-10" @click="close">
+          <button
+            class="btn role-secondary mr-10"
+            @click="close"
+          >
             {{ t('harvester.modal.restart.cancel') }}
           </button>
 
@@ -74,7 +95,7 @@ export default {
         </div>
       </div>
     </Card>
-  </modal>
+  </app-modal>
 </template>
 <style lang='scss' scoped>
   .restart-modal {

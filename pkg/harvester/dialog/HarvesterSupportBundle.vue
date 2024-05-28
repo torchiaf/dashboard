@@ -6,6 +6,7 @@ import { LabeledInput } from '@components/Form/LabeledInput';
 import AsyncButton from '@shell/components/AsyncButton';
 import GraphCircle from '@shell/components/graph/Circle';
 import { Banner } from '@components/Banner';
+import AppModal from '~/shell/components/AppModal.vue';
 
 export default {
   name: 'SupportBundle',
@@ -15,6 +16,7 @@ export default {
     GraphCircle,
     AsyncButton,
     Banner,
+    AppModal,
   },
 
   data() {
@@ -22,6 +24,7 @@ export default {
       url:         '',
       description: '',
       errors:      [],
+      isOpen:      false,
     };
   },
 
@@ -44,10 +47,10 @@ export default {
       handler(show) {
         if (show) {
           this.$nextTick(() => {
-            this.$modal.show('bundle-modal');
+            this.isOpen = true;
           });
         } else {
-          this.$modal.hide('bundle-modal');
+          this.isOpen = false;
           this.url = '';
           this.description = '';
         }
@@ -103,7 +106,8 @@ export default {
 
 <template>
   <div class="bundleModal">
-    <modal
+    <app-modal
+      v-if="isOpen"
       name="bundle-modal"
       :click-to-close="false"
       :width="550"
@@ -176,7 +180,7 @@ export default {
           />
         </div>
       </div>
-    </modal>
+    </app-modal>
   </div>
 </template>
 

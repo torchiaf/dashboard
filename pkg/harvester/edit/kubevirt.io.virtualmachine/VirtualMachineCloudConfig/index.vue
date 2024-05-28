@@ -49,7 +49,8 @@ export default {
       configUserId:      '',
       configNetworkId:   '',
       optionUser:        [],
-      optionNetwork:     []
+      optionNetwork:     [],
+      isOpen:            false
     };
   },
 
@@ -128,7 +129,7 @@ export default {
 
     show(templateType) {
       this.templateType = templateType;
-      this.$modal.show('createCloudTemplate');
+      this.isOpen = true;
     },
 
     async save(buttonCb) {
@@ -179,7 +180,7 @@ export default {
       this.cloudTemplate = '';
       this.cloudTemplateName = '';
       this.$set(this, 'errors', []);
-      this.$modal.hide('createCloudTemplate');
+      this.isOpen = false;
     },
 
     refresh() {
@@ -226,7 +227,7 @@ export default {
     </div>
 
     <ModalWithCard
-      ref="createCloudTemplate"
+      v-if="isOpen"
       name="createCloudTemplate"
       width="40%"
       :errors="errors"
