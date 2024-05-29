@@ -277,6 +277,7 @@ export default {
     :can-yaml="showEditAsYaml ? true : false"
     :apply-hooks="applyHooks"
     @finish="saveImage"
+    @error="e=>errors=e"
   >
     <NameNsDescription
       ref="nd"
