@@ -19,7 +19,7 @@ export default {
   },
 
   computed: {
-    state() {
+    diskState() {
       const longhornDisks = this.row?.longhornDisks || [];
       const out = longhornDisks.reduce((state, disk) => {
         if (disk?.readyCondition?.status !== 'True' || disk?.schedulableCondition?.status !== 'True') {
@@ -33,11 +33,11 @@ export default {
     },
 
     stateDisplay() {
-      return stateDisplay(this.state);
+      return stateDisplay(this.diskState);
     },
 
     stateBackground() {
-      if ( this.state === ACTIVE ) {
+      if ( this.diskState === ACTIVE ) {
         return 'bg-success';
       } else {
         return 'bg-warning';
@@ -45,7 +45,7 @@ export default {
     },
 
     errorMessage() {
-      if (this.state !== ACTIVE) {
+      if (this.diskState !== ACTIVE) {
         return this.t('harvester.host.disk.error');
       }
 
@@ -86,7 +86,10 @@ export default {
       </span>
 
       <template slot="popover">
-        <p v-for="(message, index) in warningMessage" :key="message">
+        <p
+          v-for="(message, index) in warningMessage"
+          :key="message"
+        >
           {{ index + 1 }}. {{ message }}
         </p>
       </template>
