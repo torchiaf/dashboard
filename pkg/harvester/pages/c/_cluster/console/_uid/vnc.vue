@@ -4,8 +4,6 @@ import NovncConsoleWrapper from '../../../../../components/novnc/NovncConsoleWra
 import Loading from '@shell/components/Loading';
 
 export default {
-  layout: 'blank',
-
   components: { NovncConsoleWrapper, Loading },
 
   async fetch() {
@@ -42,7 +40,12 @@ export default {
 
 <template>
   <Loading v-if="$fetchState.pending" />
-  <NovncConsoleWrapper v-else ref="console" v-model="vmi" class="novnc-wrapper" />
+  <NovncConsoleWrapper
+    v-else
+    ref="console"
+    v-model="vmi"
+    class="novnc-wrapper"
+  />
 </template>
 
 <style>

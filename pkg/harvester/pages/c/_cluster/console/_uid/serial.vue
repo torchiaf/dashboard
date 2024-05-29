@@ -4,8 +4,6 @@ import SerialConsole from '../../../../../components/SerialConsole';
 import Loading from '@shell/components/Loading';
 
 export default {
-  layout: 'blank',
-
   components: { SerialConsole, Loading },
 
   async fetch() {
@@ -41,7 +39,11 @@ export default {
 
 <template>
   <Loading v-if="$fetchState.pending" />
-  <SerialConsole v-else ref="serialConsole" v-model="vmi" />
+  <SerialConsole
+    v-else
+    ref="serialConsole"
+    v-model="vmi"
+  />
 </template>
 
 <style lang="scss" scoped>
