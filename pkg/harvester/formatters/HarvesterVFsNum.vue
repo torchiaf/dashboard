@@ -25,10 +25,10 @@ export default {
 
 <template>
   <div class="vfs-num">
-    <n-link
+    <router-link
       :to="to"
     >
       {{ row.numVFs }}
-    </n-link>
+    </router-link>
   </div>
 </template>

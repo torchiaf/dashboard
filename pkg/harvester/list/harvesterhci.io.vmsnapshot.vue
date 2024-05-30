@@ -34,7 +34,7 @@ export default {
 
     const schema = this.$store.getters[`${ inStore }/schemaFor`](HCI.BACKUP);
 
-    if (!schema?.collectionMethods.find(x => x.toLowerCase() === 'post')) {
+    if (!schema?.collectionMethods.find((x) => x.toLowerCase() === 'post')) {
       this.$store.dispatch('type-map/configureType', { match: HCI.VM_SNAPSHOT, isCreatable: false });
     }
 
@@ -85,7 +85,7 @@ export default {
     },
 
     filteredRows() {
-      return this.rows.filter(R => R.spec?.type !== BACKUP_TYPE.BACKUP);
+      return this.rows.filter((R) => R.spec?.type !== BACKUP_TYPE.BACKUP);
     },
   },
 };
@@ -114,12 +114,12 @@ export default {
       <template #col:name="{row}">
         <td>
           <span>
-            <n-link
+            <router-link
               v-if="row.status && row.status.source"
               :to="row.detailLocation"
             >
               {{ row.nameDisplay }}
-            </n-link>
+            </router-link>
             <span v-else>
               {{ row.nameDisplay }}
             </span>

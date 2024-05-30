@@ -45,12 +45,15 @@ export default {
 
 <template>
   <div class="vgpudevices">
-    <span v-for="(vgpu, index) in rows.visible" :key="vgpu.name">
-      <n-link
+    <span
+      v-for="(vgpu, index) in rows.visible"
+      :key="vgpu.name"
+    >
+      <router-link
         :to="vgpu.to"
       >
         {{ vgpu.name }}
-      </n-link>
+      </router-link>
 
       <span v-if="index < rows.visible.length - 1">, </span>
     </span>
@@ -72,12 +75,15 @@ export default {
       <template v-slot:popover>
         <div class="vgpu-popup">
           <div>
-            <span v-for="(vgpu, index) in rows.invisible" :key="vgpu.name">
-              <n-link
+            <span
+              v-for="(vgpu, index) in rows.invisible"
+              :key="vgpu.name"
+            >
+              <router-link
                 :to="vgpu.to"
               >
                 {{ vgpu.name }}
-              </n-link>
+              </router-link>
 
               <span v-if="index < rows.invisible.length - 1">, </span>
             </span>

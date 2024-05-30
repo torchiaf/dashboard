@@ -298,9 +298,9 @@ export default {
                 v-if="volume.to && isVirtualType"
                 class="title"
               >
-                <n-link :to="volume.to">
+                <router-link :to="volume.to">
                   {{ t('harvester.virtualMachine.volume.edit') }} {{ headerFor(volume.source) }}
-                </n-link>
+                </router-link>
 
                 <BadgeStateFormatter
                   v-if="volume.pvc"

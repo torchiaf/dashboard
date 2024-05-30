@@ -35,7 +35,7 @@ export default {
     this.settings = hash.settings;
 
     if (this.$store.getters[`${ inStore }/schemaFor`](HCI.SETTING)) {
-      const backupTargetResource = hash.settings.find( O => O.id === 'backup-target');
+      const backupTargetResource = hash.settings.find( (O) => O.id === 'backup-target');
       const isEmpty = this.getBackupTargetValueIsEmpty(backupTargetResource);
 
       if (backupTargetResource && !isEmpty) {
@@ -134,15 +134,15 @@ export default {
     },
 
     hasBackupProgresses() {
-      return !!this.rows.find(R => R.status?.progress !== undefined);
+      return !!this.rows.find((R) => R.status?.progress !== undefined);
     },
 
     filteredRows() {
-      return this.rows.filter(R => R.spec?.type !== BACKUP_TYPE.SNAPSHOT);
+      return this.rows.filter((R) => R.spec?.type !== BACKUP_TYPE.SNAPSHOT);
     },
 
     backupTargetResource() {
-      return this.settings.find( O => O.id === 'backup-target');
+      return this.settings.find( (O) => O.id === 'backup-target');
     },
 
     isEmptyValue() {
@@ -219,12 +219,12 @@ export default {
       <template #col:name="{row}">
         <td>
           <span>
-            <n-link
+            <router-link
               v-if="row.status && row.status.source"
               :to="row.detailLocation"
             >
               {{ row.nameDisplay }}
-            </n-link>
+            </router-link>
             <span v-else>
               {{ row.nameDisplay }}
             </span>

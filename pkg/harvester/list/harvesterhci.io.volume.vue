@@ -50,7 +50,7 @@ export default {
 
     const pvcSchema = this.$store.getters[`${ inStore }/schemaFor`](PVC);
 
-    if (!pvcSchema?.collectionMethods.find(x => x.toLowerCase() === 'post')) {
+    if (!pvcSchema?.collectionMethods.find((x) => x.toLowerCase() === 'post')) {
       this.$store.dispatch('type-map/configureType', { match: HCI.VOLUME, isCreatable: false });
     }
 
@@ -146,16 +146,28 @@ export default {
     key-field="_key"
     v-on="$listeners"
   >
-    <template slot="cell:state" slot-scope="scope">
+    <template
+      slot="cell:state"
+      slot-scope="scope"
+    >
       <div class="state">
-        <HarvesterVolumeState class="vmstate" :row="scope.row" />
+        <HarvesterVolumeState
+          class="vmstate"
+          :row="scope.row"
+        />
       </div>
     </template>
-    <template slot="cell:AttachedVM" slot-scope="scope">
+    <template
+      slot="cell:AttachedVM"
+      slot-scope="scope"
+    >
       <div>
-        <n-link v-if="getVMName(scope.row)" :to="goTo(scope.row)">
+        <router-link
+          v-if="getVMName(scope.row)"
+          :to="goTo(scope.row)"
+        >
           {{ getVMName(scope.row) }}
-        </n-link>
+        </router-link>
       </div>
     </template>
   </ResourceTable>

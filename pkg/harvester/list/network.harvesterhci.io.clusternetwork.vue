@@ -50,7 +50,7 @@ export default {
           name:     'type',
           labelKey: 'tableHeaders.type',
           value:    'typeDisplay',
-          getValue: row => row.typeDisplay,
+          getValue: (row) => row.typeDisplay,
           sort:     ['typeDisplay'],
         },
         AGE,
@@ -99,7 +99,7 @@ export default {
       const clusterNetworks = this.$store.getters[`${ inStore }/all`](HCI.CLUSTER_NETWORK);
 
       const out = clusterNetworks.map((network) => {
-        const hasChild = !!this.rows.find(config => config?.spec?.clusterNetwork === network.id);
+        const hasChild = !!this.rows.find((config) => config?.spec?.clusterNetwork === network.id);
 
         return {
           ...network,
@@ -211,13 +211,13 @@ export default {
             </div>
 
             <div class="right">
-              <n-link
+              <router-link
                 v-if="isClusterNetworkCreatable && group.key !== 'mgmt'"
                 class="btn btn-sm role-secondary mr-5"
                 :to="createVlanConfigLocation(group)"
               >
                 {{ t('harvester.vlanConfig.createNetworkConfig') }}
-              </n-link>
+              </router-link>
               <button
                 type="button"
                 class="btn btn-sm role-multi-action actions mr-10"
@@ -229,13 +229,19 @@ export default {
             </div>
           </div>
         </template>
-        <template v-for="clusterNetwork in clusterNetworkWithoutConfigs" v-slot:[slotName(clusterNetwork.id)]>
+        <template
+          v-for="clusterNetwork in clusterNetworkWithoutConfigs"
+          v-slot:[slotName(clusterNetwork.id)]
+        >
           <tr
             v-show="!clusterNetwork.hasChild"
             :key="clusterNetwork.id"
             class="main-row"
           >
-            <td class="empty text-center" colspan="12">
+            <td
+              class="empty text-center"
+              colspan="12"
+            >
               {{ clusterNetwork.id === 'mgmt' ? t('harvester.clusterNetwork.mgmt') : t('harvester.clusterNetwork.clusterNetwork') }}
             </td>
           </tr>

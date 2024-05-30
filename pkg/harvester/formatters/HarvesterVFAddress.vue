@@ -47,12 +47,15 @@ export default {
 
 <template>
   <div class="vfs">
-    <span v-for="(vf, index) in rows.visible" :key="vf.name">
-      <n-link
+    <span
+      v-for="(vf, index) in rows.visible"
+      :key="vf.name"
+    >
+      <router-link
         :to="vf.to"
       >
         {{ vf.name }}
-      </n-link>
+      </router-link>
 
       <span v-if="index < rows.visible.length - 1">, </span>
     </span>
@@ -74,12 +77,15 @@ export default {
       <template v-slot:popover>
         <div class="vfs-popup">
           <div>
-            <span v-for="(vf, index) in rows.invisible" :key="vf.name">
-              <n-link
+            <span
+              v-for="(vf, index) in rows.invisible"
+              :key="vf.name"
+            >
+              <router-link
                 :to="vf.to"
               >
                 {{ vf.name }}
-              </n-link>
+              </router-link>
 
               <span v-if="index < rows.invisible.length - 1">, </span>
             </span>

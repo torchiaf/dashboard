@@ -23,7 +23,7 @@ export default {
 
   computed: {
     vm() {
-      const vm = this.vmList.find( V => V.id === `${ this.row.metadata.namespace }/${ this.value }`);
+      const vm = this.vmList.find( (V) => V.id === `${ this.row.metadata.namespace }/${ this.value }`);
 
       return vm;
     },
@@ -36,9 +36,12 @@ export default {
 </script>
 
 <template>
-  <n-link v-if="to" :to="to">
+  <router-link
+    v-if="to"
+    :to="to"
+  >
     {{ value }}
-  </n-link>
+  </router-link>
 
   <span v-else>
     {{ value }}

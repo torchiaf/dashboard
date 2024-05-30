@@ -22,7 +22,7 @@ export default {
   computed: {
     volume() {
       const namespace = this.row?.metadata?.namespace;
-      const volume = this.volumeList.find( V => V.id === `${ namespace }/${ this.value }`) || {};
+      const volume = this.volumeList.find( (V) => V.id === `${ namespace }/${ this.value }`) || {};
 
       return volume;
     },
@@ -33,9 +33,12 @@ export default {
 };
 </script>
 <template>
-  <n-link v-if="to" :to="to">
+  <router-link
+    v-if="to"
+    :to="to"
+  >
     {{ value }}
-  </n-link>
+  </router-link>
   <span v-else>
     {{ value }}
   </span>
