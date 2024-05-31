@@ -38,4 +38,8 @@ echo "Package Directory: ${PKG_NAME}"
 echo "Package Tarball: ${PKG_TARBALL}"
 echo "Tag Package: ${PKG_TAG_VERSION} ${PKG_TAG_TARBALL}"
 
+ENV_OUTPUT="${GITHUB_OUTPUT:-"temp-env"}"
+echo "PKG_TARBALL=${PKG_TARBALL}" >> "$ENV_OUTPUT"
+echo "PKG_NAME=${PKG_NAME}" >> "$ENV_OUTPUT"
+
 exit $EXIT_CODE
