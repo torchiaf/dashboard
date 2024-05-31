@@ -27,16 +27,17 @@ fi
 
 EXIT_CODE=$?
 
-export PKG_NAME=${1}-${VERSION}
-export PKG_TARBALL=${PKG_NAME}.tar.gz
-
-export PKG_TAG_VERSION=${1}-${TAG_VERSION}
-export PKG_TAG_TARBALL=${TAG_VERSION}.tar.gz
+if [ -n "$GIT_TAG" ]; then
+  export PKG_NAME=${1}-${CI_BUILD_TAG}
+  export PKG_TARBALL=${PKG_NAME}.tar.gz
+else
+  export PKG_NAME=${1}-${VERSION}
+  export PKG_TARBALL=${PKG_NAME}.tar.gz
+fi
 
 echo "CI Build Artefacts"
 echo "Package Directory: ${PKG_NAME}"
 echo "Package Tarball: ${PKG_TARBALL}"
-echo "Tag Package: ${PKG_TAG_VERSION} ${PKG_TAG_TARBALL}"
 
 ENV_OUTPUT="${GITHUB_OUTPUT:-"temp-env"}"
 echo "PKG_TARBALL=${PKG_TARBALL}" >> "$ENV_OUTPUT"
