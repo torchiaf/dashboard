@@ -1,5 +1,5 @@
 name: Setup UI Env
-description: Setup node, python and call bootstrap script
+description: Setup node and call bootstrap script
 
 runs:
   using: 'composite'
