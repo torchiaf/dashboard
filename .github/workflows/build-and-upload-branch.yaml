@@ -3,8 +3,6 @@ name: Build Dashboard (Branch)
 on:
   push:
     branches:
-      # dev-only to remove drone-migration
-      - drone-migration
       - master
       - 'release-harvester-v*'
       - '*-dev'
