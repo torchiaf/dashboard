@@ -592,6 +592,8 @@ export default {
   <section v-else>
     <HarvesterUpgrade />
 
+    <span style="color: red;"> DRONE MIGRATION TAG TEST </span>
+
     <div
       class="cluster-dashboard-glance"
     >
