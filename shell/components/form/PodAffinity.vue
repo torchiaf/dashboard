@@ -223,6 +223,14 @@ export default {
     hasNamespaces() {
       return this.allNamespacesOptions.length;
     },
+
+    namespaceModeLabel() {
+      return this.overwriteNsModeLabel || [this.t('workload.scheduling.affinity.thisPodNamespace'), this.t('workload.scheduling.affinity.matchExpressions.inNamespaces')];
+    },
+
+    namespaceLabel() {
+      return this.overwriteNsModeLabel?.[2] || this.t('workload.scheduling.affinity.matchExpressions.inNamespaces');
+    }
   },
 
   created() {
