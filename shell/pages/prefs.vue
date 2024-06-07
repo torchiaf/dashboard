@@ -262,7 +262,10 @@ export default {
       </div>
     </div>
     <!-- Confirmation setting -->
-    <div class="col adv-features mt-10 mb-10">
+    <div
+      v-if="!isSingleProduct"
+      class="col adv-features mt-10 mb-10"
+    >
       <hr>
       <h4 v-t="'prefs.confirmationSetting.title'" />
       <Checkbox
@@ -282,13 +285,13 @@ export default {
         :label="t('prefs.advFeatures.viewInApi', {}, true)"
         class="mt-10"
       />
-      <br>
+      <!-- <br>
       <Checkbox
         v-model="allNamespaces"
         data-testid="prefs__allNamespaces"
         :label="t('prefs.advFeatures.allNamespaces', {}, true)"
         class="mt-20"
-      />
+      /> -->
       <br>
       <Checkbox
         v-model="themeShortcut"
@@ -296,14 +299,18 @@ export default {
         :label="t('prefs.advFeatures.themeShortcut', {}, true)"
         class="mt-20"
       />
-      <br>
-      <Checkbox
-        v-if="!isSingleProduct"
-        v-model="hideDescriptions"
-        data-testid="prefs__hideDescriptions"
-        :label="t('prefs.hideDesc.label')"
-        class="mt-20"
-      />
+
+      <template v-if="!isSingleProduct">
+        <br>
+        <Checkbox
+
+          v-model="hideDescriptions"
+          data-testid="prefs__hideDescriptions"
+          :label="t('prefs.hideDesc.label')"
+          class="mt-20"
+        />
+      </template>
+
       <template v-if="admin">
         <br>
         <Checkbox

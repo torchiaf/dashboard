@@ -7,8 +7,7 @@ import VueSelectOverrides from '@shell/mixins/vue-select-overrides';
 import { onClickOption, calculatePosition } from '@shell/utils/select';
 import LabeledSelectPagination from '@shell/components/form/labeled-select-utils/labeled-select-pagination';
 import { LABEL_SELECT_NOT_OPTION_KINDS } from '@shell/types/components/labeledSelect';
-
-// In theory this would be nicer as LabeledSelect/index.vue, however that would break a lot of places where we import this (which includes extensions)
+import { mapGetters } from 'vuex';
 
 export default {
   name: 'LabeledSelect',
@@ -113,6 +112,7 @@ export default {
   },
 
   computed: {
+    ...mapGetters({ t: 'i18n/t' }),
     hasLabel() {
       return this.isCompact ? false : !!this.label || !!this.labelKey || !!this.$slots.label;
     },
@@ -125,6 +125,11 @@ export default {
     _options() {
       // If we're paginated show the page as provided by `paginate`. See label-select-pagination mixin
       return this.canPaginate ? this.page : this.options;
+    },
+
+    // update placeholder text to inform user they can add their own opts when none are found
+    showTagPrompts() {
+      return !this.options.length && this.$attrs.taggable;
     }
   },
 
@@ -298,10 +303,16 @@ export default {
       @search="onSearch"
       @open="onOpen"
       @close="onClose"
-      @option:selected="$emit('selecting', $event)"
+      @option:selecting="$emit('selecting', $event)"
+      @option:deselecting="$emit('deselecting', $event)"
     >
       <template #option="option">
-        <template v-if="option.kind === 'group'">
+        <template v-if="showTagPrompts">
+          <div class="only-user-opts">
+            {{ t('labeledSelect.pressEnter', {input:getOptionLabel(option.label)}) }}
+          </div>
+        </template>
+        <template v-else-if="option.kind === 'group'">
           <div class="vs__option-kind-group">
             <i
               v-if="option.icon"
@@ -335,6 +346,12 @@ export default {
             style="font-size: 20px;"
           />
         </div>
+      </template>
+      <template
+        v-if="showTagPrompts"
+        v-slot:no-options="{ searching }"
+      >
+        <span v-if="!searching">{{ t('labeledSelect.startTyping') }}</span>
       </template>
       <!-- Pass down templates provided by the caller -->
       <template
@@ -487,6 +504,7 @@ export default {
 
   &.taggable {
     ::v-deep .vs__selected-options {
+
       padding: 3px 0;
       .vs__selected {
         border-color: var(--accent-btn);
@@ -650,4 +668,10 @@ $icon-size: 18px;
   }
 }
 
+.vs__dropdown-menu .vs__dropdown-option .only-user-opts{
+    color: var(--dropdown-text);
+    background-color: var(--dropdown-bg);
+    margin: 0px calc(-#{$input-padding-sm}/2);
+    padding: 3px 20px;
+}
 </style>
