@@ -648,7 +648,6 @@ export default {
           :value="filteredLabels"
           :add-label="t('labels.addLabel')"
           :mode="mode"
-          :title="t('labels.labels.title')"
           :read-allowed="false"
           :value-can-be-empty="true"
           @input="updateHostLabels"
