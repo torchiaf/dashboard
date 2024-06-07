@@ -6,7 +6,7 @@ import { uniq } from '@shell/utils/array';
 import {
   CONFIG_MAP, MANAGEMENT, NAMESPACE, NODE, POD
 } from '@shell/config/types';
-import { Schema } from 'plugins/steve/schema';
+import { Schema } from '@shell/plugins/steve/schema';
 
 class NamespaceProjectFilters {
   /**
@@ -313,7 +313,7 @@ class StevePaginationUtils extends NamespaceProjectFilters {
     // Then check in schema (the api automatically supports these)
     if (!!schema?.attributes.columns.find(
       // This isn't the most performant, but the string is tiny
-      (at) => at.field.replace('$.', '').replace('[', '.').replace(']', '') === field
+      (at: any) => at.field.replace('$.', '').replace('[', '.').replace(']', '') === field
     )) {
       return;
     }
