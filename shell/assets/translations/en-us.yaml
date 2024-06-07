@@ -26,6 +26,7 @@ generic:
   id: ID
   ignored: Ignored
   invalidCron: Invalid cron schedule
+  inProgress: In Progress
   imagePullPolicy:
     always: Always
     ifNotPresent: IfNotPresent
@@ -111,6 +112,7 @@ generic:
           =1 {Matches 1 of {total, number}: "{sample}"}
           other {Matches {matched, number} of {total, number}, including "{sample}"}
         }
+  basic: Basic
 
 locale:
   en-us: English
@@ -2980,6 +2982,10 @@ labelSelect:
   pagination:
     counts: '{count} / {totalCount} items'
     more: Load More...
+labeledSelect:
+  startTyping: Start typing to define an item
+  pressEnter: Press enter to add "{input}"
+
 landing:
   clusters:
     title: Clusters
@@ -3227,6 +3233,9 @@ logging:
       certificate: Connection
       labels: Labels
       configuration: Configuration
+    tips:
+      singleProvider: This output is configured with multiple providers. We currently only support a single provider per output. You can view or edit the YAML.
+      multipleProviders: This output is configured with providers we don't support yet. You can view or edit the YAML.
   outputProviders:
     elasticsearch: Elasticsearch
     opensearch: OpenSearch
@@ -4993,6 +5002,7 @@ resourceTable:
     node: Group by Node
     role: Group by Role
     cluster: Group by Cluster
+    device: Group by Device
   groupLabel:
     cluster: "<span>Cluster:</span> {name}"
     notInACluster: Not in a Cluster
@@ -5788,6 +5798,7 @@ tableHeaders:
   resourcesReady: Resources Ready
   restarts: Restarts
   restart: Restart Required
+  restore: Restore
   role: Role
   roles: Roles
   routes: Routes
@@ -6034,6 +6045,7 @@ validation:
   required: '"{key}" is required'
   invalid: '"{key}" is invalid'
   requiredOrOverride: '"{key}" is required or must allow override'
+  arrayCountRequired: "At least {count} {key} {count, plural, =1 {is} other {are}} required, and {key} can not be empty."
   roleTemplate:
     roleTemplateRules:
       missingVerb: You must specify at least one verb for each resource grant
@@ -7778,7 +7790,9 @@ auth:
     label: Auth Provider
 vncConsole:
   error:
-    message: Web VNC console connection is disconnected
+    message: Web VNC console is disconnected
+  reconnecting:
+    message: Web VNC console reconnection attempt
 
 gitPicker:
   github:
