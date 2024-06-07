@@ -50,7 +50,7 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(['currentCluster']),
+    ...mapGetters(['currentCluster', 'isStandaloneHarvester']),
 
     canViewMembers() {
       return canViewProjectMembershipEditor(this.$store);
@@ -216,7 +216,7 @@ export default {
         <ResourceQuota
           :value="value"
           :mode="canEditTabElements"
-          :types="isHarvester ? HARVESTER_TYPES : RANCHER_TYPES"
+          :types="isStandaloneHarvester ? HARVESTER_TYPES : RANCHER_TYPES"
           @remove="removeQuota"
         />
       </Tab>

@@ -141,7 +141,6 @@ export default {
       type:    Function,
       default: null
     },
-
     ignoreFilter: {
       type:    Boolean,
       default: false
@@ -181,7 +180,12 @@ export default {
     externalPaginationResult: {
       type:    Object,
       default: null
-    }
+    },
+
+    rowsPerPage: {
+      type:    Number,
+      default: null, // Default comes from the user preference
+    },
   },
 
   mounted() {
@@ -431,13 +435,16 @@ export default {
           tooltipKey: 'resourceTable.groupBy.none',
           icon:       'icon-list-flat',
           value:      'none',
-        },
-        {
+        }
+      ];
+
+      if (!this.options?.hiddenNamespaceGroupButton) {
+        standard.push( {
           tooltipKey: this.groupTooltip,
           icon:       'icon-folder',
           value:      'namespace',
-        },
-      ];
+        });
+      }
 
       // SUPPLEMENT (instead of REPLACE) defaults with listGroups (given listGroupsWillOverride is false)
       if (!!this.options?.listGroups?.length) {
@@ -545,6 +552,7 @@ export default {
     :paging="true"
     :paging-params="parsedPagingParams"
     :paging-label="pagingLabel"
+    :rows-per-page="rowsPerPage"
     :row-actions="rowActions"
     :table-actions="_showBulkActions"
     :overflow-x="overflowX"
