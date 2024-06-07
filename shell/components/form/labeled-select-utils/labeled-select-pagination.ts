@@ -2,6 +2,7 @@ import { debounce } from 'lodash';
 import { PropType, defineComponent } from 'vue';
 import { ComputedOptions, MethodOptions } from 'vue/types/v3-component-options';
 import { LabelSelectPaginateFn, LABEL_SELECT_NOT_OPTION_KINDS, LABEL_SELECT_KINDS } from '@shell/types/components/labeledSelect';
+import { Store } from 'vuex';
 
 interface Props {
   paginate?: LabelSelectPaginateFn
@@ -86,7 +87,7 @@ export default defineComponent<Props, any, Data, Computed, Methods>({
 
   computed: {
     canPaginate() {
-      return !!this.paginate && !!this.resourceType && this.$store.getters[`${ this.inStore }/paginationEnabled`](this.resourceType);
+      return !!this.paginate && !!this.resourceType && (this.$store as Store<any>).getters[`${ this.inStore }/paginationEnabled`](this.resourceType);
     },
 
     canLoadMore() {
@@ -95,7 +96,7 @@ export default defineComponent<Props, any, Data, Computed, Methods>({
 
     optionsInPage() {
       // Number of genuine options (not groups, dividers, etc)
-      return this.canPaginate ? this._options.filter((o: any) => {
+      return this.canPaginate ? (this._options as any[]).filter((o: any) => {
         return o.kind !== LABEL_SELECT_KINDS.NONE && !LABEL_SELECT_NOT_OPTION_KINDS.includes(o.kind);
       }).length : 0;
     },
@@ -105,7 +106,7 @@ export default defineComponent<Props, any, Data, Computed, Methods>({
         return '';
       }
 
-      return this.$store.getters['i18n/t']('labelSelect.pagination.counts', {
+      return (this.$store as Store<any>).getters['i18n/t']('labelSelect.pagination.counts', {
         count:      this.optionsInPage,
         totalCount: this.totalResults
       });
