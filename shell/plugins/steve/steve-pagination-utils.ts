@@ -6,7 +6,7 @@ import { uniq } from '@shell/utils/array';
 import {
   CONFIG_MAP, MANAGEMENT, NAMESPACE, NODE, POD
 } from '@shell/config/types';
-import { Schema } from 'plugins/steve/schema';
+import { Schema } from '@shell/plugins/steve/schema';
 
 class NamespaceProjectFilters {
   /**
@@ -15,7 +15,7 @@ class NamespaceProjectFilters {
   protected handlePrefAndSettingFilter(allNamespaces: Namespace[], showDynamicRancherNamespaces: boolean, productHidesSystemNamespaces: boolean): PaginationParamFilter[] {
     // These are AND'd together
     // Not ns 1 AND ns 2
-    return allNamespaces.reduce((res, ns) => {
+    return allNamespaces.reduce((res, ns: any) => {
       // Links to ns.isObscure and covers things like `c-`, `user-`, etc (see OBSCURE_NAMESPACE_PREFIX)
       const hideObscure = showDynamicRancherNamespaces ? false : ns.isObscure;
       // Links to ns.isSystem and covers things like ns with system annotation, hardcoded list, etc
@@ -39,7 +39,7 @@ class NamespaceProjectFilters {
    * Users resources are those not in system namespaces
    */
   protected handleSystemOrUserFilter(allNamespaces: Namespace[], isAllSystem: boolean, isAllUser: boolean) {
-    const allSystem = allNamespaces.filter((ns) => ns.isSystem);
+    const allSystem = allNamespaces.filter((ns: any) => ns.isSystem);
 
     // > Neither of these use projectsOrNamespaces to avoid scenarios where the local cluster provides a namespace which has
     // > a matching project... which could lead to results in the user project resource being included in the system filter
@@ -48,13 +48,13 @@ class NamespaceProjectFilters {
       // &filter=metadata.namespace=system ns 1,metadata.namespace=system ns 2
       return [PaginationParamFilter.createMultipleFields(
         allSystem.map(
-          (ns) => new PaginationFilterField({ field: 'metadata.namespace', value: ns.name })
+          (ns: any) => new PaginationFilterField({ field: 'metadata.namespace', value: ns.name })
         )
       )];
     } else { // if isAllUser
       // return resources not in system ns 1 AND not in system ns 2 ...
       // &filter=metadata.namespace!=system ns 1&filter=metadata.namespace!=system ns 2
-      return allSystem.map((ns) => PaginationParamFilter.createSingleField({
+      return allSystem.map((ns: any) => PaginationParamFilter.createSingleField({
         field: 'metadata.namespace', value: ns.name, equals: false
       }));
     }
@@ -313,7 +313,7 @@ class StevePaginationUtils extends NamespaceProjectFilters {
     // Then check in schema (the api automatically supports these)
     if (!!schema?.attributes.columns.find(
       // This isn't the most performant, but the string is tiny
-      (at) => at.field.replace('$.', '').replace('[', '.').replace(']', '') === field
+      (at: any) => at.field.replace('$.', '').replace('[', '.').replace(']', '') === field
     )) {
       return;
     }
