@@ -61,7 +61,7 @@ export default {
       window.open(
         url,
         '_blank',
-        'toolbars=0,width=900,height=700,left=0,top=0,noreferrer'
+        `toolbars=0,width=${ screen.width - 200 },height=${ screen.height - 200 },left=0,top=0,noreferrer`
       );
     },
 
