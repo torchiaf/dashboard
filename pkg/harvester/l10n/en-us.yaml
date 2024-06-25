@@ -433,9 +433,7 @@ harvester:
       placeholder: e.g. IPv4
       ntpSyncStatus:
         isDisabled: 'The NTP is disabled. Please check the NTP service is active.'
-        isUnsynced: 'The NTP is not synced with the NTP server <code>{current}</code>'
-      ntpConfigSyncStatus:
-        isUnsynced: 'The NTP config is not synced. Current: <code>{current}</code>, Wanted: <code>{wanted}</code> '
+        isUnsynced: 'The time is not synchronized with the NTP server {current}'
 
   virtualMachine:
     label: Virtual Machines
