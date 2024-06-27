@@ -311,14 +311,12 @@ export default {
         };
       }
 
-      const current = this.ntpSync?.currentNtpServers || '';
-
       if (status === 'unsynced') {
         return {
           status:  'unsynced',
           warning: {
-            key: 'harvester.host.ntp.ntpSyncStatus.isUnsynced',
-            current
+            key:     'harvester.host.ntp.ntpSyncStatus.isUnsynced',
+            current: this.ntpSync?.currentNtpServers ? `<code>${ this.ntpSync.currentNtpServers }</code>` : '',
           }
         };
       }
