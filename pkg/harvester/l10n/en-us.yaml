@@ -496,6 +496,8 @@ harvester:
         ShutdownAndRestartAfterEnable: Shutdown and Restart After Enable
         ShutdownAndRestartAfterDisable: Shutdown and Restart After Disable
         Shutdown: Shutdown
+    cpuPinning:
+      label: CPU Pinning
     restartNow: |-
       {restart, select,
         true {Restart}
