@@ -229,7 +229,7 @@ export default {
 
     <div class="row mb-20">
       <div class="col span-6">
-        <LabelValue :name="t('harvester.host.detail.cpuManager')" :value="cpuManager"/>
+        <LabelValue :name="t('harvester.host.detail.cpuManager')" :value="cpuManager" />
       </div>
       <div class="col span-6">
         <LabelValue :name="t('harvester.host.detail.consoleUrl')" :value="consoleUrl.value">
