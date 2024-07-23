@@ -170,13 +170,13 @@ export default class VirtVm extends HarvesterResource {
       },
       {
         action:  'migrateVM',
-        enabled: !!this.actions?.migrate,
+        enabled: !!this.actions?.migrate && !this.vmi?.vmimResource,
         icon:    'icon icon-copy',
         label:   this.t('harvester.action.migrate')
       },
       {
         action:  'abortMigrationVM',
-        enabled: !!this.actions?.abortMigration,
+        enabled: !!this.actions?.abortMigration && !!this.vmi?.vmimResource,
         icon:    'icon icon-close',
         label:   this.t('harvester.action.abortMigration')
       },
