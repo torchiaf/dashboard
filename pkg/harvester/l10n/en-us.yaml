@@ -498,6 +498,7 @@ harvester:
         Shutdown: Shutdown
     cpuPinning:
       label: CPU Pinning
+      tooltip: Changing the CPU pinning setting requires a manual reboot of the virtual machine for the changes to take effect
     restartNow: |-
       {restart, select,
         true {Restart}
