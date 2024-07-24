@@ -9,6 +9,10 @@ export default class HciUpgrade extends HarvesterResource {
     return this?.metadata?.labels?.[HCI.LATEST_UPGRADE] === 'true';
   }
 
+  get isUpgradeFailed() {
+    return this?.metadata?.labels?.[HCI.UPGRADE_STATE] === 'Failed';
+  }
+
   get isUpgradeSucceeded() {
     return this?.metadata?.labels?.[HCI.UPGRADE_STATE] === 'Succeeded';
   }
