@@ -41,6 +41,16 @@ export default {
   computed: {
     ...mapGetters(['currentCluster']),
 
+    latestUpgrade() {
+      return this.upgrade?.find(u => u.isLatestUpgrade);
+    },
+
+    isUpgradeInProgress() {
+      return this.latestUpgrade &&
+        !this.latestUpgrade.isUpgradeSucceeded &&
+        !this.latestUpgrade.isUpgradeFailed;
+    },
+
     versionOptions() {
       const versions = this.$store.getters['harvester/all'](HCI.VERSION);
 
@@ -131,7 +141,12 @@ export default {
           :cluster="currentCluster.nameDisplay"
         />
       </h1>
-      <button v-if="versionOptions.length" type="button" class="btn bg-warning btn-sm" @click="open">
+      <button
+        v-if="versionOptions.length && !isUpgradeInProgress"
+        type="button"
+        class="btn bg-warning btn-sm"
+        @click="open"
+      >
         <t k="harvester.upgradePage.upgrade" />
       </button>
     </header>
