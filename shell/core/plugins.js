@@ -83,10 +83,20 @@ export default function(context, inject, vueApp) {
 
           let removed = Promise.resolve();
 
+          console.log('--- OLD PLUGIN ID ---', oldPlugin?.id);
+          console.log('--- OLD PLUGIN NAME ---', oldPlugin?.name);
+          console.log('--- WINDOW ---', window);
+          console.log('--- WINDOW[PLUGIN] ---', window[oldPlugin?.id]);
+          console.log('--- plugins[oldPlugin.id] ---', plugins?.[oldPlugin?.id]);
+
+          console.log('--- NEW PLUGIN ID ---', id);
+
           if (oldPlugin) {
           // Uninstall existing plugin if there is one. This ensures that last loaded plugin is not always used
           // (nav harv1-->harv2-->harv1 and harv2 would be shown)
-            removed = this.removePlugin(oldPlugin.name).then(() => {
+            removed = this.removePlugin(oldPlugin.id).then(() => {
+
+              console.log('--- Remove 1 ---', oldPlugin?.id);
               delete window[oldPlugin.id];
 
               delete plugins[oldPlugin.id];
@@ -94,6 +104,7 @@ export default function(context, inject, vueApp) {
           }
 
           removed.then(() => {
+            console.log('--- Remove 2 ---', oldPlugin?.id);
             element.onload = () => {
               if (!window[id]) {
                 return reject(new Error('Could not load plugin code'));
@@ -112,7 +123,7 @@ export default function(context, inject, vueApp) {
               window[id].default(plugin, this.internal());
 
               // Uninstall existing plugin if there is one
-              this.removePlugin(plugin.name); // Removing this causes the plugin to not load on refresh
+              this.removePlugin(plugin.id); // Removing this causes the plugin to not load on refresh
 
               // Load all of the types etc from the plugin
               this.applyPlugin(plugin);
@@ -157,7 +168,7 @@ export default function(context, inject, vueApp) {
           p.default(plugin, this.internal());
 
           // Uninstall existing product if there is one
-          this.removePlugin(plugin.name);
+          this.removePlugin(plugin.id);
 
           // Load all of the types etc from the plugin
           this.applyPlugin(plugin);
@@ -181,7 +192,7 @@ export default function(context, inject, vueApp) {
           }
 
           try {
-            await this.removePlugin(plugin.name);
+            await this.removePlugin(plugin.id);
           } catch (e) {
             console.error('Error removing plugin', e); // eslint-disable-line no-console
           }
@@ -192,7 +203,8 @@ export default function(context, inject, vueApp) {
 
       // Remove the plugin
       async removePlugin(name) {
-        const plugin = Object.values(plugins).find((p) => p.name === name);
+        console.log('--- Remove 0 ---', name);
+        const plugin = Object.values(plugins).find((p) => p.id === name);
 
         if (!plugin) {
           return;
@@ -252,7 +264,7 @@ export default function(context, inject, vueApp) {
 
       // Apply the plugin based on its metadata
       applyPlugin(plugin) {
-      // Types
+        // Types
         Object.keys(plugin.types).forEach((typ) => {
           Object.keys(plugin.types[typ]).forEach((name) => {
             this.register(typ, name, plugin.types[typ][name]);
@@ -292,6 +304,8 @@ export default function(context, inject, vueApp) {
         });
 
         // Routes
+        // here
+        // console.log(app.router, plugin);
         pluginRoutes.addRoutes(plugin, plugin.routes);
 
         // Validators

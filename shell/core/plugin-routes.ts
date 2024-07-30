@@ -32,6 +32,8 @@ export class PluginRoutes {
     // Remove all routes that are being replaced
     const newRoutes = newRouteInfos.map((ri) => ri.route);
 
+    console.log(allRoutes, newRoutes)
+
     this.forEachNestedRoutes(newRoutes, (r: RouteConfig) => {
       // Patch colliding legacy routes that start /:product
       if (r.path?.startsWith('/:product')) {
