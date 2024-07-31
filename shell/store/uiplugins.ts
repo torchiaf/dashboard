@@ -43,8 +43,8 @@ export const mutations = {
     state.plugins.push(plugin);
   },
 
-  removePlugin(state: UIPluginState, pluginName: string) {
-    const index = state.plugins.findIndex((p) => p.name === pluginName);
+  removePlugin(state: UIPluginState, pluginId: string) {
+    const index = state.plugins.findIndex((p) => p.id === pluginId);
 
     if (index !== -1) {
       state.plugins.splice(index, 1);
@@ -61,7 +61,7 @@ export const actions = {
     commit('addPlugin', plugin);
   },
 
-  removePlugin({ commit }: any, pluginName: string) {
-    commit('removePlugin', pluginName);
+  removePlugin({ commit }: any, pluginId: string) {
+    commit('removePlugin', pluginId);
   }
 };

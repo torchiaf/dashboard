@@ -63,6 +63,7 @@ export default function(context, inject, vueApp) {
 
       // Load a plugin from a UI package
       loadAsync(id, mainFile) {
+        console.log('--- LoadAsync ---', id);
         return new Promise((resolve, reject) => {
         // The plugin is already loaded so we should avoid loading it again.
         // This will primarily affect plugins that load prior to authentication and we attempt to load again after authentication.
@@ -78,15 +79,20 @@ export default function(context, inject, vueApp) {
           element.id = id;
           element.dataset.purpose = 'extension';
 
+          const list = [...Object.values(plugins)];
           // id is `<product>-<version>`.
-          const oldPlugin = Object.values(plugins).find((p) => id.startsWith(p.name));
+          const oldPlugin = list.find((p) => id.startsWith(p.name));
+
+          console.log('--- OLD PLUGIN ---', oldPlugin, list, id)
 
           let removed = Promise.resolve();
 
           if (oldPlugin) {
           // Uninstall existing plugin if there is one. This ensures that last loaded plugin is not always used
           // (nav harv1-->harv2-->harv1 and harv2 would be shown)
-            removed = this.removePlugin(oldPlugin.name).then(() => {
+            removed = this.removePlugin(oldPlugin.id).then(() => {
+
+              console.log('--- STEP A ---')
               delete window[oldPlugin.id];
 
               delete plugins[oldPlugin.id];
@@ -94,8 +100,33 @@ export default function(context, inject, vueApp) {
           }
 
           removed.then(() => {
-            element.onload = () => {
-              element.parentElement.removeChild(element);
+            console.log('--- STEP B ---', element.id)
+
+            element.onload = () => {              
+              if (element.parentElement) {
+                for (let index = 0; index < element.parentElement.children.length; index++) {
+                  const x = element.parentElement.children[index];
+                  if (x.id === 'harvester-release-harvester-v1.4' || x.id === 'harvester-v1.2.2') {
+                    console.log('--- PRE ---', x)
+                  }
+                }
+              }
+
+              console.log('--- STEP C ---')
+
+              // element?.parentElement.removeChild(element);
+
+              if (element.parentElement) {
+                for (let index = 0; index < element.parentElement.children.length; index++) {
+                  const x = element.parentElement.children[index];
+                  if (x.id === 'harvester-release-harvester-v1.4' || x.id === 'harvester-v1.2.2') {
+                    console.log('--- POST ---', x)
+                  }
+                }
+              }
+
+              // console.log('-- ELEMENT onload --', element.id);
+              
 
               if (!window[id]) {
                 return reject(new Error('Could not load plugin code'));
@@ -113,9 +144,11 @@ export default function(context, inject, vueApp) {
               // Initialize the plugin
               window[id].default(plugin, this.internal());
 
+              console.log('--- STEP D ---')
               // Uninstall existing plugin if there is one
-              this.removePlugin(plugin.name); // Removing this causes the plugin to not load on refresh
+              this.removePlugin(plugin.id, element); // Removing this causes the plugin to not load on refresh
 
+              console.log('--- STEP E ---')
               // Load all of the types etc from the plugin
               this.applyPlugin(plugin);
 
@@ -136,12 +169,14 @@ export default function(context, inject, vueApp) {
             };
 
             document.head.appendChild(element);
+
           }).catch((e) => {
             const errorMessage = `Failed to unload old plugin${ oldPlugin?.id }`;
 
             console.error(errorMessage, e); // eslint-disable-line no-console
             reject(new Error(errorMessage)); // This is more useful where it's used
           });
+
         });
       },
 
@@ -161,7 +196,7 @@ export default function(context, inject, vueApp) {
           p.default(plugin, this.internal());
 
           // Uninstall existing product if there is one
-          this.removePlugin(plugin.name);
+          this.removePlugin(plugin.id);
 
           // Load all of the types etc from the plugin
           this.applyPlugin(plugin);
@@ -185,7 +220,7 @@ export default function(context, inject, vueApp) {
           }
 
           try {
-            await this.removePlugin(plugin.name);
+            await this.removePlugin(plugin.id);
           } catch (e) {
             console.error('Error removing plugin', e); // eslint-disable-line no-console
           }
@@ -195,11 +230,17 @@ export default function(context, inject, vueApp) {
       },
 
       // Remove the plugin
-      async removePlugin(name) {
-        const plugin = Object.values(plugins).find((p) => p.name === name);
+      async removePlugin(id, element) {
+        console.log('--- REMOVE 1 ---', id)
+        const plugin = Object.values(plugins).find((p) => p.id === id);
 
         if (!plugin) {
           return;
+        }
+
+        if (element) {
+          console.log('--- REMOVING NEW ---');
+          element.parentElement.removeChild(element);
         }
 
         const promises = [];
@@ -234,7 +275,7 @@ export default function(context, inject, vueApp) {
         plugin.uninstallHooks.forEach((fn) => fn(plugin, this.internal()));
 
         // Remove the plugin itself
-        promises.push( store.dispatch('uiplugins/removePlugin', name));
+        promises.push( store.dispatch('uiplugins/removePlugin', id));
 
         // Unregister vuex stores
         plugin.stores.forEach((pStore) => pStore.unregister(store));
@@ -256,6 +297,7 @@ export default function(context, inject, vueApp) {
 
       // Apply the plugin based on its metadata
       applyPlugin(plugin) {
+        console.log('--- APPLY PLUGIN ---', plugin.id)
       // Types
         Object.keys(plugin.types).forEach((typ) => {
           Object.keys(plugin.types[typ]).forEach((name) => {

@@ -186,6 +186,7 @@ export default class HciCluster extends ProvCluster {
     console.info('Harvester plugin details: ', pkgName, pkgUrl); // eslint-disable-line no-console
 
     // Skip loading if we've previously loaded the correct one
+    // console.log(plugins);
     if (!!plugins[pkgName]) {
       console.info('Harvester plugin already loaded, no need to load', pkgName); // eslint-disable-line no-console
 
