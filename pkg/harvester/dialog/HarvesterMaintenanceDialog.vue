@@ -25,9 +25,9 @@ export default {
 
   data() {
     return {
-      errors:      [],
-      unhealthyVM: '',
-      force:       false
+      errors:       [],
+      unhealthyVMs: [],
+      force:        false
     };
   },
 
@@ -46,7 +46,7 @@ export default {
 
     async apply(buttonCb) {
       this.errors = [];
-      this.unhealthyVM = '';
+      this.unhealthyVMs = [];
 
       try {
         const res = await this.actionResource.doAction('maintenancePossible');
@@ -62,8 +62,8 @@ export default {
         } else if (res._status === 200 || res._status === 204) {
           const res = await this.actionResource.doAction('listUnhealthyVM');
 
-          if (res.message) {
-            this.unhealthyVM = res;
+          if (res?.length) {
+            this.unhealthyVMs = res;
             buttonCb(false);
           } else {
             await this.actionResource.doAction('enableMaintenanceMode', { force: 'false' });
@@ -97,11 +97,14 @@ export default {
           label-key="harvester.host.enableMaintenance.force"
         />
       </div>
-      <Banner color="warning" :label="t('harvester.host.enableMaintenance.protip')" class="mb-0" />
-      <Banner v-for="(err, i) in errors" :key="i" color="error" :label="err" />
 
-      <div v-if="unhealthyVM">
-        <Banner color="error mb-5">
+      <div class="mb-5">
+        <Banner color="warning" :label="t('harvester.host.enableMaintenance.protip')" class="mb-5" />
+        <Banner v-for="(err, i) in errors" :key="i" color="error" :label="err" class="mb-2" />
+      </div>
+
+      <div v-for="unhealthyVM in unhealthyVMs">
+        <Banner color="error mt-0 mb-5">
           <p>
             {{ unhealthyVM.message }}
           </p>
