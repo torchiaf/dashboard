@@ -50,7 +50,6 @@ export const HCI = {
   PARENT_SRIOV:                   'harvesterhci.io/parent-sriov-network-device',
   PARENT_SRIOV_GPU:               'harvesterhci.io/parentSRIOVGPUDevice',
   VM_MAINTENANCE_MODE_STRATEGY:   'harvesterhci.io/maintain-mode-strategy',
-  NODE_CPU_MANAGER:               'cpumanager',
   NODE_CPU_MANAGER_UPDATE_STATUS: 'harvesterhci.io/cpu-manager-update-status',
   NODE_CPU_MANAGER_ENABLED:       'cpumanager'
 };
