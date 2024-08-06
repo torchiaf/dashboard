@@ -98,10 +98,13 @@ export default {
         />
       </div>
 
-      <div class="mb-5">
-        <Banner color="warning" :label="t('harvester.host.enableMaintenance.protip')" class="mb-5" />
-        <Banner v-for="(err, i) in errors" :key="i" color="error" :label="err" class="mb-2" />
-      </div>
+      <Banner color="warning" :label="t('harvester.host.enableMaintenance.protip')" />
+      
+      <Banner v-for="(err, i) in errors" :key="i" color="error" :label="err"  />
+
+      <Banner v-if="unhealthyVMs.length" class="mt-0" color="warning">
+        <t k="harvester.host.enableMaintenance.shoutDownVMs" :raw="true" />
+      </Banner>
 
       <div v-for="unhealthyVM in unhealthyVMs">
         <Banner color="error mt-0 mb-5">

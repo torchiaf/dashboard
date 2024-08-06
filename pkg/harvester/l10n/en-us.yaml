@@ -352,6 +352,7 @@ harvester:
     enableMaintenance:
       title: Enable Maintenance Mode
       protip: The operation will migrate all virtual machines on this node to other nodes.
+      shoutDownVMs: You can click <b>Force</b> to automatically shutdown non-migratable VMs and continue with enabling Maintenance Mode
       force: Force
     cordon:
       title: Cordon
