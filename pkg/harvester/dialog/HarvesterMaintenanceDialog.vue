@@ -41,9 +41,7 @@ export default {
   },
 
   methods: {
-    errorLabel(err) {
-      return ucFirst(err);
-    },
+    ucFirst,
 
     close() {
       this.$emit('close');
@@ -105,14 +103,14 @@ export default {
 
       <Banner color="warning" :label="t('harvester.host.enableMaintenance.protip')" />
 
-      <Banner v-for="(err, i) in errors" :key="i" color="error" :label="errorLabel(err)" />
+      <Banner v-for="(err, i) in errors" :key="i" color="error" :label="ucFirst(err)" />
 
       <Banner v-if="!force" class="mt-0" color="warning" :labelKey="'harvester.host.enableMaintenance.shutDownVMs'" />
 
       <div v-for="(unhealthyVM, i) in unhealthyVMs" :key="i">
         <Banner color="error mt-0 mb-5">
           <p>
-            {{ unhealthyVM.message }}
+            {{ ucFirst(unhealthyVM.message) }}
           </p>
         </Banner>
 
