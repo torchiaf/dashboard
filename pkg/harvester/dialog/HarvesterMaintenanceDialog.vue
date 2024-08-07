@@ -6,6 +6,7 @@ import { Banner } from '@components/Banner';
 import { Checkbox } from '@components/Form/Checkbox';
 import { exceptionToErrorsArray } from '@shell/utils/error';
 import { BadgeState } from '@components/BadgeState';
+import { ucFirst } from '@shell/utils/string';
 
 export default {
   components: {
@@ -40,6 +41,10 @@ export default {
   },
 
   methods: {
+    errorLabel(err) {
+      return ucFirst(err);
+    },
+
     close() {
       this.$emit('close');
     },
@@ -99,14 +104,12 @@ export default {
       </div>
 
       <Banner color="warning" :label="t('harvester.host.enableMaintenance.protip')" />
-      
-      <Banner v-for="(err, i) in errors" :key="i" color="error" :label="err"  />
 
-      <Banner v-if="unhealthyVMs.length" class="mt-0" color="warning">
-        <t k="harvester.host.enableMaintenance.shoutDownVMs" :raw="true" />
-      </Banner>
+      <Banner v-for="(err, i) in errors" :key="i" color="error" :label="errorLabel(err)" />
 
-      <div v-for="unhealthyVM in unhealthyVMs">
+      <Banner v-if="!force" class="mt-0" color="warning" :labelKey="'harvester.host.enableMaintenance.shutDownVMs'" />
+
+      <div v-for="(unhealthyVM, i) in unhealthyVMs" :key="i">
         <Banner color="error mt-0 mb-5">
           <p>
             {{ unhealthyVM.message }}
