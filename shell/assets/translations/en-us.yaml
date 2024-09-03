@@ -5673,6 +5673,7 @@ tableHeaders:
   customVerbs: Custom Verbs
   description: Description
   cpu: CPU
+  expires: Expires
   currentReplicas: Current Replicas
   date: Date
   data: Data
