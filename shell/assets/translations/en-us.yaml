@@ -5631,7 +5631,7 @@ tableHeaders:
   customVerbs: Custom Verbs
   description: Description
   expires: Expires
-  cpu: CPU
+  cpu: TEST SHELL
   currentReplicas: Current Replicas
   date: Date
   data: Data
