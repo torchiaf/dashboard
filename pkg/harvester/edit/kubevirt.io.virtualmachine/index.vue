@@ -567,7 +567,7 @@ export default {
         <VGpuDevices :mode="mode" :value="spec.template.spec" :vm="value" />
       </Tab>
 
-      <Tab v-if="enabledUSB" :label="t('harvester.tab.usbDevices')" name="usbDevices" :weight="-7">
+      <Tab v-if="enabledPCI" :label="t('harvester.tab.usbDevices')" name="usbDevices" :weight="-7">
         <UsbDevices :mode="mode" :value="spec.template.spec" :vm="value" />
       </Tab>
 
