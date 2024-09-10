@@ -659,9 +659,7 @@ export default {
                 @click.stop="showPageActionsMenu(false)"
               >
                 <li
-                  v-for="(a, i) in pageActions"
-                  :key="i"
-                  class="user-menu-item"
+                  v-for="(a, i) in pageActions" :key="i"class="user-menu-item"
                 >
                   <a
                     v-if="!a.separator"

@@ -89,7 +89,7 @@ export default {
           type="color"
           :disabled="mode !== editMode"
           :value="inputValue"
-          @input="$emit('update:value', $event.target.value)"
+          @update:value="$emit('update:value', $event.target.value)"
         >
       </span>
       <span class="text-muted color-value">{{ inputValue }}</span>

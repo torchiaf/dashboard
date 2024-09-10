@@ -363,9 +363,7 @@ export default {
       </template>
       <!-- Pass down templates provided by the caller -->
       <template
-        v-for="(_, slot) of $slots"
-        :key="slot"
-        #[slot]="scope"
+        v-for="(_, slot) of $slots" :key="slot"#[slot]="scope"
       >
         <slot
           :name="slot"

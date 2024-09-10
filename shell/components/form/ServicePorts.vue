@@ -169,9 +169,7 @@ export default {
         />
       </div>
       <div
-        v-for="(row, idx) in rows"
-        :key="idx"
-        class="ports-row"
+        v-for="(row, idx) in rows" :key="idx"class="ports-row"
         :class="{'show-protocol':showProtocol, 'show-node-port':showNodePort}"
       >
         <div
@@ -186,7 +184,7 @@ export default {
             v-model.number="row.name"
             type="text"
             :placeholder="t('servicePorts.rules.name.placeholder')"
-            @input="queueUpdate"
+            @update:value="queueUpdate"
           >
         </div>
         <div class="port">
@@ -199,7 +197,7 @@ export default {
             min="1"
             max="65535"
             :placeholder="t('servicePorts.rules.listening.placeholder')"
-            @input="queueUpdate"
+            @update:value="queueUpdate"
           >
         </div>
         <div
@@ -218,9 +216,9 @@ export default {
           <span v-if="isView">{{ row.targetPort }}</span>
           <input
             v-else
-            v-model="row.targetPort"
+            v-model:value="row.targetPort"
             :placeholder="t('servicePorts.rules.target.placeholder')"
-            @input="queueUpdate"
+            @update:value="queueUpdate"
           >
         </div>
         <div
@@ -235,7 +233,7 @@ export default {
             min="1"
             max="65535"
             :placeholder="t('servicePorts.rules.node.placeholder')"
-            @input="queueUpdate"
+            @update:value="queueUpdate"
           >
         </div>
         <div

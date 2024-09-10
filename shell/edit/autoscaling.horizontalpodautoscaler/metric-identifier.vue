@@ -71,7 +71,7 @@ export default {
           :value="matchExpressions"
           :label="t('hpa.metricIdentifier.selector.label')"
           :show-remove="false"
-          @input="matchChanged($event)"
+          @update:value="matchChanged($event)"
         />
       </div>
     </div>

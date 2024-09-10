@@ -200,9 +200,7 @@ export default {
     >
       <div>
         <div
-          v-for="(obj, i) in parts"
-          :key="i"
-          class="counts"
+          v-for="(obj, i) in parts" :key="i"class="counts"
         >
           <span class="counts-label">{{ obj.label }}</span>
           <span>{{ obj.value }}</span>

@@ -406,9 +406,7 @@ export default {
         >
           <component
             :is="providerComponents[idx]"
-            v-for="(name, idx) in providers"
-            :key="idx"
-            class="mb-10"
+            v-for="(name, idx) in providers" :key="idx"class="mb-10"
             :focus-on-mount="(idx === 0 && !showLocal)"
             :name="name"
             :open="!showLocal"

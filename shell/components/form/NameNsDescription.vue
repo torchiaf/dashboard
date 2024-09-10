@@ -489,9 +489,7 @@ export default {
     </div>
 
     <div
-      v-for="(slot, i) in extraColumns"
-      :key="i"
-      :class="{ col: true, [colSpan]: true }"
+      v-for="(slot, i) in extraColumns" :key="i":class="{ col: true, [colSpan]: true }"
     >
       <slot :name="slot" />
     </div>

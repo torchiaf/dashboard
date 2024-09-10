@@ -389,9 +389,7 @@ export default {
                   data-testid="setup-serverurl-localhost-warning"
                 />
                 <Banner
-                  v-for="(err, i) in fvGetPathErrors(['serverUrl'])"
-                  :key="i"
-                  color="error"
+                  v-for="(err, i) in fvGetPathErrors(['serverUrl'])" :key="i"color="error"
                   :label="err"
                   data-testid="setup-error-banner"
                 />
@@ -453,9 +451,7 @@ export default {
 
           <div class="setup-errors mt-20">
             <h4
-              v-for="(err, i) in errors"
-              :key="i"
-              class="text-error text-center"
+              v-for="(err, i) in errors" :key="i"class="text-error text-center"
             >
               {{ err }}
             </h4>

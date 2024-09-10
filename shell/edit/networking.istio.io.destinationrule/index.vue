@@ -86,7 +86,6 @@ export default {
                 :required="true"
               />
               <KeyValue
-                :key="i"
                 v-model:value="row.value.labels"
                 :mode="mode"
                 :protip="true"

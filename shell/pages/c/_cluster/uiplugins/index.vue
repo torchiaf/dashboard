@@ -794,9 +794,7 @@ export default {
           />
           <template v-else>
             <div
-              v-for="(plugin, i) in list"
-              :key="i"
-              class="plugin"
+              v-for="(plugin, i) in list" :key="i"class="plugin"
               :data-testid="`extension-card-${plugin.name}`"
               @click="showPluginDetail(plugin)"
             >

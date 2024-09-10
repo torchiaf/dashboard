@@ -75,9 +75,7 @@ export default {
                 @click="switchLocale('none')"
               />
               <li
-                v-for="(label, name) in availableLocales"
-                :key="name"
-                class="hand"
+                v-for="(label, name) in availableLocales" :key="name"class="hand"
                 @click="switchLocale(name)"
               >
                 {{ label }}

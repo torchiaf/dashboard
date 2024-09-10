@@ -197,7 +197,7 @@ export default {
       :value="value"
       :mode="mode"
       :namespaced="isNamespaced"
-      @input="$emit('input', $event)"
+      @update:value="$emit('input', $event)"
     />
 
     <Tabbed>

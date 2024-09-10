@@ -297,9 +297,7 @@ export default {
 
     <div class="grid">
       <div
-        v-for="opt in options"
-        :key="opt.chart.id"
-        class="item"
+         v-for="(opt, i) in options" :key="i" class="item"
         :data-testid="`cluster-tools-app-${opt.chart.id}`"
       >
         <div

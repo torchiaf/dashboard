@@ -82,7 +82,7 @@ export default {
             v-model:value="row.enabled"
             label-key="customLinks.settings.showLabel"
             :data-testid="`custom-links__checkbox-${i}`"
-            @input="showhide(row, i, $event)"
+            @update:value="showhide(row, i, $event)"
           />
         </div>
         <div

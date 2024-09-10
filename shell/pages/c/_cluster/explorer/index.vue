@@ -695,9 +695,7 @@ export default {
 
     <div v-if="clusterServices">
       <div
-        v-for="(service, i) in clusterServices"
-        :key="i"
-        class="k8s-service-status"
+        v-for="(service, i) in clusterServices" :key="i"class="k8s-service-status"
         :class="{[service.status]: true }"
         :data-testid="`k8s-service-${ service.name }`"
       >

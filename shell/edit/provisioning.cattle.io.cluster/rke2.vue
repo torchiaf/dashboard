@@ -2215,9 +2215,7 @@ export default {
           @removeTab="removeMachinePool($event)"
         >
           <template
-            v-for="(obj, idx) in machinePools"
-            :key="idx"
-          >
+            v-for="(obj, idx) in machinePools" :key="idx">
             <Tab
               v-if="!obj.remove"
               :key="obj.id"

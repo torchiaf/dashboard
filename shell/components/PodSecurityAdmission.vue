@@ -212,9 +212,7 @@ export default defineComponent({
     </p>
 
     <div
-      v-for="(psaControl, level, i) in psaControls"
-      :key="i"
-      class="row row--y-center mb-20"
+      v-for="(psaControl, level, i) in psaControls" :key="i"class="row row--y-center mb-20"
     >
       <span class="col span-2">
         <Checkbox
@@ -271,9 +269,7 @@ export default defineComponent({
       </p>
 
       <div
-        v-for="(psaExemptionsControl, dimension, i) in psaExemptionsControls"
-        :key="i"
-        class="row row--y-center mb-20"
+        v-for="(psaExemptionsControl, dimension, i) in psaExemptionsControls" :key="i"class="row row--y-center mb-20"
       >
         <span class="col span-2">
           <Checkbox

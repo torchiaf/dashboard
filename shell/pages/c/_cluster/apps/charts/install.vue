@@ -1394,17 +1394,13 @@ export default {
             class="mb-15"
           >
             <Banner
-              v-for="(msg, i) in requires"
-              :key="i"
-              color="error"
+              v-for="(msg, i) in requires" :key="i"color="error"
             >
               <span v-clean-html="msg" />
             </Banner>
 
             <Banner
-              v-for="(msg, i) in warnings"
-              :key="i"
-              color="warning"
+              v-for="(msg, i) in warnings" :key="i"color="warning"
             >
               <span v-clean-html="msg" />
             </Banner>

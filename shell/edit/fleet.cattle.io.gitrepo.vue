@@ -723,9 +723,7 @@ export default {
         </div>
 
         <Banner
-          v-for="(err, i) in targetAdvancedErrors"
-          :key="i"
-          color="error"
+          v-for="(err, i) in targetAdvancedErrors" :key="i"color="error"
           :label="err"
         />
       </template>

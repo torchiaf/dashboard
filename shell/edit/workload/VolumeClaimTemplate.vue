@@ -95,7 +95,7 @@ export default {
       <ArrayListGrouped
         v-model:value="templates"
         class="mb-20"
-        @input="update()"
+        @update:value="update()"
       >
         <template #default="props">
           <div class="bordered-section">
@@ -103,7 +103,7 @@ export default {
               v-if="props.row.value.metadata"
               :value="props.row.value"
               :mode="mode"
-              @input="updatePVC(props.row.value)"
+              @update:value="updatePVC(props.row.value)"
             />
           </div>
           <Mount

@@ -206,7 +206,7 @@ export default {
         />
         <div class="ml-20 mt-10 expiry">
           <input
-            v-model="form.customExpiry"
+            v-model:value="form.customExpiry"
             :disabled="form.expiryType !== 'custom'"
             type="number"
             :mode="mode"

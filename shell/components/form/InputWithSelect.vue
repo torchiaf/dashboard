@@ -187,7 +187,7 @@ export default {
     <input
       v-else
       ref="text"
-      v-model="string"
+      v-model:value="string"
       class="input-string"
       :disabled="isView"
       :placeholder="placeholder"

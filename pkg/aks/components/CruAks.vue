@@ -1097,9 +1097,7 @@ export default defineComponent({
           @removeTab="removePool($event)"
         >
           <Tab
-            v-for="(pool, i) in nodePools"
-            :key="i"
-            :name="pool._id || pool.name"
+            v-for="(pool, i) in nodePools" :key="i":name="pool._id || pool.name"
             :label="pool.name || t('aks.nodePools.notNamed')"
             :error="!poolIsValid(pool)"
           >

@@ -545,9 +545,9 @@ export default {
     showHeaderRow() {
       return this.search ||
         this.tableActions ||
-        this.$slots['header-left']?.() ||
-        this.$slots['header-middle']?.() ||
-        this.$slots['header-right']?.();
+        this.$slots['header-left']()?.() ||
+        this.$slots['header-middle']()?.() ||
+        this.$slots['header-right']()?.();
     },
 
     columns() {
@@ -1013,7 +1013,7 @@ export default {
           <slot name="header-left">
             <template v-if="tableActions">
               <button
-                v-for="(act) in availableActions"
+                 v-for="((act), i) in availableActions" :key="i" 
                 :id="act.action"
                 :key="act.action"
                 v-clean-tooltip="actionTooltip"
@@ -1052,9 +1052,7 @@ export default {
                 <template #popover-content>
                   <ul class="list-unstyled menu">
                     <li
-                      v-for="(act, i) in hiddenActions"
-                      :key="i"
-                      v-close-popper
+                      v-for="(act, i) in hiddenActions" :key="i"v-close-popper
                       v-clean-tooltip="{
                         content: actionTooltip,
                         placement: 'right'
@@ -1100,9 +1098,7 @@ export default {
             class="advanced-filters-applied"
           >
             <li
-              v-for="(filter, i) in advancedFilteringValues"
-              :key="i"
-            >
+              v-for="(filter, i) in advancedFilteringValues" :key="i">
               <span class="label">{{ `"${filter.value}" ${ t('sortableTable.in') } ${filter.label}` }}</span>
               <span
                 class="cross"
@@ -1136,7 +1132,7 @@ export default {
             >
               <input
                 ref="advancedSearchQuery"
-                v-model="advFilterSearchTerm"
+                v-model:value="advFilterSearchTerm"
                 type="search"
                 class="advanced-search-box"
                 :placeholder="t('sortableTable.filterFor')"
@@ -1177,7 +1173,7 @@ export default {
           <input
             v-else-if="search"
             ref="searchQuery"
-            v-model="eventualSearchQuery"
+            v-model:value="eventualSearchQuery"
             type="search"
             class="input-sm search-box"
             :placeholder="t('sortableTable.search')"
@@ -1261,7 +1257,7 @@ export default {
         </slot>
       </tbody>
       <tbody
-        v-for="(groupedRows) in displayRows"
+         v-for="((groupedRows), i) in displayRows" :key="i" 
         v-else
         :key="groupedRows.key"
         :class="{ group: groupBy }"
@@ -1289,9 +1285,7 @@ export default {
           </tr>
         </slot>
         <template
-          v-for="(row, i) in groupedRows.rows"
-          :key="i"
-        >
+          v-for="(row, i) in groupedRows.rows" :key="i">
           <slot
             name="main-row"
             :row="row.row"
@@ -1338,9 +1332,7 @@ export default {
                   />
                 </td>
                 <template
-                  v-for="(col, j) in row.columns"
-                  :key="j"
-                >
+                  v-for="(col, j) in row.columns" :key="j">
                   <slot
                     :name="'col:' + col.col.name"
                     :row="row.row"

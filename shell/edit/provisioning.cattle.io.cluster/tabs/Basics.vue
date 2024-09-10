@@ -679,9 +679,7 @@ export default {
           </h3>
         </div>
         <Checkbox
-          v-for="(opt, i) in disableOptions"
-          :key="i"
-          v-model:value="enabledSystemServices"
+          v-for="(opt, i) in disableOptions" :key="i"v-model:value="enabledSystemServices"
           :mode="mode"
           :label="opt.label"
           :value-when-true="opt.value"

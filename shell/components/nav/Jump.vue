@@ -71,16 +71,14 @@ export default {
   <div>
     <input
       ref="input"
-      v-model="value"
+      v-model:value="value"
       :placeholder="t('nav.resourceSearch.placeholder')"
       class="search"
       @keyup.esc="$emit('closeSearch')"
     >
     <div class="results">
       <div
-        v-for="g in groups"
-        :key="g.name"
-        class="package"
+         v-for="(g, i) in groups" :key="i" class="package"
       >
         <Group
           v-if="!g.hidden"

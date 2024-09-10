@@ -38,7 +38,7 @@ export default {
       v-model:value="localValue"
       :mode="mode"
       :display-side-by-side="false"
-      @input="$emit('input', $event)"
+      @update:value="$emit('input', $event)"
     />
   </Tab>
 </template>

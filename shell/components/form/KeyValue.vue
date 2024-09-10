@@ -616,9 +616,7 @@ export default {
           {{ _valueLabel }}
         </label>
         <label
-          v-for="(c, i) in extraColumns"
-          :key="i"
-        >
+          v-for="(c, i) in extraColumns" :key="i">
           <slot :name="'label:'+c">{{ c }}</slot>
         </label>
         <slot
@@ -637,7 +635,7 @@ export default {
         </div>
       </template>
       <template
-        v-for="(row,i) in filteredRows"
+        v-for="(row,i) in filteredRows" :key="i"
         v-else
         :key="i"
       >
@@ -669,11 +667,11 @@ export default {
             <input
               v-else
               ref="key"
-              v-model="row[keyName]"
+              v-model:value="row[keyName]"
               :disabled="isView || disabled || !keyEditable || isProtected(row.key)"
               :placeholder="_keyPlaceholder"
               :data-testid="`input-kv-item-key-${i}`"
-              @input="queueUpdate"
+              @update:value="queueUpdate"
               @paste="onPaste(i, $event)"
             >
           </slot>
@@ -728,7 +726,7 @@ export default {
               />
               <input
                 v-else
-                v-model="row[valueName]"
+                v-model:value="row[valueName]"
                 :disabled="isView || disabled || isProtected(row.key)"
                 :type="valueConcealed ? 'password' : 'text'"
                 :placeholder="_valuePlaceholder"
@@ -736,7 +734,7 @@ export default {
                 autocapitalize="off"
                 spellcheck="false"
                 :data-testid="`input-kv-item-value-${i}`"
-                @input="queueUpdate"
+                @update:value="queueUpdate"
               >
               <FileSelector
                 v-if="parseValueFromFile && readAllowed && !isView && isValueFieldEmpty(row[valueName])"
@@ -749,9 +747,7 @@ export default {
           </slot>
         </div>
         <div
-          v-for="(c, j) in extraColumns"
-          :key="`${i}-${j}`"
-          class="kv-item extra"
+          v-for="(c, j) in extraColumns" :key="j"class="kv-item extra"
         >
           <slot
             :name="'col:' + c"

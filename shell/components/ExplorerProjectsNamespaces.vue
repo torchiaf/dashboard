@@ -480,9 +480,7 @@ export default {
         </div>
       </template>
       <template
-        v-for="(project, i) in projectsWithoutNamespaces"
-        :key="i"
-        v-slot:[slotName(project)]
+        v-for="(project, i) in projectsWithoutNamespaces" :key="i"v-slot:[slotName(project)]
       >
         <tr
           class="main-row"

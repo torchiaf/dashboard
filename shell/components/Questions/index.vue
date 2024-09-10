@@ -452,16 +452,12 @@ export default {
   />
   <form v-else-if="asTabs">
     <Tab
-      v-for="(g, i) in groups"
-      :key="i"
-      :name="g.name"
+      v-for="(g, i) in groups" :key="i":name="g.name"
       :label="g.name"
       :weight="g.weight"
     >
       <div
-        v-for="(q, j) in g.questions"
-        :key="`${i}-${j}`"
-        class="row question"
+        v-for="(q, j) in g.questions" :key="j"class="row question"
       >
         <div class="col span-12">
           <component
@@ -480,16 +476,12 @@ export default {
   </form>
   <form v-else>
     <div
-      v-for="(g, i) in groups"
-      :key="i"
-    >
+      v-for="(g, i) in groups" :key="i">
       <h3 v-if="groups.length > 1">
         {{ g.label }}
       </h3>
       <div
-        v-for="(q, j) in g.questions"
-        :key="`${i}-${j}`"
-        class="row question"
+        v-for="(q, j) in g.questions" :key="j"class="row question"
       >
         <div class="col span-12">
           <component

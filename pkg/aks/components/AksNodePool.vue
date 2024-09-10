@@ -396,9 +396,7 @@ export default defineComponent({
           </tr>
           <template v-if="taints && taints.length">
             <Taint
-              v-for="(keyedTaint, i) in taints"
-              :key="i"
-              :taint="keyedTaint.taint"
+              v-for="(keyedTaint, i) in taints" :key="i":taint="keyedTaint.taint"
               :mode="mode"
               :rules="validationRules.taints"
               :data-testid="`aks-pool-taint-${i}`"

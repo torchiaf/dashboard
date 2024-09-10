@@ -456,7 +456,7 @@ export default {
       <div class="filter-block">
         <input
           ref="searchQuery"
-          v-model="searchQuery"
+          v-model:value="searchQuery"
           type="search"
           class="input-sm"
           :placeholder="t('catalog.charts.search')"
@@ -486,9 +486,7 @@ export default {
     </div>
 
     <Banner
-      v-for="(err, i) in loadingErrors"
-      :key="i"
-      color="error"
+      v-for="(err, i) in loadingErrors" :key="i"color="error"
       :label="err"
     />
 

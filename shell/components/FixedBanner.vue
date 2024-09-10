@@ -169,9 +169,7 @@ export default {
       <!-- text as array to support line breaks programmatically rather than just exposing HTML -->
       <div v-if="isTextAnArray">
         <p
-          v-for="(text, index) in banner.text"
-          :key="index"
-        >
+          v-for="(text, index) in banner.text" :key="index">
           {{ text }}
         </p>
       </div>
@@ -193,9 +191,7 @@ export default {
             <!-- text as array to support line breaks programmatically rather than just exposing HTML -->
             <div v-if="isTextAnArray">
               <p
-                v-for="(text, index) in banner.text"
-                :key="index"
-              >
+                v-for="(text, index) in banner.text" :key="index">
                 {{ text }}
               </p>
             </div>

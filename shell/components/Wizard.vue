@@ -334,9 +334,7 @@ export default {
               @keyup.left.stop="selectNext(-1)"
             >
               <template
-                v-for="(step, idx ) in visibleSteps"
-                :key="idx"
-              >
+                v-for="(step, idx ) in visibleSteps" :key="idx">
                 <li
 
                   :id="step.name"
@@ -375,9 +373,7 @@ export default {
         :activeStep="activeStep"
       >
         <template
-          v-for="(step, i) in steps"
-          :key="i"
-        >
+          v-for="(step, i) in steps" :key="i">
           <div
             v-if="step.name === activeStep.name || step.hidden"
             :key="step.name"
@@ -405,9 +401,7 @@ export default {
         :activeStep="activeStep"
       >
         <div
-          v-for="(err,idx) in errorStrings"
-          :key="idx"
-        >
+          v-for="(err,idx) in errorStrings" :key="idx">
           <Banner
             color="error"
             :label="err"

@@ -21,9 +21,7 @@ export default {
     :show-tab="false"
   >
     <div
-      v-for="slot in slots"
-      :key="slot"
-      class="tile"
+       v-for="(slot, i) in slots" :key="i" class="tile"
     >
       <slot :name="slot" />
     </div>

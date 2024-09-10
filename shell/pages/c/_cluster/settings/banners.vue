@@ -319,9 +319,7 @@ export default {
       />
     </div>
     <template
-      v-for="(err, i) in errors"
-      :key="i"
-    >
+      v-for="(err, i) in errors" :key="i">
       <Banner
         color="error"
         :label="err"

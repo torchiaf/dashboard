@@ -38,9 +38,7 @@ export default {
 <template>
   <div class="pgb">
     <template
-      v-for="(role, i) in boundRoles"
-      :key="role.id"
-    >
+      v-for="(role, i) in boundRoles" :key="i">
       <router-link :to="role.detailLocation">
         {{ role.label }}
       </router-link>

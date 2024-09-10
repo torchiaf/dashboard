@@ -239,9 +239,7 @@ export default {
       v-bind="$attrs"
     >
       <template
-        v-for="(child, idx) in group[childrenKey]"
-        :key="idx"
-      >
+        v-for="(child, idx) in group[childrenKey]" :key="idx">
         <li
           v-if="child.divider"
           :key="idx"

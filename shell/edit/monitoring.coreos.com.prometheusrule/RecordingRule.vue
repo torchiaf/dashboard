@@ -94,7 +94,7 @@ export default {
           :mode="mode"
           :title="t('prometheusRule.recordingRules.labels')"
           :read-allowed="false"
-          @input="queueLabelUpdate"
+          @update:value="queueLabelUpdate"
         />
       </div>
     </div>

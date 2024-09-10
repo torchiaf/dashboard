@@ -734,9 +734,7 @@ export default defineComponent({
           @removeTab="removePool($event)"
         >
           <Tab
-            v-for="(pool) in nodePools"
-            :key="pool._id"
-            :name="pool._id || pool.name"
+             v-for="((pool), i) in nodePools" :key="i" :name="pool._id || pool.name"
             :label="pool.name || t('gke.notNamed')"
             :error="pool._minMaxValid===false || pool._nameUnique===false"
           >

@@ -188,9 +188,7 @@ export default {
       </div>
 
       <template
-        v-for="(row,i) in rows"
-        :key="i"
-      >
+        v-for="(row,i) in rows" :key="i">
         <div
           class="kv-item key"
         >

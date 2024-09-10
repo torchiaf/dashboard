@@ -100,9 +100,7 @@ export default {
       {{ $t('kubectl-explain.fields') }}
     </div>
     <div
-      v-for="(field, i) in fields"
-      :key="i"
-    >
+      v-for="(field, i) in fields" :key="i">
       <div class="field-section">
         <div class="field">
           {{ field.name }}

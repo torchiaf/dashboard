@@ -72,7 +72,7 @@ export default {
     v-else
     :value="value"
     :default-tab="defaultTab"
-    @input="$emit('input', $event)"
+    @update:value="$emit('input', $event)"
   >
     <Tab
       v-if="showRegistration"

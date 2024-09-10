@@ -77,7 +77,7 @@ export default {
           :mode="mode"
           :types="remainingTypes(typeValues[props.i])"
           :type="typeValues[props.i]"
-          @input="$emit('input', $event)"
+          @update:value="$emit('input', $event)"
           @type-change="updateType(props.i, $event)"
         />
       </template>

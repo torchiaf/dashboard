@@ -72,6 +72,7 @@
     "dagre-d3": "0.6.4",
     "dayjs": "1.8.29",
     "diff2html": "3.4.24",
+    "diff_match_patch": "^0.1.1",
     "dompurify": "2.4.5",
     "element-matches": "^0.1.2",
     "eslint": "7.32.0",
@@ -105,6 +106,7 @@
     "jszip": "3.8.0",
     "lodash": "4.17.21",
     "marked": "4.0.17",
+    "node-polyfill-webpack-plugin": "^3.0.0",
     "nodemon": "2.0.22",
     "nyc": "15.1.0",
     "papaparse": "5.3.0",
@@ -162,5 +164,8 @@
       ".js",
       ".vue"
     ]
+  },
+  "devDependencies": {
+    "@types/codemirror": "^5.60.15"
   }
 }

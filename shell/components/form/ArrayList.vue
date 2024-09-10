@@ -257,9 +257,7 @@ export default {
         </slot>
       </div>
       <div
-        v-for="(row, idx) in rows"
-        :key="idx"
-        :data-testid="`array-list-box${ idx }`"
+        v-for="(row, idx) in rows" :key="idx":data-testid="`array-list-box${ idx }`"
         class="box"
       >
         <slot
@@ -305,7 +303,7 @@ export default {
               <input
                 v-else
                 ref="value"
-                v-model="row.value"
+                v-model:value="row.value"
                 :data-testid="`input-${idx}`"
                 :placeholder="valuePlaceholder"
                 :disabled="isView || disabled"

@@ -8,6 +8,7 @@ const { dev, devPorts, api, proxyWsOpts, proxyOpts, proxyMetaOpts, proxyPrimeOpt
 const har = require('./server/har-file');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const VirtualModulesPlugin = require('webpack-virtual-modules');
+// const DiffMatchPatchPlugin = require('diff-match-patch');
 
 // Suppress info level logging messages from http-proxy-middleware
 // This hides all of the "[HPM Proxy created] ..." messages
@@ -544,6 +545,7 @@ module.exports = function(dir, _appConfig) {
       config.plugins.push(getPackageImport(dir));
       config.plugins.push(createEnvVariablesPlugin(routerBasePath, rancherEnv));
       config.plugins.push(new NodePolyfillPlugin()); // required from Webpack 5 to polyfill node modules
+      // config.plugins.push(new DiffMatchPatchPlugin()); // required from Webpack 5 to polyfill node modules
 
       // The static assets need to be in the built assets directory in order to get served (primarily the favicon)
       config.plugins.push(new CopyWebpackPlugin({ patterns: [{ from: path.join(SHELL_ABS, 'static'), to: '.' }] }));

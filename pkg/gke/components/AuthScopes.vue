@@ -113,9 +113,7 @@ export default defineComponent({
     </div>
     <div v-if="scopeMode==='custom'">
       <template
-        v-for="(scopeKey, index) in Object.keys(formOptions)"
-        :key="index"
-      >
+        v-for="(scopeKey, index) in Object.keys(formOptions)" :key="index">
         <div
           v-if="!(index%2)"
           :key="scopeKey"

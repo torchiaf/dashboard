@@ -89,9 +89,7 @@ export default {
 <template>
   <span class="name-container">
     <template
-      v-for="(type, key, i) in types"
-      :key="i"
-    >
+      v-for="(type, key, i) in types" :key="i">
       <div
         class="logo"
       >

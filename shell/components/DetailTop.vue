@@ -215,9 +215,7 @@ export default {
         class="details"
       >
         <div
-          v-for="(detail, i) in group"
-          :key="i"
-          class="detail"
+          v-for="(detail, i) in group" :key="i"class="detail"
         >
           <span class="label">
             {{ detail.label }}:
@@ -242,9 +240,7 @@ export default {
           {{ t('resourceDetail.detailTop.labels') }}:
         </span>
         <Tag
-          v-for="(prop, key) in labels"
-          :key="key"
-        >
+          v-for="(prop, key) in labels" :key="key">
           <i
             v-if="internalIcons[key]"
             class="icon"
@@ -285,9 +281,7 @@ export default {
       </a>
       <div v-if="annotationsVisible">
         <DetailText
-          v-for="(val, key) in annotations"
-          :key="key"
-          class="annotation"
+          v-for="(val, key) in annotations" :key="key"class="annotation"
           :value="val"
           :label="key"
         />

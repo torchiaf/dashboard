@@ -367,9 +367,7 @@ export default {
             #cell:role="{row}"
           >
             <span
-              v-for="(role, j) in row.allRoles"
-              :key="j"
-              ref="value"
+              v-for="(role, j) in row.allRoles" :key="j"ref="value"
               :data-testid="`role-value-${j}`"
               class="role"
             >
@@ -388,9 +386,7 @@ export default {
             </span>
           </template>
           <template
-            v-for="(project, i) in projectsWithoutRoles"
-            :key="i"
-            v-slot:[slotName(project)]
+            v-for="(project, i) in projectsWithoutRoles" :key="i"v-slot:[slotName(project)]
           >
             <tr
               class="main-row"

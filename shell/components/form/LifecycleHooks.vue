@@ -67,7 +67,7 @@ export default {
       <HookOption
         v-model:value="postStart"
         :mode="mode"
-        @input="update"
+        @update:value="update"
       />
     </div>
 
@@ -78,7 +78,7 @@ export default {
       <HookOption
         v-model:value="preStop"
         :mode="mode"
-        @input="update"
+        @update:value="update"
       />
     </div>
   </div>

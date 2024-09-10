@@ -177,7 +177,7 @@ export default {
               :placeholder="t(`authConfig.${NAME}.host.placeholder`)"
               :required="true"
               :mode="mode"
-              @input="updateHost($event.selected, $event.text)"
+              @update:value="updateHost($event.selected, $event.text)"
             />
           </div>
         </div>

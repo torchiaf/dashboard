@@ -527,7 +527,7 @@ export default {
               >
                 <input
                   ref="clusterFilter"
-                  v-model="clusterFilter"
+                  v-model:value="clusterFilter"
                   :placeholder="t('nav.search.placeholder')"
                 >
                 <i
@@ -561,9 +561,7 @@ export default {
               </a>
             </div>
             <div
-              v-for="(a, i) in appBar.hciApps"
-              :key="i"
-              @click="hide()"
+              v-for="(a, i) in appBar.hciApps" :key="i"@click="hide()"
             >
               <router-link
                 class="option"
@@ -592,9 +590,7 @@ export default {
                 class="clustersPinned"
               >
                 <div
-                  v-for="(c, index) in appBar.pinFiltered"
-                  :key="index"
-                  :data-testid="`pinned-ready-cluster-${index}`"
+                  v-for="(c, index) in appBar.pinFiltered" :key="index":data-testid="`pinned-ready-cluster-${index}`"
                   @click="hide()"
                 >
                   <button
@@ -667,9 +663,7 @@ export default {
               <!-- Clusters Search result -->
               <div class="clustersList">
                 <div
-                  v-for="(c, index) in appBar.clustersFiltered"
-                  :key="index"
-                  :data-testid="`top-level-menu-cluster-${index}`"
+                  v-for="(c, index) in appBar.clustersFiltered" :key="index":data-testid="`top-level-menu-cluster-${index}`"
                   @click="hide()"
                 >
                   <button
@@ -773,9 +767,7 @@ export default {
                 </span>
               </div>
               <div
-                v-for="(a, i) in appBar.multiClusterApps"
-                :key="i"
-                @click="hide()"
+                v-for="(a, i) in appBar.multiClusterApps" :key="i"@click="hide()"
               >
                 <router-link
                   class="option"
@@ -801,9 +793,7 @@ export default {
                 </span>
               </div>
               <div
-                v-for="(a, i) in appBar.legacyApps"
-                :key="i"
-                @click="hide()"
+                v-for="(a, i) in appBar.legacyApps" :key="i"@click="hide()"
               >
                 <router-link
                   class="option"
@@ -831,9 +821,7 @@ export default {
                 </span>
               </div>
               <div
-                v-for="(a, i) in appBar.configurationApps"
-                :key="i"
-                @click="hide()"
+                v-for="(a, i) in appBar.configurationApps" :key="i"@click="hide()"
               >
                 <router-link
                   class="option"

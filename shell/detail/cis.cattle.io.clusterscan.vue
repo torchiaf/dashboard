@@ -263,9 +263,7 @@ export default {
   <div v-else>
     <div class="detail mb-20">
       <div
-        v-for="(item, i) in details"
-        :key="i"
-      >
+        v-for="(item, i) in details" :key="i">
         <span class="text-label">{{ item.label }}</span>:
         <component
           :is="item.component"

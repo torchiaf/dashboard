@@ -269,9 +269,7 @@ export default {
       <span />
     </div>
     <div
-      v-for="(row, index) in rules"
-      :key="index"
-      class="match-expression-row"
+      v-for="(row, index) in rules" :key="index"class="match-expression-row"
       :class="{'view':isView, 'mb-10': index !== rules.length - 1, 'match-expression-row-matching': matchingSelectorDisplay}"
     >
       <!-- Select for matchFields and matchExpressions -->
@@ -299,10 +297,10 @@ export default {
         </div>
         <input
           v-else-if="!hasKeySelectOptions"
-          v-model="row.key"
+          v-model:value="row.key"
           :mode="mode"
           :data-testid="`input-match-expression-key-control-${index}`"
-          @input="update"
+          @update:value="update"
         >
         <LabeledSelect
           v-else
@@ -346,11 +344,11 @@ export default {
         </div>
         <input
           v-else
-          v-model="row.values"
+          v-model:value="row.values"
           :mode="mode"
           :disabled="row.operator==='Exists' || row.operator==='DoesNotExist'"
           :data-testid="`input-match-expression-values-control-${index}`"
-          @input="update"
+          @update:value="update"
         >
       </div>
       <div

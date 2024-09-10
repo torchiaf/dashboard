@@ -40,7 +40,7 @@ const bindValue = (value, el, binding, vnode) => {
   }
 };
 
-const unbindValue = (value, el) => {
+const unmountedValue = (value, el) => {
   for (const key in value) {
     const k = ShortKey.encodeKey(value[key]);
     const idxElm = mapFunctions[k].el.indexOf(el);
@@ -55,7 +55,7 @@ const unbindValue = (value, el) => {
 
 ShortKey.install = (Vue, options) => {
   elementAvoided = [...(options && options.prevent ? options.prevent : [])];
-  Vue.directive('shortkey', {
+  vueApp.directive('shortkey', {
     beforeMount: (el, binding, vnode) => {
       // Mapping the commands
       const value = parseValue(binding.value);
@@ -65,7 +65,7 @@ ShortKey.install = (Vue, options) => {
     updated: (el, binding, vnode) => {
       const oldValue = parseValue(binding.oldValue);
 
-      unbindValue(oldValue, el);
+      unmountedValue(oldValue, el);
 
       const newValue = parseValue(binding.value);
 
@@ -74,7 +74,7 @@ ShortKey.install = (Vue, options) => {
     unmounted: (el, binding) => {
       const value = parseValue(binding.value);
 
-      unbindValue(value, el);
+      unmountedValue(value, el);
     }
   });
 };
