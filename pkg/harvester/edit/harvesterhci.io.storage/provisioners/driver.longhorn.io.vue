@@ -8,6 +8,7 @@ import { _CREATE, _VIEW } from '@shell/config/query-params';
 import { LONGHORN } from '@shell/config/types';
 import { clone } from '@shell/utils/object';
 import { uniq } from '@shell/utils/array';
+import { LONGHORN_VERSION_V1, LONGHORN_VERSION_V2 } from '@shell/models/persistentvolume';
 
 const LONGHORN_V2_DATA_ENGINE = 'longhorn-system/v2-data-engine';
 
@@ -46,7 +47,7 @@ export default {
     const inStore = this.$store.getters['currentProduct'].inStore;
     const v2DataEngine = this.$store.getters[`${ inStore }/byId`](LONGHORN.SETTINGS, LONGHORN_V2_DATA_ENGINE) || {};
 
-    const longhornVersion = v2DataEngine.value === 'true' ? 'v2' : 'v1';
+    const longhornVersion = v2DataEngine.value === 'true' ? LONGHORN_VERSION_V2 : LONGHORN_VERSION_V1;
 
     if (this.realMode === _CREATE) {
       this.$set(this.value, 'parameters', {
@@ -54,11 +55,14 @@ export default {
         staleReplicaTimeout: '30',
         diskSelector:        null,
         nodeSelector:        null,
-        migratable:          longhornVersion === 'v2' ? 'false' : 'true',
+        migratable:          longhornVersion === LONGHORN_VERSION_V2 ? 'false' : 'true',
       });
     }
 
-    return { longhornVersion };
+    return {
+      LONGHORN_VERSION_V2,
+      longhornVersion
+    };
   },
 
   computed: {
@@ -236,7 +240,7 @@ export default {
           :label="t('harvester.storage.parameters.migratable.label')"
           :mode="mode"
           :options="migratableOptions"
-          :disabled="longhornVersion === 'v2'"
+          :disabled="longhornVersion === LONGHORN_VERSION_V2"
         />
       </div>
     </div>
