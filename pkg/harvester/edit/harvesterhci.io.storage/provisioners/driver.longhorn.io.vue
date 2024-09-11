@@ -9,6 +9,8 @@ import { LONGHORN } from '@shell/config/types';
 import { clone } from '@shell/utils/object';
 import { uniq } from '@shell/utils/array';
 
+const LONGHORN_V2_DATA_ENGINE = 'longhorn-system/v2-data-engine';
+
 const DEFAULT_PARAMETERS = [
   'numberOfReplicas',
   'staleReplicaTimeout',
@@ -41,17 +43,22 @@ export default {
   },
 
   data() {
+    const inStore = this.$store.getters['currentProduct'].inStore;
+    const v2DataEngine = this.$store.getters[`${ inStore }/byId`](LONGHORN.SETTINGS, LONGHORN_V2_DATA_ENGINE) || {};
+
+    const longhornVersion = v2DataEngine.value === 'true' ? 'v2' : 'v1';
+
     if (this.realMode === _CREATE) {
       this.$set(this.value, 'parameters', {
         numberOfReplicas:    '3',
         staleReplicaTimeout: '30',
         diskSelector:        null,
         nodeSelector:        null,
-        migratable:          'true',
+        migratable:          longhornVersion === 'v2' ? 'false' : 'true',
       });
     }
 
-    return {};
+    return { longhornVersion };
   },
 
   computed: {
@@ -229,6 +236,7 @@ export default {
           :label="t('harvester.storage.parameters.migratable.label')"
           :mode="mode"
           :options="migratableOptions"
+          :disabled="longhornVersion === 'v2'"
         />
       </div>
     </div>
