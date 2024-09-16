@@ -1,4 +1,3 @@
-import Vue from 'vue';
 import SteveModel from '@shell/plugins/steve/steve-class';
 import { HCI } from '@shell/config/labels-annotations';
 
@@ -16,7 +15,7 @@ export default class NetworkAttachmentDef extends SteveModel {
       })
     };
 
-    Vue.set(this, 'spec', spec);
+    this['spec'] = spec;
   }
 
   get parseConfig() {
