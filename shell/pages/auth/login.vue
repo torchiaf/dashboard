@@ -64,7 +64,7 @@ export default {
   },
 
   computed: {
-    ...mapGetters({ t: 'i18n/t' }),
+    ...mapGetters({ t: 'i18n/t', hasMultipleLocales: 'i18n/hasMultipleLocales' }),
 
     loggedOutSuccessMsg() {
       if (this.isSlo) {
@@ -494,6 +494,12 @@ export default {
             >
               {{ nonLocalPrompt }}
             </a>
+          </div>
+          <div
+            v-if="hasMultipleLocales"
+            class="locale-elector"
+          >
+            <LocaleSelector mode="login" />
           </div>
         </template>
         <div

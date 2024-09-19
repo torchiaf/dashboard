@@ -18,7 +18,7 @@ export const state = function() {
   // const available = translationContext.keys().map(path => path.replace(/^.*\/([^\/]+)\.[^.]+$/, '$1'));
   // Using require.context() forces them to all be in the same webpack chunk name... just hardcode the list for now so zh-hans
   // gets generated as it's own chunk instead of being loaded all the time.
-  const available = [DEFAULT_LOCALE, 'zh-hans'];
+  const available = [DEFAULT_LOCALE];
 
   const out = {
     default:      DEFAULT_LOCALE,
@@ -58,7 +58,11 @@ export const getters = {
     return out;
   },
 
-  t: (state) => (key, args, language) => {
+  hasMultipleLocales(state) {
+    return state.available.length > 1;
+  },
+
+  t: state => (key, args, language) => {
     if (state.selected === NONE && !language) {
       return `%${ key }%`;
     }
@@ -333,7 +337,7 @@ export const actions = {
 
     commit('setSelected', locale);
 
-    // Ony update the preference if the locale changed
+    // Only update the preference if the locale changed
     if (currentLocale !== locale) {
       dispatch('prefs/set', {
         key:   'locale',

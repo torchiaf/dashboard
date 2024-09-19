@@ -70,7 +70,23 @@ export default class Namespace extends SteveModel {
       });
     }
 
+    insertAt(out, 5, {
+      action:  'editNSQuota',
+      label:   this.t('harvester.modal.quota.editQuota'),
+      icon:    'icon icon-storage',
+      enabled: !!this?.actions?.updateResourceQuota && !!this?.actions?.deleteResourceQuota,
+      weight:  4,
+    });
+
     return out;
+  }
+
+  editNSQuota(resources = this) {
+    this.$dispatch('promptModal', {
+      resources,
+      snapshotSizeQuota: this.snapshotSizeQuota,
+      component:         'HarvesterQuotaDialog'
+    });
   }
 
   move(resources = this) {
