@@ -17,7 +17,7 @@ import { exceptionToErrorsArray } from '@shell/utils/error';
 import { allHash } from '@shell/utils/promise';
 import { STORAGE_CLASS } from '@shell/config/types';
 import { HCI } from '../types';
-import { LVM_DRIVER } from '@shell/models/storage.k8s.io.storageclass';
+import { LVM_DRIVER } from '../models/harvester/storage.k8s.io.storageclass';
 
 const DOWNLOAD = 'download';
 const UPLOAD = 'upload';

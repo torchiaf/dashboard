@@ -51,5 +51,6 @@ export const HCI = {
   PARENT_SRIOV_GPU:               'harvesterhci.io/parentSRIOVGPUDevice',
   VM_MAINTENANCE_MODE_STRATEGY:   'harvesterhci.io/maintain-mode-strategy',
   NODE_CPU_MANAGER_UPDATE_STATUS: 'harvesterhci.io/cpu-manager-update-status',
-  CPU_MANAGER:                    'cpumanager'
+  CPU_MANAGER:                    'cpumanager',
+  DISABLE_LONGHORN_V2_ENGINE:     'node.longhorn.io/disable-v2-data-engine'
 };

@@ -67,5 +67,6 @@ export const ADD_ONS = {
   NVIDIA_DRIVER_TOOLKIT_CONTROLLER: 'nvidia-driver-toolkit',
   RANCHER_LOGGING:                  'rancher-logging',
   RANCHER_MONITORING:               'rancher-monitoring',
-  VM_IMPORT_CONTROLLER:             'vm-import-controller'
+  VM_IMPORT_CONTROLLER:             'vm-import-controller',
+  LVM_DRIVER:                       'lvm.driver.harvesterhci.io'
 };
