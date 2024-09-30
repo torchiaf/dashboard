@@ -432,7 +432,7 @@ export default {
         />
         <div v-if="isHarvester">
           <LabeledSelect
-            v-model="loggingType"
+            v-model:value="loggingType"
             class="mb-20"
             :options="flowTypeOptions"
             :mode="mode"

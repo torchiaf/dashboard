@@ -1,7 +1,7 @@
 <script>
 import { mapGetters } from 'vuex';
 import ResourceTable, { defaultTableSortGenerationFn } from '@shell/components/ResourceTable';
-import { STATE, AGE, NAME } from '@shell/config/table-headers';
+import { STATE, AGE, NAME, NS_SNAPSHOT_QUOTA } from '@shell/config/table-headers';
 import { uniq } from '@shell/utils/array';
 import { MANAGEMENT, NAMESPACE, VIRTUAL_TYPES, HCI } from '@shell/config/types';
 import { PROJECT_ID, FLAT_VIEW } from '@shell/config/query-params';
