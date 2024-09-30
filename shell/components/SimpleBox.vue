@@ -31,7 +31,7 @@ export default {
   <div
     v-if="shown"
     class="simple-box"
-    v-on="$listeners"
+    
   >
     <div
       v-if="title || canClose || $slots.title"

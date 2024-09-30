@@ -316,9 +316,7 @@ export default {
             </div>
 
             <div
-              v-for="a in hciApps"
-              :key="a.label"
-              @click="hide()"
+               v-for="(a, i) in hciApps" :key="i" @click="hide()"
             >
               <nuxt-link
                 class="option"
@@ -344,7 +342,7 @@ export default {
             >
               <input
                 ref="clusterFilter"
-                v-model="clusterFilter"
+                v-model:value="clusterFilter"
                 :placeholder="t('nav.search.placeholder')"
               >
               <i
@@ -358,9 +356,7 @@ export default {
               class="clusters"
             >
               <div
-                v-for="c in clustersFiltered"
-                :key="c.id"
-                @click="hide()"
+                 v-for="(c, i) in clustersFiltered" :key="i" @click="hide()"
               >
                 <nuxt-link
                   v-if="c.ready"
@@ -402,9 +398,7 @@ export default {
               {{ t('nav.categories.multiCluster') }}
             </div>
             <div
-              v-for="a in multiClusterApps"
-              :key="a.label"
-              @click="hide()"
+               v-for="(a, i) in multiClusterApps" :key="i" @click="hide()"
             >
               <nuxt-link
                 class="option"
@@ -423,9 +417,7 @@ export default {
               {{ t('nav.categories.legacy') }}
             </div>
             <div
-              v-for="a in legacyApps"
-              :key="a.label"
-              @click="hide()"
+               v-for="(a, i) in legacyApps" :key="i" @click="hide()"
             >
               <nuxt-link
                 class="option"
@@ -444,9 +436,7 @@ export default {
               {{ t('nav.categories.configuration') }}
             </div>
             <div
-              v-for="a in configurationApps"
-              :key="a.label"
-              @click="hide()"
+               v-for="(a, i) in configurationApps" :key="i" @click="hide()"
             >
               <nuxt-link
                 class="option"
@@ -819,15 +809,15 @@ export default {
   }
 
   .localeSelector {
-    ::v-deep .popover-inner {
+    :deep() .popover-inner {
       padding: 50px 0;
     }
 
-    ::v-deep .popover-arrow {
+    :deep() .popover-arrow {
       display: none;
     }
 
-    ::v-deep .popover:focus {
+    :deep() .popover:focus {
       outline: 0;
     }
 

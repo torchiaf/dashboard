@@ -120,7 +120,7 @@ export default {
         :text-value="value.path"
         :searchable="false"
         :text-rules="rules.path"
-        @input="queueUpdatePathTypeAndPath"
+        @update:value="queueUpdatePathTypeAndPath"
       />
     </div>
     <div
@@ -129,9 +129,9 @@ export default {
     >
       <input
         ref="first"
-        v-model="path"
+        v-model:value="path"
         :placeholder="t('ingress.rules.path.placeholder', undefined, true)"
-        @input="queueUpdate"
+        @update:value="queueUpdate"
       >
     </div>
     <div
@@ -139,7 +139,7 @@ export default {
       :class="{'span-3': ingress.showPathType, 'span-4': !ingress.showPathType}"
     >
       <Select
-        v-model="serviceName"
+        v-model:value="serviceName"
         option-label="label"
         option-key="label"
         :options="serviceTargets"
@@ -148,7 +148,7 @@ export default {
         :searchable="true"
         :tooltip="serviceTargetTooltip"
         :hover-tooltip="true"
-        @input="servicePort = ''; queueUpdate();"
+        @update:value="servicePort = ''; queueUpdate();"
       />
     </div>
     <div
@@ -158,19 +158,19 @@ export default {
     >
       <LabeledInput
         v-if="portOptions.length === 0"
-        v-model="servicePort"
+        v-model:value="servicePort"
         class="fullHeightInput"
         :placeholder="t('ingress.rules.port.placeholder')"
         :rules="rules.port"
-        @input="queueUpdate"
+        @update:value="queueUpdate"
       />
       <Select
         v-else
-        v-model="servicePort"
+        v-model:value="servicePort"
         :options="portOptions"
         :placeholder="t('ingress.rules.port.placeholder')"
         :rules="rules.port"
-        @input="queueUpdate"
+        @update:value="queueUpdate"
       />
     </div>
     <button
@@ -184,7 +184,7 @@ export default {
 <style lang="scss" scoped>
 $row-height: 40px;
 
-.labeled-input ::v-deep, ::v-deep .labeled-input {
+.labeled-input :deep(), :deep() .labeled-input {
   padding: 0 !important;
   height: 100%;
   input.no-label {
@@ -192,7 +192,7 @@ $row-height: 40px;
     padding: 10px;
   }
 }
-.rule-path ::v-deep {
+.rule-path :deep() {
   .col, INPUT {
     height: $row-height;
   }

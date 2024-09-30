@@ -119,7 +119,7 @@ export default {
         class="mt-20"
       >
         <Checkbox
-          v-model="removeRepo"
+          v-model:value="removeRepo"
           :primary="true"
           label-key="plugins.setup.remove.registry.title"
           data-testid="disable-ext-modal-remove-repo"
@@ -133,7 +133,7 @@ export default {
         class="mt-20"
       >
         <Checkbox
-          v-model="removeCRD"
+          v-model:value="removeCRD"
           :primary="true"
           label-key="plugins.setup.remove.crd.title"
         />

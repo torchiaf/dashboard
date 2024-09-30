@@ -3,7 +3,8 @@
  * so that it doesn't all get loaded put into vendor.js
  */
 
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import VueCodemirror from 'vue-codemirror';
 import CodeMirror from 'codemirror';
 
@@ -35,7 +36,7 @@ import 'codemirror/addon/hint/anyword-hint.js';
 
 import { strPad } from '@shell/utils/string';
 
-Vue.use(VueCodemirror);
+vueApp.use(VueCodemirror);
 export default VueCodemirror;
 
 function isLineComment(cm, lineNo) {

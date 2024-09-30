@@ -44,10 +44,10 @@ export default {
     }));
 
     if (this.mode !== _VIEW) {
-      this.$set(this.value, 'spec', this.value.spec || {});
+      this.value['spec'] = this.value.spec || {};
 
       providers.forEach((provider) => {
-        this.$set(this.value.spec, provider.name, this.value.spec[provider.name] || clone(provider.default));
+        this.value.spec[provider.name] = this.value.spec[provider.name] || clone(provider.default);
       });
     }
 
@@ -133,7 +133,7 @@ export default {
       if (!isEmpty(bufferJson)) {
         this.value.spec[this.selectedProvider].buffer = bufferJson;
       } else {
-        this.$delete(this.value.spec[this.selectedProvider], 'buffer');
+        delete this.value.spec[this.selectedProvider]['buffer'];
       }
       this.save(done);
     },
@@ -204,7 +204,7 @@ export default {
           <div class="row">
             <div class="col span-6">
               <LabeledSelect
-                v-model="selectedProvider"
+                v-model:value="selectedProvider"
                 label="Output"
                 :options="providers"
                 :mode="mode"
@@ -226,7 +226,7 @@ export default {
         >
           <YamlEditor
             ref="yaml"
-            v-model="bufferYaml"
+            v-model:value="bufferYaml"
             :scrolling="false"
             :initial-yaml-values="initialBufferYaml"
             :editor-mode="isView ? EDITOR_MODES.VIEW_CODE : EDITOR_MODES.EDIT_CODE"

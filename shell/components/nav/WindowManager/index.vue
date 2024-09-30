@@ -329,9 +329,7 @@ export default {
         <i class="icon icon-code" />
       </div>
       <div
-        v-for="tab in tabs"
-        :key="tab.id"
-        class="tab"
+         v-for="(tab, i) in tabs" :key="i" class="tab"
         :class="{'active': tab.id === active}"
         @click="switchTo(tab.id)"
       >
@@ -365,9 +363,7 @@ export default {
       </div>
     </div>
     <div
-      v-for="tab in tabs"
-      :key="tab.id"
-      class="body"
+       v-for="(tab, i) in tabs" :key="i" class="body"
       :class="{'active': tab.id === active}"
       draggable="false"
       @dragstart.prevent.stop

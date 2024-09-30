@@ -1,4 +1,5 @@
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 
 export function trimWhitespace(el, dir) {
   for (const node of el.childNodes) {
@@ -31,7 +32,7 @@ export function trimWhitespaceSsr(el, dir) {
   */
 }
 
-Vue.directive('trim-whitespace', {
+vueApp.directive('trim-whitespace', {
   inserted:         trimWhitespace,
   componentUpdated: trimWhitespace
 });

@@ -304,7 +304,7 @@ export default {
             >
             <div class="mb-20">
               <RadioGroup
-                v-model="useRandom"
+                v-model:value="useRandom"
                 data-testid="setup-password-mode"
                 name="password-mode"
                 :options="passwordOptions"
@@ -368,7 +368,7 @@ export default {
               </p>
               <div class="mt-20">
                 <LabeledInput
-                  v-model="serverUrl"
+                  v-model:value="serverUrl"
                   :label="t('setup.serverUrl.label')"
                   data-testid="setup-server-url"
                 />
@@ -378,7 +378,7 @@ export default {
             <div class="checkbox mt-40">
               <Checkbox
                 id="checkbox-telemetry"
-                v-model="telemetry"
+                v-model:value="telemetry"
               >
                 <template #label>
                   <t
@@ -392,7 +392,7 @@ export default {
             <div class="checkbox pt-10 eula">
               <Checkbox
                 id="checkbox-eula"
-                v-model="eula"
+                v-model:value="eula"
                 data-testid="setup-agreement"
               >
                 <template #label>
@@ -422,9 +422,7 @@ export default {
 
           <div class="setup-errors mt-20">
             <h4
-              v-for="err in errors"
-              :key="err"
-              class="text-error text-center"
+               v-for="(err, i) in errors" :key="i" class="text-error text-center"
             >
               {{ err }}
             </h4>
@@ -487,7 +485,7 @@ export default {
     }
 
     .setup-title {
-      ::v-deep code {
+      :deep() code {
         font-size: 12px;
         padding: 0;
       }

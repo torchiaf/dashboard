@@ -470,7 +470,7 @@ export default {
     >
       <div :class="firstCol">
         <LabeledSelect
-          v-model="selected"
+          v-model:value="selected"
           :mode="mode"
           :label-key="labelKey"
           :loading="$fetchState.pending"
@@ -481,7 +481,7 @@ export default {
       <template v-if="selected === _SSH">
         <div :class="moreCols">
           <LabeledInput
-            v-model="publicKey"
+            v-model:value="publicKey"
             :mode="mode"
             type="multiline"
             label-key="selectOrCreateAuthSecret.ssh.publicKey"
@@ -489,7 +489,7 @@ export default {
         </div>
         <div :class="moreCols">
           <LabeledInput
-            v-model="privateKey"
+            v-model:value="privateKey"
             :mode="mode"
             type="multiline"
             label-key="selectOrCreateAuthSecret.ssh.privateKey"
@@ -499,14 +499,14 @@ export default {
       <template v-else-if="selected === _BASIC">
         <div :class="moreCols">
           <LabeledInput
-            v-model="publicKey"
+            v-model:value="publicKey"
             :mode="mode"
             label-key="selectOrCreateAuthSecret.basic.username"
           />
         </div>
         <div :class="moreCols">
           <LabeledInput
-            v-model="privateKey"
+            v-model:value="privateKey"
             :mode="mode"
             type="password"
             label-key="selectOrCreateAuthSecret.basic.password"
@@ -516,14 +516,14 @@ export default {
       <template v-else-if="selected === _S3">
         <div :class="moreCols">
           <LabeledInput
-            v-model="publicKey"
+            v-model:value="publicKey"
             :mode="mode"
             label-key="selectOrCreateAuthSecret.s3.accessKey"
           />
         </div>
         <div :class="moreCols">
           <LabeledInput
-            v-model="privateKey"
+            v-model:value="privateKey"
             :mode="mode"
             type="password"
             label-key="selectOrCreateAuthSecret.s3.secretKey"

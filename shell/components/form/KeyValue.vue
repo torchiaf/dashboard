@@ -59,8 +59,8 @@ export default {
 
     protip: {
       type: [String, Boolean],
-      default() {
-        return this.$store.getters['i18n/t']('keyValue.protip', null, true);
+      default(props) {
+        return props.$store.getters['i18n/t']('keyValue.protip', null, true);
       },
     },
     // For asMap=false, the name of the field that goes into the row objects
@@ -407,7 +407,7 @@ export default {
         return (row.value.length || row.key.length);
       });
 
-      this.$set(this, 'rows', cleaned);
+      this['rows'] = cleaned;
     },
     onFileSelected(file) {
       const { name, value } = this.fileModifier(file.name, file.value);
@@ -543,7 +543,7 @@ export default {
      * Set focus on CodeMirror fields
      */
     onFocusMarkdownMultiline(idx, value) {
-      this.$set(this.codeMirrorFocus, idx, value);
+      this.codeMirrorFocus[idx] = value;
     }
   }
 };
@@ -582,9 +582,7 @@ export default {
           {{ valueLabel }}
         </label>
         <label
-          v-for="c in extraColumns"
-          :key="c"
-        >
+           v-for="(c, i) in extraColumns" :key="i" >
           <slot :name="'label:'+c">{{ c }}</slot>
         </label>
         <slot
@@ -603,12 +601,11 @@ export default {
         </div>
       </template>
       <template
-        v-for="(row,i) in filteredRows"
+        v-for="(row,i) in filteredRows" :key="i"
         v-else
       >
         <!-- Key -->
         <div
-          :key="i+'key'"
           class="kv-item key"
         >
           <slot
@@ -623,21 +620,21 @@ export default {
             <Select
               v-if="keyOptions"
               ref="key"
-              v-model="row[keyName]"
+              v-model:value="row[keyName]"
               :searchable="true"
               :disabled="disabled || isProtected(row.key)"
               :clearable="false"
               :taggable="keyTaggable"
               :options="calculateOptions(row[keyName])"
-              @input="queueUpdate"
+              @update:value="queueUpdate"
             />
             <input
               v-else
               ref="key"
-              v-model="row[keyName]"
+              v-model:value="row[keyName]"
               :disabled="isView || disabled || !keyEditable || isProtected(row.key)"
               :placeholder="keyPlaceholder"
-              @input="queueUpdate"
+              @update:value="queueUpdate"
               @paste="onPaste(i, $event)"
             >
           </slot>
@@ -645,7 +642,6 @@ export default {
 
         <!-- Value -->
         <div
-          :key="i+'value'"
           class="kv-item value"
         >
           <slot
@@ -675,32 +671,30 @@ export default {
             />
             <TextAreaAutoGrow
               v-else-if="valueMultiline"
-              v-model="row[valueName]"
+              v-model:value="row[valueName]"
               :class="{'conceal': valueConcealed}"
               :disabled="disabled || isProtected(row.key)"
               :mode="mode"
               :placeholder="valuePlaceholder"
               :min-height="40"
               :spellcheck="false"
-              @input="queueUpdate"
+              @update:value="queueUpdate"
             />
             <input
               v-else
-              v-model="row[valueName]"
+              v-model:value="row[valueName]"
               :disabled="isView || disabled || isProtected(row.key)"
               :type="valueConcealed ? 'password' : 'text'"
               :placeholder="valuePlaceholder"
               autocorrect="off"
               autocapitalize="off"
               spellcheck="false"
-              @input="queueUpdate"
+              @update:value="queueUpdate"
             >
           </slot>
         </div>
         <div
-          v-for="c in extraColumns"
-          :key="i + c"
-          class="kv-item extra"
+           v-for="(c, i) in extraColumns" :key="i" class="kv-item extra"
         >
           <slot
             :name="'col:' + c"

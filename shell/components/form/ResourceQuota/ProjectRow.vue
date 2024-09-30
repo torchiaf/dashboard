@@ -32,11 +32,11 @@ export default {
   methods: {
     updateType(type) {
       if (typeof this.value.spec.resourceQuota.limit[this.type] !== 'undefined') {
-        this.$delete(this.value.spec.resourceQuota.limit, this.type);
+        delete this.value.spec.resourceQuota.limit[this.type];
       }
 
       if (typeof this.value.spec.namespaceDefaultResourceQuota.limit[this.type] !== 'undefined') {
-        this.$delete(this.value.spec.namespaceDefaultResourceQuota.limit, this.type);
+        delete this.value.spec.namespaceDefaultResourceQuota.limit[this.type];
       }
 
       this.$emit('type-change', type);
@@ -54,10 +54,10 @@ export default {
       :mode="mode"
       :value="type"
       :options="types"
-      @input="updateType($event)"
+      @update:value="updateType($event)"
     />
     <UnitInput
-      v-model="value.spec.resourceQuota.limit[type]"
+      v-model:value="value.spec.resourceQuota.limit[type]"
       class="mr-10"
       :mode="mode"
       :placeholder="typeOption.placeholder"
@@ -67,7 +67,7 @@ export default {
       :output-modifier="true"
     />
     <UnitInput
-      v-model="value.spec.namespaceDefaultResourceQuota.limit[type]"
+      v-model:value="value.spec.namespaceDefaultResourceQuota.limit[type]"
       :mode="mode"
       :placeholder="typeOption.placeholder"
       :increment="typeOption.increment"

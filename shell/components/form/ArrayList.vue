@@ -48,8 +48,8 @@ export default {
     },
     addLabel: {
       type: String,
-      default() {
-        return this.$store.getters['i18n/t']('generic.add');
+      default(props) {
+        return props.$store.getters['i18n/t']('generic.add');
       },
     },
     addAllowed: {
@@ -233,9 +233,7 @@ export default {
         </slot>
       </div>
       <div
-        v-for="(row, idx) in rows"
-        :key="idx"
-        :data-testid="`array-list-box${ idx }`"
+        v-for="(row, idx) in rows" :key="idx":data-testid="`array-list-box${ idx }`"
         class="box"
       >
         <slot
@@ -258,32 +256,32 @@ export default {
               <TextAreaAutoGrow
                 v-if="valueMultiline"
                 ref="value"
-                v-model="row.value"
+                v-model:value="row.value"
                 :placeholder="valuePlaceholder"
                 :mode="mode"
                 :disabled="disabled"
                 @paste="onPaste(idx, $event)"
-                @input="queueUpdate"
+                @update:value="queueUpdate"
               />
               <LabeledInput
                 v-else-if="rules.length > 0"
                 ref="value"
-                v-model="row.value"
+                v-model:value="row.value"
                 :placeholder="valuePlaceholder"
                 :disabled="isView || disabled"
                 :rules="rules"
                 :compact="false"
                 @paste="onPaste(idx, $event)"
-                @input="queueUpdate"
+                @update:value="queueUpdate"
               />
               <input
                 v-else
                 ref="value"
-                v-model="row.value"
+                v-model:value="row.value"
                 :placeholder="valuePlaceholder"
                 :disabled="isView || disabled"
                 @paste="onPaste(idx, $event)"
-                @input="queueUpdate"
+                @update:value="queueUpdate"
               >
             </slot>
           </div>

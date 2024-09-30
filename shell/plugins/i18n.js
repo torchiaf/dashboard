@@ -26,7 +26,7 @@ function stringFor(store, key, args, raw = false, escapehtml = true) {
   }
 }
 
-Vue.prototype.t = function(key, args, raw) {
+vueApp.config.globalProperties.t = function(key, args, raw) {
   return stringFor(this.$store, key, args, raw);
 };
 
@@ -56,7 +56,7 @@ export function directiveSsr(vnode, binding) {
 
 // InnerHTML: <some-tag v-t="'some.key'" />
 // As an attribute: <some-tag v-t:title="'some.key'" />
-Vue.directive('t', {
+vueApp.directive('t', {
   bind() {
     directive(...arguments);
   },
@@ -68,7 +68,7 @@ Vue.directive('t', {
 
 // Basic (but you might want the directive above): <t k="some.key" />
 // With interpolation: <t k="some.key" count="1" :foo="bar" />
-Vue.component('t', {
+vueApp.component('t', {
   inheritAttrs: false,
   props:        {
     k: {

@@ -117,7 +117,7 @@ export default {
 
         <h3>{{ t(`authConfig.ldap.${NAME}`) }}</h3>
         <config
-          v-model="model"
+          v-model:value="model"
           :type="NAME"
           :mode="mode"
         />
@@ -126,7 +126,7 @@ export default {
         <div class="row mb-20">
           <div class="col span-6">
             <LabeledInput
-              v-model="username"
+              v-model:value="username"
               :label="t(`authConfig.${AUTH_TYPE}.username`)"
               :mode="mode"
               required
@@ -134,7 +134,7 @@ export default {
           </div>
           <div class="col span-6">
             <Password
-              v-model="password"
+              v-model:value="password"
               :label="t(`authConfig.${AUTH_TYPE}.password`)"
               :mode="mode"
               required
@@ -160,7 +160,7 @@ export default {
   .banner {
     display: block;
 
-    &::v-deep code {
+    &:deep() code {
       padding: 0 3px;
       margin: 0 3px;
     }

@@ -323,7 +323,7 @@ export default {
     },
 
     updateMatch(neu, idx) {
-      this.$set(this.matches, idx, neu);
+      this.matches[idx] = neu;
     },
 
     tabChanged({ tab }) {
@@ -355,22 +355,22 @@ export default {
     },
     willSave() {
       if (this.value.spec.filters && isEmpty(this.value.spec.filters)) {
-        this.$delete(this.value.spec, 'filters');
+        delete this.value.spec['filters'];
       }
 
       if (this.value.spec.match && this.isMatchEmpty(this.value.spec.match)) {
-        this.$delete(this.value.spec, 'match');
+        delete this.value.spec['match'];
       }
 
       if (this.loggingType === FLOW_AUDIT) {
-        this.$set(this.value.spec, 'loggingRef', 'harvester-kube-audit-log-ref');
+        this.value.spec['loggingRef'] = 'harvester-kube-audit-log-ref';
       }
 
       if (this.loggingType === FLOW_EVENT) {
         const eventSelector = { select: { labels: { 'app.kubernetes.io/name': 'event-tailer' } } };
 
         if (!this.value.spec.match) {
-          this.$set(this.value.spec, 'match', [eventSelector]);
+          this.value.spec['match'] = [eventSelector];
         } else {
           this.value.spec.match.push(eventSelector);
         }
@@ -406,7 +406,7 @@ export default {
   >
     <NameNsDescription
       v-if="!isView"
-      v-model="value"
+      v-model:value="value"
       :mode="mode"
       :namespaced="value.type !== LOGGING.CLUSTER_FLOW"
     />
@@ -428,7 +428,7 @@ export default {
         />
         <div v-if="isHarvester">
           <LabeledSelect
-            v-model="loggingType"
+            v-model:value="loggingType"
             class="mb-20"
             :options="flowTypeOptions"
             :mode="mode"
@@ -437,7 +437,7 @@ export default {
           />
         </div>
         <ArrayListGrouped
-          v-model="matches"
+          v-model:value="matches"
           :add-label="t('ingress.rules.addRule')"
           :default-add-value="{}"
           :mode="mode"
@@ -452,7 +452,7 @@ export default {
               :containers="containerChoices"
               :is-cluster-flow="value.type === LOGGING.CLUSTER_FLOW"
               @remove="e=>removeMatch(props.row.i)"
-              @input="e=>updateMatch(e,props.row.i)"
+              @update:value="e=>updateMatch(e,props.row.i)"
             />
           </template>
           <template #add>
@@ -485,7 +485,7 @@ export default {
           color="info"
         />
         <LabeledSelect
-          v-model="globalOutputRefs"
+          v-model:value="globalOutputRefs"
           :label="t('logging.flow.clusterOutputs.label')"
           :options="clusterOutputChoices"
           :multiple="true"
@@ -505,7 +505,7 @@ export default {
         </LabeledSelect>
         <LabeledSelect
           v-if="value.type === LOGGING.FLOW"
-          v-model="localOutputRefs"
+          v-model:value="localOutputRefs"
           :label="t('logging.flow.outputs.label')"
           class="mt-10"
           :options="outputChoices"
@@ -533,7 +533,7 @@ export default {
       >
         <YamlEditor
           ref="yaml"
-          v-model="filtersYaml"
+          v-model:value="filtersYaml"
           :scrolling="false"
           :initial-yaml-values="initialFiltersYaml"
           :editor-mode="isView ? EDITOR_MODES.VIEW_CODE : EDITOR_MODES.EDIT_CODE"
@@ -550,7 +550,7 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-::v-deep {
+:deep() {
   .icon-info {
     margin-top: -3px;
     margin-right: 4px;

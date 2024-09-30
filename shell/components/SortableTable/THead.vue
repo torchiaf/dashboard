@@ -215,7 +215,7 @@ export default {
         align="middle"
       >
         <Checkbox
-          v-model="isAll"
+          v-model:value="isAll"
           class="check"
           data-testid="sortable-table_check_select_all"
           :indeterminate="isIndeterminate"
@@ -227,7 +227,7 @@ export default {
         :width="expandWidth"
       />
       <th
-        v-for="col in columns"
+         v-for="(col, i) in columns" :key="i" 
         v-show="!hasAdvancedFiltering || (hasAdvancedFiltering && col.isColVisible)"
         :key="col.name"
         :align="col.align || 'left'"
@@ -295,7 +295,7 @@ export default {
             >
               <span class="table-options-col-subtitle">{{ t('sortableTable.tableHeader.groupBy') }}:</span>
               <LabeledSelect
-                v-model="advGroup"
+                v-model:value="advGroup"
                 class="table-options-grouping-select"
                 :clearable="true"
                 :options="groupOptions"
@@ -311,17 +311,17 @@ export default {
             </p>
             <ul>
               <li
-                v-for="(col, index) in tableColsOptions"
+                v-for="(col, index) in tableColsOptions" :key="index"
                 v-show="col.isTableOption"
                 :key="index"
                 :class="{ 'visible': !col.preventColToggle }"
               >
                 <Checkbox
                   v-show="!col.preventColToggle"
-                  v-model="col.isColVisible"
+                  v-model:value="col.isColVisible"
                   class="table-options-checkbox"
                   :label="col.label"
-                  @input="tableOptionsCheckbox($event, col.label)"
+                  @update:value="tableOptionsCheckbox($event, col.label)"
                 />
               </li>
             </ul>

@@ -156,14 +156,14 @@ export default {
       merge(this.value, extendedDefaults);
 
       if (this.provider.startsWith('rke2')) {
-        this.$set(this.value.rke2IngressNginx, 'enabled', true);
-        this.$set(this.value.rke2Etcd, 'enabled', true);
-        this.$set(this.value.rkeEtcd, 'enabled', false);
+        this.value.rke2IngressNginx['enabled'] = true;
+        this.value.rke2Etcd['enabled'] = true;
+        this.value.rkeEtcd['enabled'] = false;
       } else if (this.provider.startsWith('rke')) {
-        this.$set(this.value, 'ingressNginx', this.value.ingressNginx || {});
-        this.$set(this.value.ingressNginx, 'enabled', true);
+        this.value['ingressNginx'] = this.value.ingressNginx || {};
+        this.value.ingressNginx['enabled'] = true;
       } else {
-        this.$set(this.value.rkeEtcd, 'enabled', false);
+        this.value.rkeEtcd['enabled'] = false;
       }
     }
 
@@ -226,7 +226,7 @@ export default {
           class="row mb-20"
         >
           <Checkbox
-            v-model="value.prometheusOperator.hostNetwork"
+            v-model:value="value.prometheusOperator.hostNetwork"
             label-key="monitoring.hostNetwork.label"
             :tooltip="t('monitoring.hostNetwork.tip', {}, true)"
           />
@@ -234,14 +234,14 @@ export default {
         <div class="row">
           <div class="col span-6">
             <Checkbox
-              v-model="value.global.rbac.userRoles.create"
+              v-model:value="value.global.rbac.userRoles.create"
               label-key="monitoring.createDefaultRoles.label"
               :tooltip="t('monitoring.createDefaultRoles.tip', {}, true)"
             />
           </div>
           <div class="col span-6">
             <Checkbox
-              v-model="value.global.rbac.userRoles.aggregateToDefaultRoles"
+              v-model:value="value.global.rbac.userRoles.aggregateToDefaultRoles"
               label-key="monitoring.aggregateDefaultRoles.label"
               :tooltip="{
                 content: t('monitoring.aggregateDefaultRoles.tip', {}, true),
@@ -257,7 +257,7 @@ export default {
         >
           <div class="col span-6">
             <LabeledInput
-              v-model="value.rkeEtcd.clients.https.certDir"
+              v-model:value="value.rkeEtcd.clients.https.certDir"
               :label="t('monitoring.etcdNodeDirectory.label')"
               :tooltip="t('monitoring.etcdNodeDirectory.tooltip', {}, true)"
               :hover-tooltip="true"
@@ -280,7 +280,7 @@ export default {
     >
       <div>
         <Prometheus
-          v-model="value"
+          v-model:value="value"
           v-bind="$attrs"
           :access-modes="accessModes"
           :mode="mode"
@@ -297,7 +297,7 @@ export default {
     >
       <div>
         <Alerting
-          v-model="value"
+          v-model:value="value"
           :mode="mode"
           :secrets="secrets"
         />
@@ -310,7 +310,7 @@ export default {
     >
       <div>
         <Grafana
-          v-model="value"
+          v-model:value="value"
           :access-modes="accessModes"
           :mode="mode"
           :pvcs="pvcs"

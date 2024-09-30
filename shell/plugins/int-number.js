@@ -1,7 +1,8 @@
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 
-export default Vue.directive('intNumber', {
-  inserted(el) {
+export default vueApp.directive('intNumber', {
+  mounted(el) {
     el.addEventListener('keypress', (e) => {
       e = e || window.event;
       const charcode = typeof e.charCode === 'number' ? e.charCode : e.keyCode;

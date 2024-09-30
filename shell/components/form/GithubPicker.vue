@@ -294,7 +294,7 @@ export default {
           :value="selectedRepo"
           :clearable="false"
           @search="onSearchRepos"
-          @input="selectRepo"
+          @update:value="selectRepo"
         >
           <template #spinner="{loading}">
             <span v-show="loading">
@@ -332,7 +332,7 @@ export default {
           label="name"
           :value="selectedBranch"
           :clearable="false"
-          @input="selectBranch"
+          @update:value="selectBranch"
         />
       </div>
       <div class="col span-4">
@@ -343,7 +343,7 @@ export default {
           label="path"
           :value="selectedFile"
           :clearable="false"
-          @input="selectFile"
+          @update:value="selectFile"
         />
       </div>
     </div>

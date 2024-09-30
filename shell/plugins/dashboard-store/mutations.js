@@ -1,4 +1,5 @@
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import { addObject, addObjects, clear, removeObject } from '@shell/utils/array';
 import { SCHEMA, COUNT } from '@shell/config/types';
 import { normalizeType, keyFieldFor } from '@shell/plugins/dashboard-store/normalize';
@@ -27,7 +28,7 @@ function registerType(state, type) {
       Object.defineProperty(cache.list, '__rehydrateAll', { value: `${ state.config.namespace }/${ type }`, enumerable: true });
     }
 
-    Vue.set(state.types, type, cache);
+    state.types[type] = cache;
   }
 
   return cache;
@@ -39,7 +40,7 @@ export function replace(existing, data) {
   }
 
   for ( const k of Object.keys(data) ) {
-    Vue.set(existing, k, data[k]);
+    existing[k] = data[k];
   }
 
   return existing;

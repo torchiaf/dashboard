@@ -1,4 +1,5 @@
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 
 import { isArray } from '@shell/utils/array';
 import { classify } from '@shell/plugins/dashboard-store/classify';
@@ -81,8 +82,8 @@ export default (vuexModule, config, init) => {
           map.set(proxy[keyField], proxy);
         }
 
-        Vue.set(cache, 'map', map);
-        Vue.set(state.types, type, state.types[type]);
+        cache['map'] = map;
+        state.types[type] = state.types[type];
       });
     }
 

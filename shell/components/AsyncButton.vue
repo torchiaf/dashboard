@@ -1,5 +1,6 @@
 <script lang="ts">
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import typeHelper from '@shell/utils/type-helpers';
 
 export const ASYNC_BUTTON_STATES = {

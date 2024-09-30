@@ -11,7 +11,8 @@ import {
 } from '@shell/plugins/dashboard-store/mutations';
 import { keyForSubscribe } from '@shell/plugins/steve/resourceWatcher';
 import { perfLoadAll } from '@shell/plugins/steve/performanceTesting';
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import { classify } from '@shell/plugins/dashboard-store/classify';
 
 function registerNamespace(state, namespace) {
@@ -23,7 +24,7 @@ function registerNamespace(state, namespace) {
       map:  new Map()
     };
 
-    Vue.set(state.podsByNamespace, namespace, cache);
+    state.podsByNamespace[namespace] = cache;
   }
 
   return cache;

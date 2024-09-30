@@ -23,13 +23,13 @@ import NuxtLink from '../components/nuxt/nuxt-link.client.js'; // should be incl
 
 // Fetch mixin
 if (!Vue.__nuxt__fetch__mixin__) {
-  Vue.mixin(fetchMixin);
+  vueApp.mixin(fetchMixin);
   Vue.__nuxt__fetch__mixin__ = true;
 }
 
 // Component: <NuxtLink>
-Vue.component(NuxtLink.name, NuxtLink);
-Vue.component('NLink', NuxtLink);
+vueApp.component(NuxtLink.name, NuxtLink);
+vueApp.component('NLink', NuxtLink);
 
 if (!global.fetch) {
   global.fetch = fetch;
@@ -49,7 +49,7 @@ if ($config._app) {
   __webpack_public_path__ = urlJoin($config._app.cdnURL, $config._app.assetsPath); // eslint-disable-line camelcase, no-undef
 }
 
-Object.assign(Vue.config, { silent: false, performance: true });
+Object.assign(vueApp.config, { silent: false, performance: true });
 
 const logs = NUXT.logs || [];
 
@@ -63,10 +63,10 @@ if (logs.length > 0) {
 }
 
 // Setup global Vue error handler
-if (!Vue.config.$nuxt) {
-  const defaultErrorHandler = Vue.config.errorHandler;
+if (!vueApp.config.$nuxt) {
+  const defaultErrorHandler = vueApp.config.errorHandler;
 
-  Vue.config.errorHandler = async(err, vm, info, ...rest) => {
+  vueApp.config.errorHandler = async(err, vm, info, ...rest) => {
     // Call other handler if exist
     let handled = null;
 
@@ -78,7 +78,7 @@ if (!Vue.config.$nuxt) {
     }
 
     if (vm && vm.$root) {
-      const nuxtApp = Object.keys(Vue.config.$nuxt)
+      const nuxtApp = Object.keys(vueApp.config.$nuxt)
         .find(nuxtInstance => vm.$root[nuxtInstance]);
 
       // Show Nuxt Error Page
@@ -111,11 +111,11 @@ if (!Vue.config.$nuxt) {
       console.error(err.message || err); // eslint-disable-line no-console
     }
   };
-  Vue.config.$nuxt = {};
+  vueApp.config.$nuxt = {};
 }
-Vue.config.$nuxt.$nuxt = true;
+vueApp.config.$nuxt.$nuxt = true;
 
-const errorHandler = Vue.config.errorHandler || console.error; // eslint-disable-line no-console
+const errorHandler = vueApp.config.errorHandler || console.error; // eslint-disable-line no-console
 
 // Create and mount App
 createApp(null, nuxt.publicRuntimeConfig).then(mountApp).catch(errorHandler); // eslint-disable-line no-undef
@@ -591,7 +591,7 @@ function fixPrepatch(to, ___) {
 
   let triggerScroll = false;
 
-  Vue.nextTick(() => {
+  nextTick(() => {
     instances.forEach((instance, i) => {
       if (!instance || instance._isDestroyed) {
         return;
@@ -606,7 +606,7 @@ function fixPrepatch(to, ___) {
         const newData = instance.constructor.options.data.call(instance);
 
         for (const key in newData) {
-          Vue.set(instance.$data, key, newData[key]);
+          instance.$data[key] = newData[key];
         }
 
         triggerScroll = true;
@@ -640,7 +640,7 @@ function nuxtReady(_app) {
   // Add router hooks
   router.afterEach((to, from) => {
     // Wait for fixPrepatch + $data updates
-    Vue.nextTick(() => _app.$nuxt.$emit('routeChanged', to, from));
+    nextTick(() => _app.$nuxt.$emit('routeChanged', to, from));
   });
 }
 
@@ -730,7 +730,7 @@ function addHotReload($component, depth) {
 
         promise.then(() => {
           this.setLayout(layout);
-          Vue.nextTick(() => hotReloadAPI(this));
+          nextTick(() => hotReloadAPI(this));
         });
 
         return promise;
@@ -776,7 +776,7 @@ async function mountApp(__app) {
   router = __app.router;
 
   // Create Vue instance
-  const _app = new Vue(app);
+  const _app = createApp(app);
 
   // Mounts Vue app to DOM element
   const mount = () => {
@@ -790,7 +790,7 @@ async function mountApp(__app) {
     router.afterEach(fixPrepatch.bind(_app));
 
     // Listen for first Vue update
-    Vue.nextTick(() => {
+    nextTick(() => {
       // Call window.{{globals.readyCallback}} callbacks
       nuxtReady(_app);
 

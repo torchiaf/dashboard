@@ -429,16 +429,12 @@ export default {
 <template>
   <form v-if="asTabs">
     <Tab
-      v-for="g in groups"
-      :key="g.name"
-      :name="g.name"
+       v-for="(g, i) in groups" :key="i" :name="g.name"
       :label="g.name"
       :weight="g.weight"
     >
       <div
-        v-for="q in g.questions"
-        :key="q.variable"
-        class="row question"
+         v-for="(q, i) in g.questions" :key="i" class="row question"
       >
         <div class="col span-12">
           <component
@@ -449,7 +445,7 @@ export default {
             :value="get(value, q.variable)"
             :disabled="disabled"
             :chart-name="chartName"
-            @input="update(q.variable, $event)"
+            @update:value="update(q.variable, $event)"
           />
         </div>
       </div>
@@ -457,16 +453,12 @@ export default {
   </form>
   <form v-else>
     <div
-      v-for="g in groups"
-      :key="g.name"
-    >
+       v-for="(g, i) in groups" :key="i" >
       <h3 v-if="groups.length > 1">
         {{ g.label }}
       </h3>
       <div
-        v-for="q in g.questions"
-        :key="q.variable"
-        class="row question"
+         v-for="(q, i) in g.questions" :key="i" class="row question"
       >
         <div class="col span-12">
           <component
@@ -478,7 +470,7 @@ export default {
             :value="get(value, q.variable)"
             :disabled="disabled"
             :chart-name="chartName"
-            @input="update(q.variable, $event)"
+            @update:value="update(q.variable, $event)"
           />
         </div>
       </div>

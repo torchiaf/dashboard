@@ -83,7 +83,7 @@ export default {
 
 <style lang="scss" scoped>
     .change-password-modal {
-      ::v-deep .v--modal {
+      :deep() .v--modal {
         display: flex;
 
         .card-wrap {

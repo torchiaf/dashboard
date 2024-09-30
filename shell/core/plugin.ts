@@ -1,4 +1,4 @@
-import { RouteConfig } from 'vue-router';
+import { RouteRecordRaw } from 'vue-router';
 import { DSL as STORE_DSL } from '@shell/store/type-map';
 import {
   CoreStoreInit,

@@ -1,4 +1,5 @@
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 
 import {
   getMatchedComponentsInstances, getChildrenComponentInstancesUsingFetch, promisify, globalHandleError, sanitizeComponent
@@ -141,7 +142,7 @@ export default {
             promisify(page.$options.asyncData, this.context)
               .then((newData) => {
                 for (const key in newData) {
-                  Vue.set(page.$data, key, newData[key]);
+                  page.$data[key] = newData[key];
                 }
               })
           );

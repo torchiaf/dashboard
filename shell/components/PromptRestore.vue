@@ -147,7 +147,7 @@ export default {
 
       const defaultSnapshot = this.toRestore[0]?.type === SNAPSHOT ? this.toRestore[0].name : this.clusterSnapshots[0]?.value;
 
-      this.$set(this, 'selectedSnapshot', defaultSnapshot);
+      this['selectedSnapshot'] = defaultSnapshot;
     },
 
     async apply(buttonDone) {
@@ -234,7 +234,7 @@ export default {
 
           <LabeledSelect
             v-if="isCluster"
-            v-model="selectedSnapshot"
+            v-model:value="selectedSnapshot"
             :label="t('promptRestore.label')"
             :placeholder="t('promptRestore.placeholder')"
             :options="clusterSnapshots"
@@ -253,7 +253,7 @@ export default {
           </div>
           <div class="spacer" />
           <RadioGroup
-            v-model="restoreMode"
+            v-model:value="restoreMode"
             name="restoreMode"
             label="Restore Type"
             :labels="['Only etcd', 'Kubernetes version and etcd', 'Cluster config, Kubernetes version and etcd']"
@@ -280,9 +280,7 @@ export default {
         />
 
         <Banner
-          v-for="(err, i) in errors"
-          :key="i"
-          color="error"
+          v-for="(err, i) in errors" :key="i"color="error"
           :label="err"
         />
       </div>
@@ -303,7 +301,7 @@ export default {
       min-height: 16px;
     }
 
-    ::v-deep .card-container .card-actions {
+    :deep() .card-container .card-actions {
       display: block;
 
       button:not(:last-child) {

@@ -45,7 +45,7 @@ export default {
 <template>
   <form>
     <NameNsDescription
-      v-model="value"
+      v-model:value="value"
       :mode="mode"
       :namespaced="isNamespaced"
     />
@@ -54,7 +54,7 @@ export default {
     <div class="row mb-10">
       <div class="col span-6">
         <RadioGroup
-          v-model="isGit"
+          v-model:value="isGit"
           name="isGit"
           :options="[false, true]"
           :labels="[t('catalog.repo.target.http'), t('catalog.repo.target.git')]"
@@ -100,7 +100,7 @@ export default {
     />
 
     <SelectOrCreateAuthSecret
-      v-model="value.spec.clientSecret"
+      v-model:value="value.spec.clientSecret"
       :register-before-hook="registerBeforeHook"
       :namespace="secretNamespace"
       :limit-to-namespace="false"

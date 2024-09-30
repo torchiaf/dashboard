@@ -53,7 +53,7 @@ export default {
   >
     <div class="graph-options mb-10">
       <DashboardOptions
-        v-model="graphOptions"
+        v-model:value="graphOptions"
         :has-summary-and-detail="hasSummaryAndDetail"
       />
     </div>
@@ -92,7 +92,7 @@ export default {
 
 <style lang="scss" scoped>
 .dashboard-metrics {
-  & ::v-deep {
+  & :deep() {
     .external-link {
       position: absolute;
       left: 200px;
@@ -106,7 +106,7 @@ export default {
 }
 
 .dashboard-metrics.external-link-pull-left {
-  & ::v-deep {
+  & :deep() {
     .external-link {
       position: absolute;
       left: 10px;

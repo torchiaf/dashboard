@@ -442,7 +442,7 @@ export default {
     },
 
     stepOneReady() {
-      this.$set(this.addRepositorySteps[0], 'ready', this.stepOneRequires);
+      this.addRepositorySteps[0]['ready'] = this.stepOneRequires;
     },
 
     updateTls() {
@@ -505,7 +505,7 @@ export default {
     <template #stepRepoInfo>
       <NameNsDescription
         v-if="!isView"
-        v-model="value"
+        v-model:value="value"
         :namespaced="false"
         :mode="mode"
         @change="onUpdateRepoName"
@@ -528,7 +528,7 @@ export default {
       >
         <div class="col span-6">
           <LabeledInput
-            v-model="value.spec.repo"
+            v-model:value="value.spec.repo"
             :mode="mode"
             label-key="fleet.gitRepo.repo.label"
             :placeholder="t('fleet.gitRepo.repo.placeholder', null, true)"
@@ -544,7 +544,7 @@ export default {
             :text-value="refValue"
             :text-required="true"
             :options="[{label: t('fleet.gitRepo.ref.branch'), value: 'branch'}, {label: t('fleet.gitRepo.ref.revision'), value: 'revision'}]"
-            @input="changeRef($event)"
+            @update:value="changeRef($event)"
           />
         </div>
       </div>
@@ -558,7 +558,7 @@ export default {
         :mode="mode"
         generate-name="gitrepo-auth-"
         label-key="fleet.gitRepo.auth.git"
-        @input="updateAuth($event, 'clientSecretName')"
+        @update:value="updateAuth($event, 'clientSecretName')"
         @inputauthval="updateCachedAuthVal($event, 'clientSecretName')"
       />
 
@@ -572,7 +572,7 @@ export default {
         generate-name="helmrepo-auth-"
         label-key="fleet.gitRepo.auth.helm"
         :pre-select="tempCachedValues.helmSecretName"
-        @input="updateAuth($event, 'helmSecretName')"
+        @update:value="updateAuth($event, 'helmSecretName')"
         @inputauthval="updateCachedAuthVal($event, 'helmSecretName')"
       />
 
@@ -585,7 +585,7 @@ export default {
               :mode="mode"
               :value="tlsMode"
               :options="tlsOptions"
-              @input="updateTlsMode($event)"
+              @update:value="updateTlsMode($event)"
             />
           </div>
           <div
@@ -593,7 +593,7 @@ export default {
             class="col span-6"
           >
             <LabeledInput
-              v-model="caBundle"
+              v-model:value="caBundle"
               :mode="mode"
               type="multiline"
               label-key="fleet.gitRepo.caBundle.label"
@@ -605,7 +605,7 @@ export default {
       <div class="spacer" />
       <h2 v-t="'fleet.gitRepo.resources.label'" />
       <Checkbox
-        v-model="value.spec.keepResources"
+        v-model:value="value.spec.keepResources"
         class="check"
         type="checkbox"
         label-key="fleet.gitRepo.resources.keepResources"
@@ -619,7 +619,7 @@ export default {
       <div class="spacer" />
       <h2 v-t="'fleet.gitRepo.paths.label'" />
       <ArrayList
-        v-model="value.spec.paths"
+        v-model:value="value.spec.paths"
         :mode="mode"
         :initial-empty-row="false"
         :value-placeholder="t('fleet.gitRepo.paths.placeholder')"
@@ -637,7 +637,7 @@ export default {
         <div class="row">
           <div class="col span-6">
             <LabeledSelect
-              v-model="targetMode"
+              v-model:value="targetMode"
               :options="targetOptions"
               option-key="value"
               :mode="mode"
@@ -662,14 +662,12 @@ export default {
           class="row mt-10"
         >
           <div class="col span-12">
-            <YamlEditor v-model="targetAdvanced" />
+            <YamlEditor v-model:value="targetAdvanced" />
           </div>
         </div>
 
         <Banner
-          v-for="(err, i) in targetAdvancedErrors"
-          :key="i"
-          color="error"
+          v-for="(err, i) in targetAdvancedErrors" :key="i"color="error"
           :label="err"
         />
       </template>
@@ -677,7 +675,7 @@ export default {
       <div class="row mt-20">
         <div class="col span-6">
           <LabeledInput
-            v-model="value.spec.serviceAccount"
+            v-model:value="value.spec.serviceAccount"
             :mode="mode"
             label-key="fleet.gitRepo.serviceAccount.label"
             placeholder-key="fleet.gitRepo.serviceAccount.placeholder"
@@ -685,7 +683,7 @@ export default {
         </div>
         <div class="col span-6">
           <LabeledInput
-            v-model="value.spec.targetNamespace"
+            v-model:value="value.spec.targetNamespace"
             :mode="mode"
             label-key="fleet.gitRepo.targetNamespace.label"
             placeholder-key="fleet.gitRepo.targetNamespace.placeholder"

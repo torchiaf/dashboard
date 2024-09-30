@@ -81,7 +81,7 @@ export default {
     <div class="row mt-30">
       <div class="col span-6">
         <LabeledSelect
-          v-model="ipam"
+          v-model:value="ipam"
           :mode="mode"
           :options="ipamOptions"
           :label="t('servicesPage.harvester.ipam.label')"

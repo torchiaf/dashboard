@@ -1,4 +1,5 @@
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import VTooltip from 'v-tooltip';
 
-Vue.use(VTooltip);
+vueApp.use(VTooltip);

@@ -106,7 +106,7 @@ export default {
       const applicationSecret = this.getNewApplicationSecret();
 
       if (applicationSecret) {
-        this.$set(this.model, 'applicationSecret', applicationSecret);
+        this.model['applicationSecret'] = applicationSecret;
       }
 
       return {
@@ -152,7 +152,7 @@ export default {
         this.model.rancherUrl = this.model.rancherUrl || this.replyUrl;
 
         if (this.model.applicationSecret) {
-          this.$set(this, 'applicationSecret', this.model.applicationSecret);
+          this['applicationSecret'] = this.model.applicationSecret;
         }
       }
     },
@@ -346,7 +346,7 @@ export default {
           <div class="col span-6">
             <LabeledInput
               id="tenant-id"
-              v-model="model.tenantId"
+              v-model:value="model.tenantId"
               label="Tenant ID"
               :mode="mode"
               :required="true"
@@ -359,7 +359,7 @@ export default {
           <div class="col span-6">
             <LabeledInput
               id="application-id"
-              v-model="model.applicationId"
+              v-model:value="model.applicationId"
               label="Application ID"
               :mode="mode"
               :required="true"
@@ -369,7 +369,7 @@ export default {
           <div class="col span-6">
             <LabeledInput
               id="application-secret"
-              v-model="model.applicationSecret"
+              v-model:value="model.applicationSecret"
               type="password"
               label="Application Secret"
               :required="true"
@@ -378,7 +378,7 @@ export default {
           </div>
         </div>
         <RadioGroup
-          v-model="endpoint"
+          v-model:value="endpoint"
           class="mb-20"
           :required="true"
           label="Endpoints"
@@ -391,7 +391,7 @@ export default {
           <div class="row mb-20">
             <div class="col span-6">
               <LabeledInput
-                v-model="model.endpoint"
+                v-model:value="model.endpoint"
                 label="Endpoint"
                 :mode="mode"
                 :required="true"
@@ -399,7 +399,7 @@ export default {
             </div>
             <div class="col span-6">
               <LabeledInput
-                v-model="model.graphEndpoint"
+                v-model:value="model.graphEndpoint"
                 label="Graph Endpoint"
                 :required="true"
                 :mode="mode"
@@ -409,7 +409,7 @@ export default {
           <div class="row mb-20">
             <div class="col span-6">
               <LabeledInput
-                v-model="model.tokenEndpoint"
+                v-model:value="model.tokenEndpoint"
                 label="Token Endpoint"
                 :mode="mode"
                 :required="true"
@@ -417,7 +417,7 @@ export default {
             </div>
             <div class="col span-6">
               <LabeledInput
-                v-model="model.authEndpoint"
+                v-model:value="model.authEndpoint"
                 label="Auth Endpoint"
                 :required="true"
                 :mode="mode"

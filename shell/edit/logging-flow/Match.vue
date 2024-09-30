@@ -60,7 +60,7 @@ export default {
   <div>
     <div v-if="!isHarvester">
       <KeyValue
-        v-model="value.labels"
+        v-model:value="value.labels"
         :title="value.select ? t('logging.flow.matches.pods.title.include') : t('logging.flow.matches.pods.title.exclude')"
         :mode="mode"
         :initial-empty-row="true"
@@ -80,7 +80,7 @@ export default {
     <div class="row">
       <div class="col span-12">
         <Select
-          v-model="value.hosts"
+          v-model:value="value.hosts"
           class="lg"
           :options="nodes"
           :placeholder="t('logging.flow.matches.nodes.placeholder')"
@@ -101,7 +101,7 @@ export default {
       <div class="row">
         <div class="col span-12">
           <Select
-            v-model="value.container_names"
+            v-model:value="value.container_names"
             class="lg"
             :options="containers"
             :placeholder="t('logging.flow.matches.containerNames.placeholder')"
@@ -121,7 +121,7 @@ export default {
         <div class="row">
           <div class="col span-12">
             <Select
-              v-model="value.namespaces"
+              v-model:value="value.namespaces"
               class="lg"
               :options="namespaces"
               :placeholder="t('logging.flow.matches.namespaces.placeholder')"

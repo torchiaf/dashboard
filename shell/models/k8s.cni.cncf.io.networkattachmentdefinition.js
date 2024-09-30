@@ -16,7 +16,7 @@ export default class NetworkAttachmentDef extends SteveModel {
       })
     };
 
-    Vue.set(this, 'spec', spec);
+    this['spec'] = spec;
   }
 
   get parseConfig() {

@@ -96,7 +96,7 @@ export default {
           :searchable="false"
           :required="true"
           :label="t('cluster.credential.azure.environment.label')"
-          @input="value.setData('environment', $event)"
+          @update:value="value.setData('environment', $event)"
         />
       </div>
       <div class="col span-6">
@@ -106,7 +106,7 @@ export default {
           type="text"
           :mode="mode"
           :required="true"
-          @input="value.setData('subscriptionId', $event)"
+          @update:value="value.setData('subscriptionId', $event)"
         />
       </div>
     </div>
@@ -118,7 +118,7 @@ export default {
           type="text"
           :mode="mode"
           :required="true"
-          @input="value.setData('clientId', $event)"
+          @update:value="value.setData('clientId', $event)"
         />
       </div>
       <div class="col span-6">
@@ -128,7 +128,7 @@ export default {
           type="password"
           :mode="mode"
           :required="true"
-          @input="value.setData('clientSecret', $event)"
+          @update:value="value.setData('clientSecret', $event)"
         />
       </div>
     </div>

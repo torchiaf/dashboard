@@ -41,8 +41,8 @@ export default {
       set(neu) {
         const { name, namespace } = neu.metadata;
 
-        this.$set(this.value, 'credentialSecretName', name);
-        this.$set(this.value, 'credentialSecretNamespace', namespace);
+        this.value['credentialSecretName'] = name;
+        this.value['credentialSecretNamespace'] = namespace;
       }
     },
     ...mapGetters({ t: 'i18n/t' })
@@ -53,7 +53,7 @@ export default {
       try {
         const encoded = btoa(ca);
 
-        this.$set(this.value, 'endpointCA', encoded);
+        this.value['endpointCA'] = encoded;
       } catch (e) {
         // eslint-disable-next-line no-console
         console.warn(e);
@@ -76,7 +76,7 @@ export default {
     <div class="row mb-10">
       <div class="col span-6">
         <LabeledSelect
-          v-model="credentialSecret"
+          v-model:value="credentialSecret"
           :get-option-label="opt=>opt.metadata.name || ''"
           option-key="id"
           :mode="mode"
@@ -86,7 +86,7 @@ export default {
       </div>
       <div class="col span-6">
         <LabeledInput
-          v-model="value.bucketName"
+          v-model:value="value.bucketName"
           :mode="mode"
           :label="t('backupRestoreOperator.s3.bucketName')"
         />
@@ -95,14 +95,14 @@ export default {
     <div class="row mb-10">
       <div class="col span-6">
         <LabeledInput
-          v-model="value.region"
+          v-model:value="value.region"
           :mode="mode"
           :label="t('backupRestoreOperator.s3.region')"
         />
       </div>
       <div class="col span-6">
         <LabeledInput
-          v-model="value.folder"
+          v-model:value="value.folder"
           :mode="mode"
           :label="t('backupRestoreOperator.s3.folder')"
         />
@@ -111,12 +111,12 @@ export default {
     <div class="row mb-10">
       <div class="col span-6">
         <LabeledInput
-          v-model="value.endpoint"
+          v-model:value="value.endpoint"
           :mode="mode"
           :label="t('backupRestoreOperator.s3.endpoint')"
         />
         <Checkbox
-          v-model="value.insecureTLSSkipVerify"
+          v-model:value="value.insecureTLSSkipVerify"
           class="mt-10"
           :mode="mode"
           :label="t('backupRestoreOperator.s3.insecureTLSSkipVerify')"
@@ -124,7 +124,7 @@ export default {
       </div>
       <div class="col span-6">
         <LabeledInput
-          v-model="value.endpointCA"
+          v-model:value="value.endpointCA"
           :mode="mode"
           type="multiline"
           :label="t('backupRestoreOperator.s3.endpointCA.label')"

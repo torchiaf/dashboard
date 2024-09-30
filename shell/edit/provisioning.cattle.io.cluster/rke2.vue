@@ -1419,10 +1419,10 @@ export default {
 
     // Set busy before save and clear after save
     async saveOverride(btnCb) {
-      this.$set(this, 'busy', true);
+      this['busy'] = true;
 
       return await this._doSaveOverride((done) => {
-        this.$set(this, 'busy', false);
+        this['busy'] = false;
 
         return btnCb(done);
       });
@@ -1695,7 +1695,7 @@ export default {
     },
 
     onMembershipUpdate(update) {
-      this.$set(this, 'membershipUpdate', update);
+      this['membershipUpdate'] = update;
     },
 
     canRemoveKubeletRow(row, idx) {
@@ -2083,9 +2083,9 @@ export default {
      */
     machinePoolValidationChanged(id, value) {
       if (value === undefined) {
-        this.$delete(this.machinePoolValidation, id);
+        delete this.machinePoolValidation[id];
       } else {
-        this.$set(this.machinePoolValidation, id, value);
+        this.machinePoolValidation[id] = value;
       }
     }
   },
@@ -2127,7 +2127,7 @@ export default {
     </div>
     <SelectCredential
       v-if="needCredential"
-      v-model="credentialId"
+      v-model:value="credentialId"
       :mode="mode"
       :provider="provider"
       :cancel="cancelCredential"
@@ -2141,7 +2141,7 @@ export default {
     >
       <NameNsDescription
         v-if="!isView"
-        v-model="value"
+        v-model:value="value"
         :mode="mode"
         :namespaced="false"
         name-label="cluster.name.label"
@@ -2200,7 +2200,7 @@ export default {
           @addTab="addMachinePool($event)"
           @removeTab="removeMachinePool($event)"
         >
-          <template v-for="(obj, idx) in machinePools">
+          <template v-for="(obj, idx) in machinePools" :key="idx">
             <Tab
               v-if="!obj.remove"
               :key="obj.id"
@@ -2265,14 +2265,14 @@ export default {
           <div class="row mb-10">
             <div class="col span-6">
               <LabeledSelect
-                v-model="value.spec.kubernetesVersion"
+                v-model:value="value.spec.kubernetesVersion"
                 :mode="mode"
                 :options="versionOptions"
                 label-key="cluster.kubernetesVersion.label"
-                @input="handleKubernetesChange($event)"
+                @update:value="handleKubernetesChange($event)"
               />
               <Checkbox
-                v-model="showDeprecatedPatchVersions"
+                v-model:value="showDeprecatedPatchVersions"
                 :label="t('cluster.kubernetesVersion.deprecatedPatches')"
                 :tooltip="t('cluster.kubernetesVersion.deprecatedPatchWarning')"
                 class="patch-version"
@@ -2283,7 +2283,7 @@ export default {
               class="col span-6"
             >
               <LabeledSelect
-                v-model="agentConfig['cloud-provider-name']"
+                v-model:value="agentConfig['cloud-provider-name']"
                 :mode="mode"
                 :disabled="clusterIsAlreadyCreated"
                 :options="cloudProviderOptions"
@@ -2298,7 +2298,7 @@ export default {
           >
             <div class="col span-6">
               <LabeledSelect
-                v-model="serverConfig.cni"
+                v-model:value="serverConfig.cni"
                 :mode="mode"
                 :disabled="clusterIsAlreadyCreated"
                 :options="serverArgs.cni.options"
@@ -2310,7 +2310,7 @@ export default {
               class="col"
             >
               <Checkbox
-                v-model="ciliumIpv6"
+                v-model:value="ciliumIpv6"
                 :mode="mode"
                 :label="t('cluster.rke2.address.ipv6.enable')"
               />
@@ -2331,7 +2331,7 @@ export default {
               </h3>
               <YamlEditor
                 ref="yaml"
-                v-model="agentConfig['cloud-provider-config']"
+                v-model:value="agentConfig['cloud-provider-config']"
                 :editor-mode="mode === 'view' ? 'VIEW_CODE' : 'EDIT_CODE'"
                 initial-yaml-values="# Cloud Provider Config"
                 class="yaml-editor"
@@ -2374,12 +2374,12 @@ export default {
             >
               <!-- PSP template selector -->
               <LabeledSelect
-                v-model="value.spec.defaultPodSecurityPolicyTemplateName"
+                v-model:value="value.spec.defaultPodSecurityPolicyTemplateName"
                 data-testid="rke2-custom-edit-psp"
                 :mode="mode"
                 :options="pspOptions"
                 :label="t('cluster.rke2.defaultPodSecurityPolicyTemplateName.label')"
-                @input="handlePspChange($event)"
+                @update:value="handlePspChange($event)"
               />
             </div>
 
@@ -2389,30 +2389,30 @@ export default {
             >
               <LabeledSelect
                 v-if="serverArgs && serverArgs.profile"
-                v-model="serverConfig.profile"
+                v-model:value="serverConfig.profile"
                 :mode="mode"
                 :options="profileOptions"
                 :label="t('cluster.rke2.cis.sever')"
-                @input="handleCisChange"
+                @update:value="handleCisChange"
               />
               <LabeledSelect
                 v-else-if="agentArgs && agentArgs.profile"
-                v-model="agentConfig.profile"
+                v-model:value="agentConfig.profile"
                 data-testid="rke2-custom-edit-cis-agent"
                 :mode="mode"
                 :options="profileOptions"
                 :label="t('cluster.rke2.cis.agent')"
-                @input="handleCisChange"
+                @update:value="handleCisChange"
               />
             </div>
           </div>
 
           <template v-if="hasCisOverride">
             <Checkbox
-              v-model="cisOverride"
+              v-model:value="cisOverride"
               :mode="mode"
               :label="t('cluster.rke2.cis.override')"
-              @input="togglePsaDefault"
+              @update:value="togglePsaDefault"
             />
 
             <Banner
@@ -2434,7 +2434,7 @@ export default {
             <div class="col span-6">
               <!-- PSA template selector -->
               <LabeledSelect
-                v-model="value.spec.defaultPodSecurityAdmissionConfigurationTemplateName"
+                v-model:value="value.spec.defaultPodSecurityAdmissionConfigurationTemplateName"
                 :mode="mode"
                 data-testid="rke2-custom-edit-psa"
                 :options="psaOptions"
@@ -2448,16 +2448,16 @@ export default {
             <div class="col span-12 mt-20">
               <Checkbox
                 v-if="serverArgs['secrets-encryption']"
-                v-model="serverConfig['secrets-encryption']"
+                v-model:value="serverConfig['secrets-encryption']"
                 :mode="mode"
                 label="Encrypt Secrets"
               />
               <Checkbox
-                v-model="value.spec.enableNetworkPolicy"
+                v-model:value="value.spec.enableNetworkPolicy"
                 :mode="mode"
                 :label="t('cluster.rke2.enableNetworkPolicy.label')"
               />
-              <!-- <Checkbox v-if="agentArgs.selinux" v-model="agentConfig.selinux" :mode="mode" label="SELinux" /> -->
+              <!-- <Checkbox v-if="agentArgs.selinux" v-model:value="agentConfig.selinux" :mode="mode" label="SELinux" /> -->
             </div>
           </div>
 
@@ -2486,9 +2486,7 @@ export default {
                 </h3>
               </div>
               <Checkbox
-                v-for="opt in disableOptions"
-                :key="opt.value"
-                v-model="enabledSystemServices"
+                 v-for="(opt, i) in disableOptions" :key="i" v-model:value="enabledSystemServices"
                 :mode="mode"
                 :label="opt.label"
                 :value-when-true="opt.value"
@@ -2525,7 +2523,7 @@ export default {
           <div class="row">
             <div class="col span-6">
               <RadioGroup
-                v-model="rkeConfig.etcd.disableSnapshots"
+                v-model:value="rkeConfig.etcd.disableSnapshots"
                 name="etcd-disable-snapshots"
                 :options="[true, false]"
                 :label="t('cluster.rke2.etcd.disableSnapshots.label')"
@@ -2540,7 +2538,7 @@ export default {
           >
             <div class="col span-6">
               <LabeledInput
-                v-model="rkeConfig.etcd.snapshotScheduleCron"
+                v-model:value="rkeConfig.etcd.snapshotScheduleCron"
                 type="cron"
                 placeholder="0 * * * *"
                 :mode="mode"
@@ -2549,7 +2547,7 @@ export default {
             </div>
             <div class="col span-6">
               <UnitInput
-                v-model="rkeConfig.etcd.snapshotRetention"
+                v-model:value="rkeConfig.etcd.snapshotRetention"
                 :mode="mode"
                 :label="t('cluster.rke2.etcd.snapshotRetention.label')"
                 :suffix="t('cluster.rke2.snapshots.suffix')"
@@ -2561,7 +2559,7 @@ export default {
             <div class="spacer" />
 
             <RadioGroup
-              v-model="s3Backup"
+              v-model:value="s3Backup"
               name="etcd-s3"
               :options="[false, true]"
               label="Backup Snapshots to S3"
@@ -2571,7 +2569,7 @@ export default {
 
             <S3Config
               v-if="s3Backup"
-              v-model="rkeConfig.etcd.s3"
+              v-model:value="rkeConfig.etcd.s3"
               :namespace="value.metadata.namespace"
               :register-before-hook="registerBeforeHook"
               :mode="mode"
@@ -2584,7 +2582,7 @@ export default {
             <div class="col span-6">
               <RadioGroup
                 v-if="serverArgs['etcd-expose-metrics']"
-                v-model="serverConfig['etcd-expose-metrics']"
+                v-model:value="serverConfig['etcd-expose-metrics']"
                 name="etcd-expose-metrics"
                 :options="[false, true]"
                 :label="t('cluster.rke2.etcd.exportMetric.label')"
@@ -2620,7 +2618,7 @@ export default {
               class="col span-6"
             >
               <LabeledInput
-                v-model="serverConfig['cluster-cidr']"
+                v-model:value="serverConfig['cluster-cidr']"
                 :mode="mode"
                 :disabled="clusterIsAlreadyCreated"
                 :label="t('cluster.rke2.address.clusterCidr.label')"
@@ -2631,7 +2629,7 @@ export default {
               class="col span-6"
             >
               <LabeledInput
-                v-model="serverConfig['service-cidr']"
+                v-model:value="serverConfig['service-cidr']"
                 :mode="mode"
                 :disabled="clusterIsAlreadyCreated"
                 :label="t('cluster.rke2.address.serviceCidr.label')"
@@ -2645,7 +2643,7 @@ export default {
               class="col span-6"
             >
               <LabeledInput
-                v-model="serverConfig['cluster-dns']"
+                v-model:value="serverConfig['cluster-dns']"
                 :mode="mode"
                 :disabled="clusterIsAlreadyCreated"
                 :label="t('cluster.rke2.address.dns.label')"
@@ -2656,7 +2654,7 @@ export default {
               class="col span-6"
             >
               <LabeledInput
-                v-model="serverConfig['cluster-domain']"
+                v-model:value="serverConfig['cluster-domain']"
                 :mode="mode"
                 :disabled="clusterIsAlreadyCreated"
                 :label="t('cluster.rke2.address.domain.label')"
@@ -2670,7 +2668,7 @@ export default {
           >
             <div class="col span-6">
               <LabeledInput
-                v-model="serverConfig['service-node-port-range']"
+                v-model:value="serverConfig['service-node-port-range']"
                 :mode="mode"
                 :label="t('cluster.rke2.address.nodePortRange.label')"
               />
@@ -2680,12 +2678,12 @@ export default {
             >
               <Checkbox
                 v-if="!isView || isView && !hostnameTruncationManuallySet"
-                v-model="truncateHostnames"
+                v-model:value="truncateHostnames"
                 class="mt-20"
                 :disabled="isEdit || isView || hostnameTruncationManuallySet"
                 :mode="mode"
                 :label="t('cluster.rke2.truncateHostnames')"
-                @input="truncateName"
+                @update:value="truncateName"
               />
               <Banner
                 v-if="hostnameTruncationManuallySet"
@@ -2704,7 +2702,7 @@ export default {
           >
             <div class="col span-6">
               <ArrayList
-                v-model="serverConfig['tls-san']"
+                v-model:value="serverConfig['tls-san']"
                 :protip="false"
                 :mode="mode"
                 :title="t('cluster.rke2.address.tlsSan.label')"
@@ -2713,7 +2711,7 @@ export default {
           </div>
 
           <ACE
-            v-model="value"
+            v-model:value="value"
             :mode="mode"
           />
         </Tab>
@@ -2733,14 +2731,14 @@ export default {
             <div class="col span-6">
               <h3>Control Plane</h3>
               <LabeledInput
-                v-model="rkeConfig.upgradeStrategy.controlPlaneConcurrency"
+                v-model:value="rkeConfig.upgradeStrategy.controlPlaneConcurrency"
                 :mode="mode"
                 :label="t('cluster.rke2.controlPlaneConcurrency.label')"
                 :tooltip="t('cluster.rke2.controlPlaneConcurrency.toolTip')"
               />
               <div class="spacer" />
               <DrainOptions
-                v-model="rkeConfig.upgradeStrategy.controlPlaneDrainOptions"
+                v-model:value="rkeConfig.upgradeStrategy.controlPlaneDrainOptions"
                 :mode="mode"
               />
             </div>
@@ -2749,14 +2747,14 @@ export default {
                 {{ t('cluster.rke2.workNode.label') }}
               </h3>
               <LabeledInput
-                v-model="rkeConfig.upgradeStrategy.workerConcurrency"
+                v-model:value="rkeConfig.upgradeStrategy.workerConcurrency"
                 :mode="mode"
                 :label="t('cluster.rke2.workerConcurrency.label')"
                 :tooltip="t('cluster.rke2.workerConcurrency.toolTip')"
               />
               <div class="spacer" />
               <DrainOptions
-                v-model="rkeConfig.upgradeStrategy.workerDrainOptions"
+                v-model:value="rkeConfig.upgradeStrategy.workerDrainOptions"
                 :mode="mode"
               />
             </div>
@@ -2783,10 +2781,10 @@ export default {
           </div>
           <div class="row">
             <Checkbox
-              v-model="showCustomRegistryInput"
+              v-model:value="showCustomRegistryInput"
               class="mb-20"
               :label="t('cluster.privateRegistry.label')"
-              @input="toggleCustomRegistry"
+              @update:value="toggleCustomRegistry"
             />
           </div>
           <div
@@ -2795,13 +2793,13 @@ export default {
           >
             <div class="col span-6">
               <LabeledInput
-                v-model="registryHost"
+                v-model:value="registryHost"
                 label-key="catalog.chart.registry.custom.inputLabel"
                 placeholder-key="catalog.chart.registry.custom.placeholder"
                 :min-height="30"
               />
               <SelectOrCreateAuthSecret
-                v-model="registrySecret"
+                v-model:value="registrySecret"
                 :register-before-hook="registerBeforeHook"
                 :hook-priority="1"
                 :mode="mode"
@@ -2831,12 +2829,12 @@ export default {
                   :label-key="isK3s ? 'cluster.privateRegistry.docsLinkK3s' : 'cluster.privateRegistry.docsLinkRke2'"
                 />
                 <RegistryMirrors
-                  v-model="value"
+                  v-model:value="value"
                   class="mt-20"
                   :mode="mode"
                 />
                 <RegistryConfigs
-                  v-model="value"
+                  v-model:value="value"
                   class="mt-20"
                   :mode="mode"
                   :cluster-register-before-hook="registerBeforeHook"
@@ -2864,13 +2862,11 @@ export default {
             :key="addonsRev"
           >
             <div
-              v-for="v in addonVersions"
-              :key="v._key"
-            >
+               v-for="(v, i) in addonVersions" :key="i" >
               <h3>{{ labelForAddon(v.name) }}</h3>
               <Questions
                 v-if="versionInfo[v.name] && versionInfo[v.name].questions && v.name && userChartValuesTemp[v.name]"
-                v-model="userChartValuesTemp[v.name]"
+                v-model:value="userChartValuesTemp[v.name]"
                 :emit="true"
                 in-store="management"
                 :mode="mode"
@@ -2887,7 +2883,7 @@ export default {
                 :as-object="true"
                 :editor-mode="mode === 'view' ? 'VIEW_CODE' : 'EDIT_CODE'"
                 :hide-preview-buttons="true"
-                @input="data => updateValues(v.name, data)"
+                @update:value="data => updateValues(v.name, data)"
               />
               <div class="spacer" />
             </div>
@@ -2903,7 +2899,7 @@ export default {
             </h3>
             <YamlEditor
               ref="yaml-additional"
-              v-model="rkeConfig.additionalManifest"
+              v-model:value="rkeConfig.additionalManifest"
               :editor-mode="mode === 'view' ? 'VIEW_CODE' : 'EDIT_CODE'"
               initial-yaml-values="# Additional Manifest YAML"
               class="yaml-editor"
@@ -2917,7 +2913,7 @@ export default {
           label-key="cluster.agentConfig.tabs.cluster"
         >
           <AgentConfiguration
-            v-model="value.spec.clusterAgentDeploymentCustomization"
+            v-model:value="value.spec.clusterAgentDeploymentCustomization"
             type="cluster"
             :mode="mode"
           />
@@ -2929,7 +2925,7 @@ export default {
           label-key="cluster.agentConfig.tabs.fleet"
         >
           <AgentConfiguration
-            v-model="value.spec.fleetAgentDeploymentCustomization"
+            v-model:value="value.spec.fleetAgentDeploymentCustomization"
             type="fleet"
             :mode="mode"
           />
@@ -2947,7 +2943,7 @@ export default {
             <h3>{{ t('cluster.advanced.argInfo.title') }}</h3>
             <ArrayListGrouped
               v-if="agentArgs['kubelet-arg']"
-              v-model="rkeConfig.machineSelectorConfig"
+              v-model:value="rkeConfig.machineSelectorConfig"
               class="mb-20"
               :add-label="t('cluster.advanced.argInfo.machineSelector.label')"
               :can-remove="canRemoveKubeletRow"
@@ -2957,7 +2953,7 @@ export default {
                 <template v-if="row.value.machineLabelSelector">
                   <h3>{{ t('cluster.advanced.argInfo.machineSelector.title') }}</h3>
                   <MatchExpressions
-                    v-model="row.value.machineLabelSelector"
+                    v-model:value="row.value.machineLabelSelector"
                     class="mb-20"
                     :mode="mode"
                     :show-remove="false"
@@ -2970,7 +2966,7 @@ export default {
                 </h3>
 
                 <ArrayList
-                  v-model="row.value.config['kubelet-arg']"
+                  v-model:value="row.value.config['kubelet-arg']"
                   :mode="mode"
                   :add-label="t('cluster.advanced.argInfo.machineSelector.listLabel')"
                   :initial-empty-row="!!row.value.machineLabelSelector"
@@ -2985,21 +2981,21 @@ export default {
 
             <ArrayList
               v-if="serverArgs['kube-controller-manager-arg']"
-              v-model="serverConfig['kube-controller-manager-arg']"
+              v-model:value="serverConfig['kube-controller-manager-arg']"
               :mode="mode"
               :title="t('cluster.advanced.argInfo.machineSelector.kubeControllerManagerTitle')"
               class="mb-20"
             />
             <ArrayList
               v-if="serverArgs['kube-apiserver-arg']"
-              v-model="serverConfig['kube-apiserver-arg']"
+              v-model:value="serverConfig['kube-apiserver-arg']"
               :mode="mode"
               :title="t('cluster.advanced.argInfo.machineSelector.kubeApiServerTitle')"
               class="mb-20"
             />
             <ArrayList
               v-if="serverArgs['kube-scheduler-arg']"
-              v-model="serverConfig['kube-scheduler-arg']"
+              v-model:value="serverConfig['kube-scheduler-arg']"
               :mode="mode"
               :title="t('cluster.advanced.argInfo.machineSelector.kubeSchedulerTitle')"
             />
@@ -3010,7 +3006,7 @@ export default {
             <div class="row">
               <div class="col span-12">
                 <Checkbox
-                  v-model="agentConfig['protect-kernel-defaults']"
+                  v-model:value="agentConfig['protect-kernel-defaults']"
                   :mode="mode"
                   :label="t('cluster.advanced.agentArgs.label')"
                 />
@@ -3020,11 +3016,11 @@ export default {
         </Tab>
 
         <AgentEnv
-          v-model="value"
+          v-model:value="value"
           :mode="mode"
         />
         <Labels
-          v-model="value"
+          v-model:value="value"
           :mode="mode"
         />
       </Tabbed>

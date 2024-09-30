@@ -665,9 +665,7 @@ export default {
   />
   <div v-else-if="errors.length">
     <div
-      v-for="(err, idx) in errors"
-      :key="idx"
-    >
+      v-for="(err, idx) in errors" :key="idx">
       <Banner
         color="error"
         :label="stringify(err)"
@@ -693,7 +691,7 @@ export default {
         <div class="row">
           <div class="col span-6">
             <LabeledSelect
-              v-model="value.datacenter"
+              v-model:value="value.datacenter"
               :loading="dataCentersLoading"
               :mode="mode"
               :options="dataCenters"
@@ -703,7 +701,7 @@ export default {
           </div>
           <div class="col span-6">
             <LabeledSelect
-              v-model="value.pool"
+              v-model:value="value.pool"
               :loading="resourcePoolsLoading"
               :mode="mode"
               :options="resourcePools"
@@ -715,7 +713,7 @@ export default {
         <div class="row mt-10">
           <div class="col span-6">
             <LabeledSelect
-              v-model="value.datastore"
+              v-model:value="value.datastore"
               :loading="dataStoresLoading"
               :mode="mode"
               :options="dataStores"
@@ -725,7 +723,7 @@ export default {
           </div>
           <div class="col span-6">
             <LabeledSelect
-              v-model="value.folder"
+              v-model:value="value.folder"
               :loading="foldersLoading"
               :mode="mode"
               :options="folders"
@@ -737,7 +735,7 @@ export default {
         <div class="row mt-10">
           <div class="col span-12">
             <LabeledSelect
-              v-model="host"
+              v-model:value="host"
               :loading="hostsLoading"
               :mode="mode"
               :options="hosts"
@@ -769,7 +767,7 @@ export default {
         <div class="row mt-10">
           <div class="col span-6">
             <UnitInput
-              v-model="cpuCount"
+              v-model:value="cpuCount"
               :mode="mode"
               :label="t('cluster.machineConfig.vsphere.instanceOptions.cpus')"
               :suffix="t('suffix.cores')"
@@ -778,7 +776,7 @@ export default {
           </div>
           <div class="col span-6">
             <UnitInput
-              v-model="memorySize"
+              v-model:value="memorySize"
               :mode="mode"
               :label="t('cluster.machineConfig.vsphere.instanceOptions.memory')"
               :suffix="t('suffix.mib')"
@@ -789,7 +787,7 @@ export default {
         <div class="row mt-10">
           <div class="col span-6">
             <UnitInput
-              v-model="diskSize"
+              v-model:value="diskSize"
               :mode="mode"
               :label="t('cluster.machineConfig.vsphere.instanceOptions.disk')"
               :suffix="t('suffix.mib')"
@@ -798,7 +796,7 @@ export default {
           </div>
           <div class="col span-6">
             <LabeledSelect
-              v-model="value.os"
+              v-model:value="value.os"
               :mode="mode"
               :options="osOptions"
               :label="t('cluster.machineConfig.vsphere.instanceOptions.os')"
@@ -812,7 +810,7 @@ export default {
             :class="showContentLibrary ? 'span-4' : 'span-6'"
           >
             <LabeledSelect
-              v-model="value.creationType"
+              v-model:value="value.creationType"
               :mode="mode"
               :options="creationMethods"
               :label="t('cluster.machineConfig.vsphere.instanceOptions.creationMethod')"
@@ -824,7 +822,7 @@ export default {
             class="col span-6"
           >
             <LabeledSelect
-              v-model="value.cloneFrom"
+              v-model:value="value.cloneFrom"
               :loading="templatesLoading"
               :mode="mode"
               :options="templates"
@@ -839,7 +837,7 @@ export default {
             class="col span-4"
           >
             <LabeledSelect
-              v-model="value.contentLibrary"
+              v-model:value="value.contentLibrary"
               :loading="contentLibrariesLoading"
               :mode="mode"
               :options="contentLibraries"
@@ -852,7 +850,7 @@ export default {
             class="col span-4"
           >
             <LabeledSelect
-              v-model="value.cloneFrom"
+              v-model:value="value.cloneFrom"
               :loading="libraryTemplatesLoading"
               :mode="mode"
               :options="libraryTemplates"
@@ -866,7 +864,7 @@ export default {
             class="col span-6"
           >
             <LabeledSelect
-              v-model="value.cloneFrom"
+              v-model:value="value.cloneFrom"
               :loading="virtualMachinesLoading"
               :mode="mode"
               :options="virtualMachines"
@@ -879,7 +877,7 @@ export default {
             class="col span-6"
           >
             <LabeledInput
-              v-model="value.boot2dockerUrl"
+              v-model:value="value.boot2dockerUrl"
               :mode="mode"
               :label="t('cluster.machineConfig.vsphere.instanceOptions.osIsoUrl.label')"
               :placeholder="t('cluster.machineConfig.vsphere.instanceOptions.osIsoUrl.placeholder')"
@@ -893,7 +891,7 @@ export default {
         >
           <div class="col span-12">
             <LabeledInput
-              v-model="value.cloudinit"
+              v-model:value="value.cloudinit"
               :mode="mode"
               :label="t('cluster.machineConfig.vsphere.instanceOptions.cloudInit.label')"
               :placeholder="t('cluster.machineConfig.vsphere.instanceOptions.cloudInit.placeholder')"
@@ -912,7 +910,7 @@ export default {
             <label class="text-label mt-0">{{ t('cluster.machineConfig.vsphere.instanceOptions.cloudConfigYaml') }}</label>
             <YamlEditor
               ref="yaml-additional"
-              v-model="value.cloudConfig"
+              v-model:value="value.cloudConfig"
               :editor-mode="mode === 'view' ? 'VIEW_CODE' : 'EDIT_CODE'"
               :disabled="disabled"
               initial-yaml-values="# Additional Manifest YAML"
@@ -926,7 +924,7 @@ export default {
               {{ t('cluster.machineConfig.vsphere.networks.label') }}
             </label>
             <ArrayListSelect
-              v-model="value.network"
+              v-model:value="value.network"
               :options="networks"
               :array-list-props="{ addLabel: t('cluster.machineConfig.vsphere.networks.add') }"
               :loading="networksLoading"
@@ -940,7 +938,7 @@ export default {
               {{ t('cluster.machineConfig.vsphere.guestinfo.label') }}
             </label>
             <KeyValue
-              v-model="cfgparam"
+              v-model:value="cfgparam"
               :add-label="t('cluster.machineConfig.vsphere.guestinfo.add')"
               :key-placeholder="t('cluster.machineConfig.vsphere.guestinfo.keyPlaceholder')"
               :value-placeholder="t('cluster.machineConfig.vsphere.guestinfo.valuePlaceholder')"
@@ -968,7 +966,7 @@ export default {
       </h4>
       <div slot="body">
         <ArrayListSelect
-          v-model="value.tag"
+          v-model:value="value.tag"
           :options="tags"
           :array-list-props="{ addLabel: t('cluster.machineConfig.vsphere.tags.addTag') }"
           :loading="tagsLoading"
@@ -993,7 +991,7 @@ export default {
       </h4>
       <div slot="body">
         <KeyValue
-          v-model="customAttribute"
+          v-model:value="customAttribute"
           :key-options="attributeKeys"
           :options="tags"
           :add-label="t('cluster.machineConfig.vsphere.customAttributes.add')"
@@ -1023,7 +1021,7 @@ export default {
         <div class="row mb-10">
           <div class="col span-6">
             <RadioGroup
-              v-model="vappMode"
+              v-model:value="vappMode"
               name="restoreMode"
               :label="t('cluster.machineConfig.vsphere.vAppOptions.restoreType')"
               :options="vAppOptions"
@@ -1037,7 +1035,7 @@ export default {
         >
           <div class="col span-4">
             <LabeledInput
-              v-model="value.vappTransport"
+              v-model:value="value.vappTransport"
               :mode="mode"
               :label="t('cluster.machineConfig.vsphere.vAppOptions.transport.label')"
               :tooltip="t('cluster.machineConfig.vsphere.vAppOptions.transport.tooltip')"
@@ -1047,7 +1045,7 @@ export default {
           </div>
           <div class="col span-4">
             <LabeledInput
-              v-model="value.vappIpprotocol"
+              v-model:value="value.vappIpprotocol"
               :mode="mode"
               :label="t('cluster.machineConfig.vsphere.vAppOptions.protocol.label')"
               :tooltip="t('cluster.machineConfig.vsphere.vAppOptions.protocol.tooltip')"
@@ -1057,7 +1055,7 @@ export default {
           </div>
           <div class="col span-4">
             <LabeledInput
-              v-model="value.vappIpallocationpolicy"
+              v-model:value="value.vappIpallocationpolicy"
               :mode="mode"
               :label="t('cluster.machineConfig.vsphere.vAppOptions.allocation.label')"
               :tooltip="t('cluster.machineConfig.vsphere.vAppOptions.allocation.tooltip')"
@@ -1072,7 +1070,7 @@ export default {
         >
           <div class="col span-12">
             <KeyValue
-              v-model="vappProperty"
+              v-model:value="vappProperty"
               :title="t('cluster.machineConfig.vsphere.vAppOptions.properties.label')"
               :key-placeholder="t('cluster.machineConfig.vsphere.vAppOptions.properties.keyPlaceholder')"
               :value-placeholder="t('cluster.machineConfig.vsphere.vAppOptions.properties.valuePlaceholder')"

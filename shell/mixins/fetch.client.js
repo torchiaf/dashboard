@@ -49,7 +49,7 @@ function created() {
 
   // Merge data
   for (const key in data) {
-    Vue.set(this.$data, key, data[key]);
+    this.$data[key] = data[key];
   }
 }
 

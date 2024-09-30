@@ -415,7 +415,7 @@ export default {
       :loading="loading"
       group-tooltip="resourceTable.groupBy.project"
       key-field="_key"
-      v-on="$listeners"
+      
     >
       <template #group-by="group">
         <div
@@ -487,11 +487,10 @@ export default {
         </div>
       </template>
       <template
-        v-for="project in projectsWithoutNamespaces"
+         v-for="(project, i) in projectsWithoutNamespaces" :key="i" 
         v-slot:[slotName(project)]
       >
         <tr
-          :key="project.id"
           class="main-row"
         >
           <td
@@ -518,7 +517,7 @@ export default {
 </template>
 <style lang="scss" scoped>
 .project-namespaces {
-  & ::v-deep {
+  & :deep() {
     .project-name {
       line-height: 30px;
     }

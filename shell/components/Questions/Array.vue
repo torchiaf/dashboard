@@ -18,13 +18,12 @@ export default {
   <div class="row">
     <div class="col span-6">
       <ArrayList
-        :key="question.variable"
-        v-model="value[question.variable]"
+        v-model:value="value[question.variable]"
         :title="question.label"
         :mode="mode"
         :protip="false"
         :disabled="disabled"
-        @input="update"
+        @update:value="update"
       />
     </div>
     <div

@@ -60,7 +60,7 @@ export default {
 
   mounted() {
     if (this.isCreate) {
-      this.$set(this.value, 'spec', { groups: [] });
+      this.value['spec'] = { groups: [] };
       this.addRuleGroup();
     }
   },
@@ -69,7 +69,7 @@ export default {
     this.registerBeforeHook(this.willSave, 'willSave');
 
     if (this.mode === _CREATE) {
-      this.$set(this.value.metadata, 'namespace', 'cattle-monitoring-system');
+      this.value.metadata['namespace'] = 'cattle-monitoring-system';
     }
   },
 
@@ -95,9 +95,9 @@ export default {
           const interval = group.interval;
 
           if (isString(interval)) {
-            this.$set(group, 'interval', interval.includes('s') ? interval : `${ interval }s`);
+            group['interval'] = interval.includes('s' ? interval : `${ interval }s`);
           } else {
-            this.$set(group, 'interval', `${ interval }s`);
+            group['interval'] = `${ interval }s`;
           }
         }
       });
@@ -106,7 +106,7 @@ export default {
     },
 
     updateGroupInterval(group, interval) {
-      this.$set(group, 'interval', [null, undefined].includes(interval) ? undefined : `${ interval }s`);
+      group['interval'] = [null, undefined].includes(interval ? undefined : `${ interval }s`);
     },
 
     getGroupInterval(interval) {
@@ -148,16 +148,14 @@ export default {
         @removeTab="removeGroupRule"
       >
         <Tab
-          v-for="(group, idx) in filteredGroups"
-          :key="'filtered-group-' + idx"
-          :name="'group-' + idx"
+          v-for="(group, idx) in filteredGroups" :key="idx":name="'group-' + idx"
           :label="ruleGroupLabel(idx)"
           class="container-group"
         >
           <div class="row">
             <div class="col span-6">
               <LabeledInput
-                v-model="group.name"
+                v-model:value="group.name"
                 :label="t('prometheusRule.groups.name')"
                 :mode="mode"
                 :required="true"
@@ -174,12 +172,12 @@ export default {
                 "
                 :label="t('prometheusRule.groups.groupInterval.label')"
                 :mode="mode"
-                @input="(e) => updateGroupInterval(filteredGroups[idx], e)"
+                @update:value="(e) => updateGroupInterval(filteredGroups[idx], e)"
               />
             </div>
           </div>
           <GroupRules
-            v-model="group.rules"
+            v-model:value="group.rules"
             class="mb-20"
             :mode="mode"
           />

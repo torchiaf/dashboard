@@ -219,9 +219,7 @@ export default {
             />
           </div>
           <div
-            v-for="(e, i) in errors"
-            :key="i"
-            class="plugin-setup-error"
+            v-for="(e, i) in errors" :key="i"class="plugin-setup-error"
           >
             {{ e }}
           </div>
@@ -242,7 +240,7 @@ export default {
           class="mt-20"
         >
           <Checkbox
-            v-model="addRepo"
+            v-model:value="addRepo"
             :primary="true"
             label-key="plugins.setup.install.addRancherRepo"
           />

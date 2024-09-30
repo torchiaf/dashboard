@@ -1,5 +1,6 @@
 import { _EDIT, _YAML } from '@shell/config/query-params';
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 
 import impl from './impl';
 

@@ -115,7 +115,7 @@ export default {
         >
           <div class="col span-5">
             <LabeledInput
-              v-model="model.adminEmail"
+              v-model:value="model.adminEmail"
               :label="t(`authConfig.${NAME}.adminEmail`)"
               :mode="mode"
               required
@@ -123,7 +123,7 @@ export default {
           </div>
           <div class="col span-5">
             <LabeledInput
-              v-model="model.hostname"
+              v-model:value="model.hostname"
               :label="t(`authConfig.${NAME}.domain`)"
               :mode="mode"
               required
@@ -131,7 +131,7 @@ export default {
           </div>
           <div class="col span-2">
             <Checkbox
-              v-model="model.nestedGroupMembershipEnabled"
+              v-model:value="model.nestedGroupMembershipEnabled"
               :mode="mode"
               :label="t('authConfig.ldap.nestedGroupMembership.label')"
             />
@@ -189,7 +189,7 @@ export default {
             </div>
             <div class="col span-6">
               <LabeledInput
-                v-model="model.oauthCredential"
+                v-model:value="model.oauthCredential"
                 :label="t(`authConfig.googleoauth.oauthCredentials.label`)"
                 :mode="mode"
                 required
@@ -224,7 +224,7 @@ export default {
             </div>
             <div class="col span-6">
               <LabeledInput
-                v-model="model.serviceAccountCredential"
+                v-model:value="model.serviceAccountCredential"
                 :label="t(`authConfig.googleoauth.serviceAccountCredentials.label`)"
                 :mode="mode"
                 required
@@ -265,7 +265,7 @@ export default {
   .banner {
     display: block;
 
-    &::v-deep code {
+    &:deep() code {
       padding: 0 3px;
       margin: 0 3px;
     }

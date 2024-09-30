@@ -635,7 +635,7 @@ export default {
         class="side-nav"
       >
         <div class="nav">
-          <template v-for="(g) in groups">
+          <template  v-for="((g), i) in groups" :key="i" >
             <Group
               ref="groups"
               :key="g.name"
@@ -700,9 +700,7 @@ export default {
                   style="margin: -1px;"
                 >
                   <li
-                    v-for="(label, name) in availableLocales"
-                    :key="name"
-                    class="hand"
+                    v-for="(label, name) in availableLocales" :key="name"class="hand"
                     @click="switchLocale(name)"
                   >
                     {{ label }}
@@ -940,15 +938,15 @@ export default {
   }
 
   .localeSelector {
-    ::v-deep .popover-inner {
+    :deep() .popover-inner {
       padding: 50px 0;
     }
 
-    ::v-deep .popover-arrow {
+    :deep() .popover-arrow {
       display: none;
     }
 
-    ::v-deep .popover:focus {
+    :deep() .popover:focus {
       outline: 0;
     }
 

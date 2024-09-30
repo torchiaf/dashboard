@@ -735,7 +735,7 @@ export default {
           {{ t('namespaceFilter.selected.label', { total }) }}
         </div>
         <div
-          v-for="(ns, j) in value"
+          v-for="(ns, j) in value" :key="j"
           ref="value"
           :key="ns.id"
           :data-testid="`namespaces-value-${j}`"
@@ -787,7 +787,7 @@ export default {
         <div class="ns-input">
           <input
             ref="filter"
-            v-model="filter"
+            v-model:value="filter"
             tabindex="0"
             class="ns-filter-input"
             @keydown="inputKeyHandler($event)"
@@ -824,7 +824,7 @@ export default {
         role="list"
       >
         <div
-          v-for="(opt, i) in cachedFiltered"
+          v-for="(opt, i) in cachedFiltered" :key="i"
           :id="opt.elementId"
           :key="opt.id"
           tabindex="0"

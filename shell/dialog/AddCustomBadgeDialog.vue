@@ -94,10 +94,10 @@ export default {
         delete norman.annotations[CLUSTER_BADGE.ICON_TEXT];
 
         if (this.useCustomBadge) {
-          this.$set(norman.annotations, CLUSTER_BADGE.TEXT, this.badgeDescription);
-          this.$set(norman.annotations, CLUSTER_BADGE.COLOR, this.badgeBgColor);
+          norman.annotations[CLUSTER_BADGE.TEXT] = this.badgeDescription;
+          norman.annotations[CLUSTER_BADGE.COLOR] = this.badgeBgColor;
           if (this.badgeAsIcon) {
-            this.$set(norman.annotations, CLUSTER_BADGE.ICON_TEXT, this.letter.toUpperCase());
+            norman.annotations[CLUSTER_BADGE.ICON_TEXT] = this.letter.toUpperCase();
           }
         }
 
@@ -155,7 +155,7 @@ export default {
       <div class="row mt-10">
         <div class="col">
           <Checkbox
-            v-model="useCustomBadge"
+            v-model:value="useCustomBadge"
             :label="t('clusterBadge.modal.checkbox')"
             class="mt-10"
           />
@@ -178,7 +178,7 @@ export default {
         <div class="row mt-10">
           <div class="col span-12">
             <ColorInput
-              v-model="badgeBgColor"
+              v-model:value="badgeBgColor"
               :mode="mode"
               :default-value="badgeBgColor"
               :label="t('clusterBadge.modal.badgeBgColor')"
@@ -189,7 +189,7 @@ export default {
         <div class="row mt-10">
           <div class="col">
             <Checkbox
-              v-model="badgeAsIcon"
+              v-model:value="badgeAsIcon"
               :mode="mode"
               :label="t('clusterBadge.modal.badgeAsIcon')"
               class="mt-10"
@@ -217,9 +217,7 @@ export default {
       class="bottom"
     >
       <Banner
-        v-for="(err, i) in errors"
-        :key="i"
-        color="error"
+        v-for="(err, i) in errors" :key="i"color="error"
         :label="err"
       />
       <div class="buttons">
@@ -280,7 +278,7 @@ export default {
         }
       }
 
-      ::v-deep .badge-icon-text input {
+      :deep() .badge-icon-text input {
         text-transform: uppercase;
       }
     }

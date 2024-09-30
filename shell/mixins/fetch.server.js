@@ -1,4 +1,5 @@
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import {
   hasFetch, normalizeError, addLifecycleHook, purifyData, createGetCounter
 } from '../../utils/nuxt';

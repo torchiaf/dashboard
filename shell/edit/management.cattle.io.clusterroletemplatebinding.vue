@@ -65,13 +65,11 @@ export default {
     @cancel="done"
   >
     <ClusterPermissionsEditor
-      v-model="bindings"
+      v-model:value="bindings"
       :cluster-name="$store.getters['currentCluster'].id"
     />
     <Banner
-      v-for="(err, i) in errors"
-      :key="i"
-      color="error"
+      v-for="(err, i) in errors" :key="i"color="error"
       :label="err"
     />
   </CruResource>

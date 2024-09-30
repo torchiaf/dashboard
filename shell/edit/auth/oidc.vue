@@ -152,7 +152,7 @@ export default {
         <div class="row mb-20">
           <div class="col span-6">
             <LabeledInput
-              v-model="model.clientId"
+              v-model:value="model.clientId"
               :label="t(`authConfig.oidc.clientId`)"
               :mode="mode"
               required
@@ -160,7 +160,7 @@ export default {
           </div>
           <div class="col span-6">
             <LabeledInput
-              v-model="model.clientSecret"
+              v-model:value="model.clientSecret"
               :label="t(`authConfig.oidc.clientSecret`)"
               :mode="mode"
               required
@@ -171,7 +171,7 @@ export default {
         <div class="row mb-20">
           <div class="col span-6">
             <LabeledInput
-              v-model="model.privateKey"
+              v-model:value="model.privateKey"
               :label="t(`authConfig.oidc.key.label`)"
               :placeholder="t(`authConfig.oidc.key.placeholder`)"
               :mode="mode"
@@ -186,7 +186,7 @@ export default {
           </div>
           <div class="col span-6">
             <LabeledInput
-              v-model="model.certificate"
+              v-model:value="model.certificate"
               :label="t(`authConfig.oidc.cert.label`)"
               :placeholder="t(`authConfig.oidc.cert.placeholder`)"
               :mode="mode"
@@ -204,7 +204,7 @@ export default {
         <div class="row mb-20">
           <div class="col span-6">
             <RadioGroup
-              v-model="customEndpoint.value"
+              v-model:value="customEndpoint.value"
               name="customEndpoint"
               label-key="authConfig.oidc.customEndpoint.label"
               :labels="customEndpoint.labels"
@@ -220,7 +220,7 @@ export default {
         <div class="row mb-20">
           <div class="col span-6">
             <LabeledInput
-              v-model="keycloakUrls.url"
+              v-model:value="keycloakUrls.url"
               :label="t(`authConfig.oidc.keycloak.url`)"
               :mode="mode"
               :required="!customEndpoint.value"
@@ -229,7 +229,7 @@ export default {
           </div>
           <div class="col span-6">
             <LabeledInput
-              v-model="keycloakUrls.realm"
+              v-model:value="keycloakUrls.realm"
               :label="t(`authConfig.oidc.keycloak.realm`)"
               :mode="mode"
               :required="!customEndpoint.value"
@@ -241,7 +241,7 @@ export default {
         <div class="row mb-20">
           <div class="col span-6">
             <LabeledInput
-              v-model="model.rancherUrl"
+              v-model:value="model.rancherUrl"
               :label="t(`authConfig.oidc.rancherUrl`)"
               :mode="mode"
               required
@@ -253,7 +253,7 @@ export default {
         <div class="row mb-20">
           <div class="col span-6">
             <LabeledInput
-              v-model="model.issuer"
+              v-model:value="model.issuer"
               :label="t(`authConfig.oidc.issuer`)"
               :mode="mode"
               required
@@ -262,7 +262,7 @@ export default {
           </div>
           <div class="col span-6">
             <LabeledInput
-              v-model="model.authEndpoint"
+              v-model:value="model.authEndpoint"
               :label="t(`authConfig.oidc.authEndpoint`)"
               :mode="mode"
               required
@@ -289,7 +289,7 @@ export default {
   .banner {
     display: block;
 
-    &::v-deep code {
+    &:deep() code {
       padding: 0 3px;
       margin: 0 3px;
     }

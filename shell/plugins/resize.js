@@ -1,5 +1,6 @@
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import VueResize from 'vue-resize';
 import 'vue-resize/dist/vue-resize.css';
 
-Vue.use(VueResize);
+vueApp.use(VueResize);
