@@ -40,7 +40,7 @@ export default class HciPv extends HarvesterResource {
     return [
       {
         action:  'exportImage',
-        enabled: this.hasAction('export'),
+        enabled: this.hasAction('export') && !this.isEncrypted,
         icon:    'icon icon-copy',
         label:   this.t('harvester.action.exportImage')
       },
@@ -214,6 +214,10 @@ export default class HciPv extends HarvesterResource {
     }
 
     return false;
+  }
+
+  get isEncrypted() {
+    return this.relatedPV?.spec.csi.volumeAttributes.encrypted === 'true';
   }
 
   get longhornVolume() {

@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import { load } from 'js-yaml';
 import { omitBy, pickBy } from 'lodash';
-
+import { PRODUCT_NAME as HARVESTER_PRODUCT } from '../config/harvester';
 import { colorForState } from '@shell/plugins/dashboard-store/resource-class';
 import { POD, NODE, PVC } from '@shell/config/types';
 import { HCI } from '../types';
@@ -161,6 +161,12 @@ export default class VirtVm extends HarvesterResource {
         enabled: !!this.actions?.updateResourceQuota && !!this.actions.deleteResourceQuota,
         icon:    'icon icon-storage',
         label:   this.t('harvester.action.editVMQuota')
+      },
+      {
+        action:  'createSchedule',
+        enabled: true,
+        icon:    'icon icon-history',
+        label:   this.t('harvester.action.createSchedule')
       },
       {
         action:  'restoreVM',
@@ -324,6 +330,16 @@ export default class VirtVm extends HarvesterResource {
     );
   }
 
+  createSchedule(resources = this) {
+    const router = this.currentRouter();
+
+    router.push({
+      name:   `${ HARVESTER_PRODUCT }-c-cluster-resource-create`,
+      params: { resource: HCI.SCHEDULE_VM_BACKUP },
+      query:  { vmNamespace: this.metadata.namespace, vmName: this.metadata.name }
+    });
+  }
+
   backupVM(resources = this) {
     this.$dispatch('promptModal', {
       resources,
@@ -460,6 +476,10 @@ export default class VirtVm extends HarvesterResource {
     return null;
   }
 
+  get isCpuPinning() {
+    return this.spec?.template?.spec?.domain?.cpu?.dedicatedCpuPlacement === true;
+  }
+
   get isVMExpectedRunning() {
     if (!this?.spec) {
       return false;
@@ -573,6 +593,22 @@ export default class VirtVm extends HarvesterResource {
     const vmis = this.$rootGetters[`${ inStore }/all`](HCI.VMI);
 
     return vmis.find(VMI => VMI.id === this.id);
+  }
+
+  get encryptedVolumeType() {
+    const inStore = this.productInStore;
+    const pvcs = this.$rootGetters[`${ inStore }/all`](PVC);
+
+    const volumeClaimNames = this.spec.template.spec.volumes?.map(v => v.persistentVolumeClaim?.claimName).filter(v => !!v) || [];
+    const volumes = pvcs.filter(pvc => volumeClaimNames.includes(pvc.metadata.name));
+
+    if (volumes.every(vol => vol.isEncrypted)) {
+      return 'all';
+    } else if (volumes.some(vol => vol.isEncrypted)) {
+      return 'partial';
+    } else {
+      return 'none';
+    }
   }
 
   get isError() {
@@ -1077,6 +1113,20 @@ export default class VirtVm extends HarvesterResource {
     return omitBy(all, (value, key) => {
       return matchesSomeRegex(key, LABELS_TO_IGNORE_REGEX);
     });
+  }
+
+  get hostDevices() {
+    return this.spec?.template?.spec?.domain?.devices?.hostDevices || [];
+  }
+
+  get provisionedVGpus() {
+    try {
+      const deviceAllocationDetails = JSON.parse(this.metadata?.annotations[HCI_ANNOTATIONS.VM_DEVICE_ALLOCATION_DETAILS] || '{}');
+
+      return deviceAllocationDetails?.gpus || {};
+    } catch (error) {
+      return {};
+    }
   }
 
   setInstanceLabels(val) {

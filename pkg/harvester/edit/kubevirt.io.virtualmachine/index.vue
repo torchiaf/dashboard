@@ -1,7 +1,7 @@
 <script>
 import { isEqual } from 'lodash';
 import { mapGetters } from 'vuex';
-
+import { Banner } from '@components/Banner';
 import Tabbed from '@shell/components/Tabbed';
 import Tab from '@shell/components/Tabbed/Tab';
 import { Checkbox } from '@components/Form/Checkbox';
@@ -12,7 +12,7 @@ import LabeledSelect from '@shell/components/form/LabeledSelect';
 import NameNsDescription from '@shell/components/form/NameNsDescription';
 import UnitInput from '@shell/components/form/UnitInput';
 import Labels from '@shell/components/form/Labels';
-
+import MessageLink from '@shell/components/MessageLink';
 import Reserved from './VirtualMachineReserved';
 import SSHKey from './VirtualMachineSSHKey';
 import Volume from './VirtualMachineVolume';
@@ -23,7 +23,8 @@ import NodeScheduling from '@shell/components/form/NodeScheduling';
 import PodAffinity from '@shell/components/form/PodAffinity';
 import AccessCredentials from './VirtualMachineAccessCredentials';
 import PciDevices from './VirtualMachinePciDevices/index';
-import VirtualMachineVGpuDevices from './VirtualMachineVGpuDevices/index';
+import VGpuDevices from './VirtualMachineVGpuDevices/index';
+import UsbDevices from './VirtualMachineUSBDevices/index';
 import RestartVMDialog from '../../dialog/RestartVMDialog';
 import KeyValue from '@shell/components/form/KeyValue';
 
@@ -65,8 +66,11 @@ export default {
     PciDevices,
     RestartVMDialog,
     UnitInput,
-    VirtualMachineVGpuDevices,
+    VGpuDevices,
     KeyValue,
+    Banner,
+    MessageLink,
+    UsbDevices,
   },
 
   mixins: [CreateEditView, VM_MIXIN],
@@ -99,6 +103,13 @@ export default {
 
   computed: {
     ...mapGetters({ t: 'i18n/t' }),
+
+    to() {
+      return {
+        name:   'harvester-c-cluster-resource',
+        params: { cluster: this.$store.getters['clusterId'], resource: HCI.HOST },
+      };
+    },
 
     machineTypeOptions() {
       return [{
@@ -170,6 +181,26 @@ export default {
     hasStartAction() {
       return this.value.hasAction('start');
     },
+
+    enableCpuPinningCheckbox() {
+      if (this.mode === 'create') {
+        return this.nodes.some(node => node.isCPUManagerEnabled); // any one of nodes has label cpuManager=true
+      }
+
+      return true;
+    },
+
+    showCpuPinningBanner() {
+      if (this.mode === 'edit') {
+        return this.cpuPinning !== !!this.cloneVM.spec.template.spec.domain.cpu.dedicatedCpuPlacement;
+      }
+
+      if (this.mode === 'create') {
+        return this.nodes.every(node => !node.isCPUManagerEnabled); // no node enabled CPU manager
+      }
+
+      return false;
+    }
   },
 
   watch: {
@@ -573,10 +604,14 @@ export default {
       </Tab>
 
       <Tab v-if="enabledSriovgpu" :label="t('harvester.tab.vGpuDevices')" name="vGpuDevices" :weight="-6">
-        <VirtualMachineVGpuDevices :mode="mode" :value="spec.template.spec" :vm="value" />
+        <VGpuDevices :mode="mode" :value="spec.template.spec" :vm="value" />
       </Tab>
 
-      <Tab v-if="isEdit" :label="t('harvester.tab.accessCredentials')" name="accessCredentials" :weight="-7">
+      <Tab v-if="enabledPCI" :label="t('harvester.tab.usbDevices')" name="usbDevices" :weight="-7">
+        <UsbDevices :mode="mode" :value="spec.template.spec" :vm="value" />
+      </Tab>
+
+      <Tab v-if="isEdit" :label="t('harvester.tab.accessCredentials')" name="accessCredentials" :weight="-8">
         <AccessCredentials v-model="accessCredentials" :mode="mode" :resource="value" :is-qemu-installed="isQemuInstalled" />
       </Tab>
 
@@ -706,6 +741,16 @@ export default {
         />
 
         <Checkbox
+          v-model="cpuPinning"
+          :disabled="!enableCpuPinningCheckbox"
+          class="check"
+          type="checkbox"
+          tooltip-key="harvester.virtualMachine.cpuPinning.tooltip"
+          label-key="harvester.virtualMachine.cpuPinning.label"
+          :mode="mode"
+        />
+
+        <Checkbox
           v-model="installUSBTablet"
           class="check mt-20"
           type="checkbox"
@@ -748,6 +793,21 @@ export default {
           :label="t('harvester.virtualMachine.secureBoot')"
           :mode="mode"
         />
+        <Banner
+          v-if="showCpuPinningBanner"
+          color="warning"
+        >
+          <MessageLink
+            v-if="mode === 'create'"
+            :to="to"
+            prefix-label="harvester.virtualMachine.advancedOptions.cpuManager.prefix"
+            middle-label="harvester.virtualMachine.advancedOptions.cpuManager.middle"
+            suffix-label="harvester.virtualMachine.advancedOptions.cpuManager.suffix"
+          />
+          <span v-if="mode==='edit'">
+            {{ t('harvester.virtualMachine.cpuPinning.restartVMMessage') }}
+          </span>
+        </Banner>
       </Tab>
     </Tabbed>
 

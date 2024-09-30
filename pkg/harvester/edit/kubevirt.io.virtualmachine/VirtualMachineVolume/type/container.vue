@@ -3,11 +3,12 @@ import { LabeledInput } from '@components/Form/LabeledInput';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import InputOrDisplay from '@shell/components/InputOrDisplay';
 import { VOLUME_TYPE, InterfaceOption } from '../../../../config/harvester-map';
+import { Banner } from '@components/Banner';
 
 export default {
   name:       'HarvesterEditContainer',
   components: {
-    LabeledInput, LabeledSelect, InputOrDisplay
+    LabeledInput, LabeledSelect, InputOrDisplay, Banner
   },
 
   props: {
@@ -67,7 +68,6 @@ export default {
           />
         </InputOrDisplay>
       </div>
-
       <div
         data-testid="input-hec-type"
         class="col span-6"
@@ -108,10 +108,9 @@ export default {
           />
         </InputOrDisplay>
       </div>
-
       <div
         data-testid="input-hec-bus"
-        class="col span-3"
+        class="col span-6"
       >
         <InputOrDisplay
           :name="t('harvester.virtualMachine.volume.bus')"
@@ -128,5 +127,28 @@ export default {
         </InputOrDisplay>
       </div>
     </div>
+    <div class="row mb-20">
+      <div
+        v-if="value.volumeBackups"
+        class="col span-6"
+      >
+        <InputOrDisplay
+          :name="t('harvester.virtualMachine.volume.readyToUse')"
+          :value="value.volumeBackups.readyToUse"
+          :mode="mode"
+        >
+          <LabelValue
+            :name="t('harvester.virtualMachine.volume.readyToUse')"
+            :value="value.volumeBackups.readyToUse"
+          />
+        </InputOrDisplay>
+      </div>
+    </div>
+    <Banner
+      v-if="value.volumeBackups && value.volumeBackups.error && value.volumeBackups.error.message"
+      color="error"
+      class="mb-20"
+      :label="value.volumeBackups.error.message"
+    />
   </div>
 </template>

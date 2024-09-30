@@ -92,6 +92,7 @@ export default {
           value:     'internalIp',
           formatter: 'CopyToClipboard',
           sort:      ['internalIp'],
+          align:     'center',
         },
       ];
 
@@ -122,11 +123,22 @@ export default {
           labelKey:      'tableHeaders.storage',
           value:         'id',
           formatter:     'HarvesterStorageUsed',
-          formatterOpts: { showReserved: true },
+          formatterOpts: { showAllocated: true },
         };
 
         out.splice(-1, 0, storageHeader);
       }
+
+      out.push({
+        name:          'cpuManager',
+        labelKey:      'harvester.tableHeaders.cpuManager',
+        value:         'id',
+        formatter:     'HarvesterCPUPinning',
+        formatterOpts: { rows: this.rows },
+        width:         150,
+        align:         'center',
+
+      });
 
       if (this.hasLonghornSchema) {
         out.push({
@@ -157,7 +169,6 @@ export default {
     consoleDocLink() {
       return DOC_LINKS.CONSOLE_URL;
     }
-
   },
   methods: {
     async loadMetrics() {

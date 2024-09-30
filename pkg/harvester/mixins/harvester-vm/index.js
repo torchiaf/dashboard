@@ -51,6 +51,7 @@ export const OS = [{
   value: 'oracle'
 }, {
   label: 'Red Hat',
+  match: ['redhat', 'rhel'],
   value: 'redhat'
 }, {
   label: 'openSUSE',
@@ -122,11 +123,10 @@ export default {
     const hasPCISchema = !!this.$store.getters[`${ inStore }/schemaFor`](HCI.PCI_DEVICE);
     const hasSRIOVGPUSchema = !!this.$store.getters[`${ inStore }/schemaFor`](HCI.SR_IOVGPU_DEVICE);
 
-    const hasPCIAddon = res.addons.find(addon => addon.name === ADD_ONS.PCI_DEVICE_CONTROLLER)?.spec?.enabled === true;
-    const hasSriovgpuAddon = res.addons.find(addon => addon.name === ADD_ONS.NVIDIA_DRIVER_TOOLKIT_CONTROLLER)?.spec?.enabled === true;
+    const enabledAddons = res.addons.reduce((acc, addon) => ({ ...acc, [addon.name]: addon.spec?.enabled }), {});
 
-    this.enabledPCI = hasPCIAddon && hasPCISchema;
-    this.enabledSriovgpu = hasSriovgpuAddon && hasPCIAddon && hasSRIOVGPUSchema;
+    this.enabledPCI = hasPCISchema && enabledAddons[ADD_ONS.PCI_DEVICE_CONTROLLER];
+    this.enabledSriovgpu = hasSRIOVGPUSchema && enabledAddons[ADD_ONS.PCI_DEVICE_CONTROLLER] && enabledAddons[ADD_ONS.NVIDIA_DRIVER_TOOLKIT_CONTROLLER];
   },
 
   data() {
@@ -169,6 +169,7 @@ export default {
       enabledSriovgpu:               false,
       immutableMode:                 this.realMode === _CREATE ? _CREATE : _VIEW,
       terminationGracePeriodSeconds: '',
+      cpuPinning:                    false,
     };
   },
 
@@ -302,7 +303,7 @@ export default {
       } = config;
 
       const vm = this.resource === HCI.VM ? value : this.resource === HCI.BACKUP ? this.value.status?.source : value.spec.vm;
-
+      const volumeBackups = this.resource === HCI.BACKUP ? this.value.status?.volumeBackups : null;
       const spec = vm?.spec;
 
       if (!spec) {
@@ -336,7 +337,8 @@ export default {
       const sshKey = this.getSSHFromAnnotation(spec) || [];
 
       const imageId = this.getRootImageId(vm) || '';
-      const diskRows = this.getDiskRows(vm);
+      const diskRows = this.getDiskRows(vm, volumeBackups);
+
       const networkRows = this.getNetworkRows(vm, { fromTemplate, init });
       const hasCreateVolumes = this.getHasCreatedVolumes(spec) || [];
 
@@ -362,6 +364,7 @@ export default {
       const efiEnabled = this.isEfiEnabled(spec);
       const tpmEnabled = this.isTpmEnabled(spec);
       const secureBoot = this.isSecureBoot(spec);
+      const cpuPinning = this.isCpuPinning(spec);
 
       const secretRef = this.getSecret(spec);
       const accessCredentials = this.getAccessCredentials(spec);
@@ -393,6 +396,7 @@ export default {
       this.$set(this, 'efiEnabled', efiEnabled);
       this.$set(this, 'tpmEnabled', tpmEnabled);
       this.$set(this, 'secureBoot', secureBoot);
+      this.$set(this, 'cpuPinning', cpuPinning);
 
       this.$set(this, 'hasCreateVolumes', hasCreateVolumes);
       this.$set(this, 'networkRows', networkRows);
@@ -403,7 +407,7 @@ export default {
       this.refreshYamlEditor();
     },
 
-    getDiskRows(vm) {
+    getDiskRows(vm, volBackups) {
       const namespace = vm.metadata.namespace;
       const _volumes = vm.spec.template.spec.volumes || [];
       const _disks = vm.spec.template.spec.domain.devices.disks || [];
@@ -417,8 +421,11 @@ export default {
         let size = '10Gi';
 
         const imageResource = this.images.find( I => this.imageId === I.id);
+
         const isIsoImage = /iso$/i.test(imageResource?.imageSuffix);
         const imageSize = Math.max(imageResource?.status?.size, imageResource?.status?.virtualSize);
+        const isEncrypted = imageResource?.isEncrypted || false;
+        const volumeBackups = volBackups?.find(vBackup => vBackup.volumeName === 'disk-0') || null ;
 
         if (isIsoImage) {
           bus = 'sata';
@@ -446,6 +453,8 @@ export default {
           storageClassName: '',
           image:            this.imageId,
           volumeMode:       'Block',
+          isEncrypted,
+          volumeBackups,
         });
       } else {
         out = _disks.map( (DISK, index) => {
@@ -522,7 +531,12 @@ export default {
             minExponent: 3,
           });
 
-          const volumeStatus = this.pvcs.find(P => P.id === `${ this.value.metadata.namespace }/${ volumeName }`)?.relatedPV?.metadata?.annotations?.[HCI_ANNOTATIONS.VOLUME_ERROR];
+          const pvc = this.pvcs.find(P => P.id === `${ this.value.metadata.namespace }/${ volumeName }`);
+
+          const volumeStatus = pvc?.relatedPV?.metadata?.annotations?.[HCI_ANNOTATIONS.VOLUME_ERROR];
+
+          const isEncrypted = pvc?.isEncrypted || false;
+          const volumeBackups = volBackups?.find(vBackup => vBackup.volumeName === DISK.name) || null;
 
           return {
             id:         randomStr(5),
@@ -542,7 +556,9 @@ export default {
             hotpluggable,
             volumeStatus,
             dataSource,
-            namespace
+            namespace,
+            isEncrypted,
+            volumeBackups,
           };
         });
       }
@@ -1382,6 +1398,14 @@ export default {
       }
     },
 
+    setCpuPinning(value) {
+      if (value) {
+        set(this.spec.template.spec.domain.cpu, 'dedicatedCpuPlacement', true);
+      } else {
+        this.$delete(this.spec.template.spec.domain.cpu, 'dedicatedCpuPlacement');
+      }
+    },
+
     setTPM(tpmEnabled) {
       if (tpmEnabled) {
         set(this.spec.template.spec.domain.devices, 'tpm', {});
@@ -1503,6 +1527,10 @@ export default {
 
     secureBoot(val) {
       this.setBootMethod({ efi: this.efiEnabled, secureBoot: val });
+    },
+
+    cpuPinning(value) {
+      this.setCpuPinning(value);
     },
 
     tpmEnabled(val) {
