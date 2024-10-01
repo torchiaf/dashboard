@@ -320,7 +320,9 @@ export default {
 
     async createResourceYaml(modifiers, resource = this.resource) {
       // Required to populate yaml comments and default values
-      await this.schema?.fetchResourceFields();
+      if (this.schema?.fetchResourceFields && typeof this.schema.fetchResourceFields === 'function') {
+        await this.schema?.fetchResourceFields();
+      }
 
       if ( typeof this.generateYaml === 'function' ) {
         return this.generateYaml.apply(this, resource);
@@ -337,7 +339,9 @@ export default {
 
     async showPreviewYaml() {
       // Required to populate yaml comments and default values
-      await this.schema?.fetchResourceFields();
+      if (this.schema?.fetchResourceFields && typeof this.schema.fetchResourceFields === 'function') {
+        await this.schema?.fetchResourceFields();
+      }
 
       if ( this.applyHooks ) {
         try {
