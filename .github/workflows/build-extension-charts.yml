@@ -50,6 +50,7 @@ jobs:
         with:
           node-version: '20'
           cache: yarn
+          node-version-file: '.nvmrc'
 
       - name: Install dependencies
         run: yarn
