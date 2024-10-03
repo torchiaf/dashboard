@@ -23,6 +23,8 @@ jobs:
   build-extension-artifact:
     name: Build extension artifact
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
     permissions:
       actions: write
       contents: read
