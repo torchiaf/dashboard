@@ -141,7 +141,7 @@ export default {
     <div class="mt-20">
       <div v-if="setting.kind === 'enum'">
         <LabeledSelect
-          v-model="value.value"
+          v-model:value="value.value"
           data-testid="input-setting-enum"
           :label="t('advancedSettings.edit.value')"
           :rules="fvGetAndReportPathRules('value')"
@@ -153,7 +153,7 @@ export default {
       </div>
       <div v-else-if="setting.kind === 'boolean'">
         <RadioGroup
-          v-model="value.value"
+          v-model:value="value.value"
           data-testid="input-setting-boolean"
           name="settings_value"
           :rules="fvGetAndReportPathRules('value')"
@@ -163,7 +163,7 @@ export default {
       </div>
       <div v-else-if="setting.kind === 'multiline' || setting.kind === 'json'">
         <TextAreaAutoGrow
-          v-model="value.value"
+          v-model:value="value.value"
           data-testid="input-setting-json"
           :required="true"
           :rules="fvGetAndReportPathRules('value')"
@@ -172,7 +172,7 @@ export default {
       </div>
       <div v-else-if="setting.kind === 'integer'">
         <LabeledInput
-          v-model="value.value"
+          v-model:value="value.value"
           data-testid="input-setting-integer"
           :label="t('advancedSettings.edit.value')"
           :mode="mode"
@@ -183,7 +183,7 @@ export default {
       </div>
       <div v-else>
         <LabeledInput
-          v-model="value.value"
+          v-model:value="value.value"
           data-testid="input-setting-generic"
           :localized-label="true"
           :required="true"
@@ -206,7 +206,7 @@ export default {
     }
   }
 
-  ::v-deep .edit-help code {
+  :deep() .edit-help code {
     padding: 1px 5px;
   }
 </style>

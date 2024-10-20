@@ -144,7 +144,7 @@ export default {
     },
 
     toggleLabels(row) {
-      this.$set(row, 'displayLabels', !row.displayLabels);
+      row['displayLabels'] = !row.displayLabels;
     },
   }
 
@@ -167,7 +167,7 @@ export default {
       :loading="loading"
       :use-query-params-for-simple-filtering="useQueryParamsForSimpleFiltering"
       :force-update-live-and-delayed="forceUpdateLiveAndDelayed"
-      v-on="$listeners"
+      
     >
       <template #sub-row="{fullColspan, row, onRowMouseEnter, onRowMouseLeave}">
         <tr
@@ -183,9 +183,7 @@ export default {
               <span v-if="row.spec.taints && row.spec.taints.length">
                 {{ t('node.list.nodeTaint') }}:
                 <Tag
-                  v-for="taint in row.spec.taints"
-                  :key="taint.key + taint.value + taint.effect"
-                  class="mr-5 mt-2"
+                   v-for="(taint, i) in row.spec.taints" :key="i" class="mr-5 mt-2"
                 >
                   {{ taint.key }}={{ taint.value }}:{{ taint.effect }}
                 </Tag>
@@ -195,9 +193,7 @@ export default {
                 class="mt-5"
               > {{ t('node.list.nodeLabels') }}:
                 <span
-                  v-for="(label, i) in row.customLabels"
-                  :key="i"
-                  class="mt-5 labels"
+                  v-for="(label, i) in row.customLabels" :key="i"class="mt-5 labels"
                 >
                   <Tag
                     v-if="i < 7"

@@ -1,4 +1,5 @@
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import Meta from 'vue-meta';
 import ClientOnly from 'vue-client-only';
 import NoSsr from 'vue-no-ssr';
@@ -44,10 +45,10 @@ import version from '../plugins/version';
 import steveCreateWorker from '../plugins/steve-create-worker';
 
 // Component: <ClientOnly>
-Vue.component(ClientOnly.name, ClientOnly);
+vueApp.component(ClientOnly.name, ClientOnly);
 
 // TODO: Remove in Nuxt 3: <NoSsr>
-Vue.component(NoSsr.name, {
+vueApp.component(NoSsr.name, {
   ...NoSsr,
   render(h, ctx) {
     if (process.client && !NoSsr._warned) {
@@ -61,15 +62,15 @@ Vue.component(NoSsr.name, {
 });
 
 // Component: <NuxtChild>
-Vue.component(NuxtChild.name, NuxtChild);
-Vue.component('NChild', NuxtChild);
+vueApp.component(NuxtChild.name, NuxtChild);
+vueApp.component('NChild', NuxtChild);
 
 // Component NuxtLink is imported in server.js or client.js
 
 // Component: <Nuxt>
-Vue.component(Nuxt.name, Nuxt);
+vueApp.component(Nuxt.name, Nuxt);
 
-Object.defineProperty(Vue.prototype, '$nuxt', {
+Object.defineProperty(vueApp.config.globalProperties, '$nuxt', {
   get() {
     const globalNuxt = this.$root.$options.$nuxt;
 
@@ -82,7 +83,7 @@ Object.defineProperty(Vue.prototype, '$nuxt', {
   configurable: true
 });
 
-Vue.use(Meta, {
+vueApp.use(Meta, {
   keyName: 'head', attribute: 'data-n-head', ssrAttribute: 'data-n-head-ssr', tagIDKeyName: 'hid'
 });
 
@@ -215,10 +216,10 @@ async function createApp(ssrContext, config = {}) {
       return;
     }
     Vue[installKey] = true;
-    // Call Vue.use() to install the plugin into vm
-    Vue.use(() => {
-      if (!Object.prototype.hasOwnProperty.call(Vue.prototype, key)) {
-        Object.defineProperty(Vue.prototype, key, {
+    // Call vueApp.use() to install the plugin into vm
+    vueApp.use(() => {
+      if (!Object.prototype.hasOwnProperty.call(vueApp.config.globalProperties, key)) {
+        Object.defineProperty(vueApp.config.globalProperties, key, {
           get() {
             return this.$root.$options[key];
           }

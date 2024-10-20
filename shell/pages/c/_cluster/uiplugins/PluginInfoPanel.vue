@@ -202,9 +202,7 @@ export default {
         </h3>
         <div class="plugin-versions mb-10">
           <div
-            v-for="v in info.versions"
-            :key="v.version"
-          >
+             v-for="(v, i) in info.versions" :key="i" >
             <a
               v-clean-tooltip="v.requiredUiVersion ? t('plugins.info.requiresVersion', { version: v.requiredUiVersion }) : ''"
               class="version-link"
@@ -408,7 +406,7 @@ export default {
 
         padding-bottom: 10px;
 
-        ::v-deep .chart-readmes {
+        :deep() .chart-readmes {
           flex: 1;
           overflow: auto;
         }

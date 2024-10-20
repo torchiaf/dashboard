@@ -363,7 +363,7 @@ export default {
               :is="removeComponent"
               v-if="hasCustomRemove"
               ref="customPrompt"
-              v-model="toRemove"
+              v-model:value="toRemove"
               v-bind="_data"
               :close="close"
               :needs-confirm="needsConfirm"
@@ -386,7 +386,7 @@ export default {
         <input
           v-if="needsConfirm"
           id="confirm"
-          v-model="confirmName"
+          v-model:value="confirmName"
           :data-testid="componentTestid + '-input'"
           type="text"
         >
@@ -404,10 +404,10 @@ export default {
         </div>
         <Checkbox
           v-if="chartsToRemoveIsApp"
-          v-model="chartsDeleteCrd"
+          v-model:value="chartsDeleteCrd"
           label-key="promptRemoveApp.removeCrd"
           class="mt-10 type"
-          @input="chartAddCrdToRemove"
+          @update:value="chartAddCrdToRemove"
         />
       </div>
       <template #actions>

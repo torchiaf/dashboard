@@ -164,15 +164,15 @@ function sanitizeValue(v) {
       <h3 v-t="'cluster.custom.nodeRole.label'" />
       <h4 v-t="'cluster.custom.nodeRole.detail'" />
       <Checkbox
-        v-model="etcd"
+        v-model:value="etcd"
         label-key="model.machine.role.etcd"
       />
       <Checkbox
-        v-model="controlPlane"
+        v-model:value="controlPlane"
         label-key="model.machine.role.controlPlane"
       />
       <Checkbox
-        v-model="worker"
+        v-model:value="worker"
         label-key="model.machine.role.worker"
       />
     </InfoBox>
@@ -188,26 +188,26 @@ function sanitizeValue(v) {
       <div class="row mb-10">
         <div class="col span-4">
           <LabeledInput
-            v-model="nodeName"
+            v-model:value="nodeName"
             label-key="cluster.custom.advanced.nodeName"
           />
         </div>
         <div class="col span-4">
           <LabeledInput
-            v-model="address"
+            v-model:value="address"
             label-key="cluster.custom.advanced.publicIp"
           />
         </div>
         <div class="col span-4">
           <LabeledInput
-            v-model="internalAddress"
+            v-model:value="internalAddress"
             label-key="cluster.custom.advanced.privateIp"
           />
         </div>
       </div>
 
       <KeyValue
-        v-model="labels"
+        v-model:value="labels"
         class="mb-10"
         mode="edit"
         :title="t('cluster.custom.advanced.nodeLabel.title')"
@@ -216,7 +216,7 @@ function sanitizeValue(v) {
       />
 
       <Taints
-        v-model="taints"
+        v-model:value="taints"
         class="mb-10"
         mode="edit"
         :value="taints"
@@ -252,7 +252,7 @@ function sanitizeValue(v) {
       </CopyCode>
       <Checkbox
         v-if="clusterToken.insecureNodeCommand"
-        v-model="insecure"
+        v-model:value="insecure"
         label-key="cluster.custom.registrationCommand.insecure"
       />
 
@@ -274,7 +274,7 @@ function sanitizeValue(v) {
           </CopyCode>
           <Checkbox
             v-if="clusterToken.insecureWindowsNodeCommand"
-            v-model="insecureWindows"
+            v-model:value="insecureWindows"
             label-key="cluster.custom.registrationCommand.insecure"
           />
           <Banner

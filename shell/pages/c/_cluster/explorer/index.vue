@@ -572,9 +572,7 @@ export default {
 
     <div v-if="!hasV1Monitoring && componentServices">
       <div
-        v-for="status in componentServices"
-        :key="status.name"
-        class="k8s-component-status"
+         v-for="(status, i) in componentServices" :key="i" class="k8s-component-status"
         :class="{'k8s-component-status-healthy': status.healthy, 'k8s-component-status-unhealthy': !status.healthy}"
       >
         <i
@@ -730,7 +728,7 @@ export default {
   align-items: center;
 }
 
-.etcd-metrics ::v-deep .external-link {
+.etcd-metrics :deep() .external-link {
   top: -107px;
 }
 

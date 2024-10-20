@@ -34,10 +34,10 @@ export default {
   },
   created() {
     if (!this.value.global.cattle) {
-      this.$set(this.value.global, 'cattle', { psp: { enabled: false } });
+      this.value.global['cattle'] = { psp: { enabled: false } };
     }
     if (!this.value.global.cattle.psp) {
-      this.$set(this.value.global.cattle, 'psp', { enabled: false });
+      this.value.global.cattle['psp'] = { enabled: false };
     }
   },
   computed: {
@@ -67,7 +67,7 @@ export default {
     </h3>
 
     <Checkbox
-      v-model="value.global.cattle.psp.enabled"
+      v-model:value="value.global.cattle.psp.enabled"
       data-testid="psp-checkbox"
       :mode="mode"
       :label="t('catalog.chart.enablePSP')"

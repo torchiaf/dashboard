@@ -127,7 +127,7 @@ export default {
       {{ t('registryConfig.description') }}
     </p>
     <ArrayListGrouped
-      v-model="entries"
+      v-model:value="entries"
       :add-label="t('registryConfig.addLabel')"
       :default-add-value="defaultAddValue"
       :initial-empty-row="true"
@@ -138,13 +138,13 @@ export default {
         <div class="row">
           <div class="col span-6">
             <LabeledInput
-              v-model="row.value.hostname"
+              v-model:value="row.value.hostname"
               label="Registry Hostname"
               :mode="mode"
             />
 
             <SelectOrCreateAuthSecret
-              v-model="row.value.authConfigSecretName"
+              v-model:value="row.value.authConfigSecretName"
               :register-before-hook="wrapRegisterBeforeHook"
               :append-unique-id-to-hook="true"
               in-store="management"
@@ -158,7 +158,7 @@ export default {
           </div>
           <div class="col span-6">
             <SecretSelector
-              v-model="row.value.tlsSecretName"
+              v-model:value="row.value.tlsSecretName"
               in-store="management"
               :mode="mode"
               :types="[TLS]"
@@ -167,7 +167,7 @@ export default {
             />
 
             <LabeledInput
-              v-model="row.value.caBundle"
+              v-model:value="row.value.caBundle"
               class="mt-20"
               type="multiline"
               label="CA Cert Bundle"
@@ -176,7 +176,7 @@ export default {
 
             <div>
               <Checkbox
-                v-model="row.value.insecureSkipVerify"
+                v-model:value="row.value.insecureSkipVerify"
                 class="mt-10"
                 :mode="mode"
                 label="Skip TLS Verifications"

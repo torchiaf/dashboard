@@ -1,5 +1,6 @@
 <script>
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import { mapGetters } from 'vuex';
 import { get, set } from '@shell/utils/object';
 import { sortBy } from '@shell/utils/sort';
@@ -304,7 +305,7 @@ export default {
       if (this.nameKey) {
         set(this.value, this.nameKey, val);
       } else {
-        this.$set(this.value.metadata, 'name', val);
+        this.value.metadata['name'] = val;
       }
       this.$emit('change');
     },
@@ -365,7 +366,7 @@ export default {
         this.createNamespace = true;
         this.$parent.$emit('createNamespace', true);
         this.$emit('isNamespaceNew', true);
-        Vue.nextTick(() => this.$refs.namespace.focus());
+        nextTick(() => this.$refs.namespace.focus());
       } else {
         this.createNamespace = false;
         this.$parent.$emit('createNamespace', false);
@@ -385,7 +386,7 @@ export default {
     >
       <LabeledInput
         ref="namespace"
-        v-model="namespace"
+        v-model:value="namespace"
         :label="t('namespace.label')"
         :placeholder="t('namespace.createNamespace')"
         :disabled="namespaceReallyDisabled"
@@ -411,7 +412,7 @@ export default {
     >
       <LabeledSelect
         v-show="!createNamespace"
-        v-model="namespace"
+        v-model:value="namespace"
         :clearable="true"
         :options="options"
         :disabled="namespaceReallyDisabled"
@@ -434,7 +435,7 @@ export default {
       <LabeledInput
         ref="name"
         key="name"
-        v-model="name"
+        v-model:value="name"
         :label="t(nameLabel)"
         :placeholder="t(namePlaceholder)"
         :disabled="nameReallyDisabled"
@@ -452,7 +453,7 @@ export default {
     >
       <LabeledInput
         key="description"
-        v-model="description"
+        v-model:value="description"
         :mode="mode"
         :disabled="descriptionDisabled"
         :label="t(descriptionLabel)"
@@ -463,9 +464,7 @@ export default {
     </div>
 
     <div
-      v-for="slot in extraColumns"
-      :key="slot"
-      :class="{ col: true, [colSpan]: true }"
+       v-for="(slot, i) in extraColumns" :key="i" :class="{ col: true, [colSpan]: true }"
     >
       <slot :name="slot" />
     </div>
@@ -495,7 +494,7 @@ button {
   &.name-ns-description {
     max-height: $input-height;
   }
-  .namespace-select ::v-deep {
+  .namespace-select :deep() {
     .labeled-select {
       min-width: 40%;
       .v-select.inline {

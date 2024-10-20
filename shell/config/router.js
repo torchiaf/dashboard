@@ -1,12 +1,13 @@
-import Vue from 'vue';
-import Router from 'vue-router';
+import { createApp } from 'vue';
+const vueApp = createApp({});
+import { createRouter } from 'vue-router';
 import { normalizeURL } from 'ufo';
 import { interopDefault } from '../utils/nuxt';
 import scrollBehavior from '../utils/router.scrollBehavior.js';
 
 const emptyFn = () => {};
 
-Vue.use(Router);
+vueApp.use(Router);
 
 export const routerOptions = {
   mode:                 'history',

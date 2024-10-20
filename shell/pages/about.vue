@@ -178,9 +178,7 @@ export default {
       </h3>
       <table>
         <tr
-          v-for="d in downloadImageList"
-          :key="d.icon"
-        >
+           v-for="(d, i) in downloadImageList" :key="i" >
           <td>
             <div class="os">
               <i :class="`icon ${d.icon} mr-5`" /> {{ t(d.label) }}
@@ -203,9 +201,7 @@ export default {
       </h3>
       <table>
         <tr
-          v-for="d in downloadCli"
-          :key="d.icon"
-          class="link"
+           v-for="(d, i) in downloadCli" :key="i" class="link"
         >
           <td>
             <div class="os">

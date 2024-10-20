@@ -112,7 +112,7 @@ export default {
           class="col span-3"
         >
           <LabeledInput
-            v-model="spec.schedule"
+            v-model:value="spec.schedule"
             type="cron"
             required
             :mode="mode"
@@ -139,7 +139,7 @@ export default {
           class="col span-3"
         >
           <LabeledSelect
-            v-model="spec.serviceName"
+            v-model:value="spec.serviceName"
             option-label="metadata.name"
             :reduce="service=>service.metadata.name"
             :mode="mode"
@@ -158,9 +158,7 @@ export default {
         @changed="changed"
       >
         <Tab
-          v-for="(tab, i) in allContainers"
-          :key="tab[idKey]"
-          :label="tab.name"
+          v-for="(tab, i) in allContainers" :key="i":label="tab.name"
           :name="tab[idKey]"
           :weight="tab.weight"
           :error="!!tab.error"
@@ -195,7 +193,7 @@ export default {
                 >
                   <div class="col span-6">
                     <LabeledInput
-                      v-model="allContainers[i].name"
+                      v-model:value="allContainers[i].name"
                       :mode="mode"
                       :label="t('workload.container.containerName')"
                     />
@@ -207,7 +205,7 @@ export default {
                       name="initContainer"
                       :options="[true, false]"
                       :labels="[t('workload.container.init'), t('workload.container.standard')]"
-                      @input="updateInitContainer($event, allContainers[i])"
+                      @update:value="updateInitContainer($event, allContainers[i])"
                     />
                   </div>
                 </div>
@@ -224,7 +222,7 @@ export default {
                   </div>
                   <div class="col span-6">
                     <LabeledSelect
-                      v-model="allContainers[i].imagePullPolicy"
+                      v-model:value="allContainers[i].imagePullPolicy"
                       :label="t('workload.container.imagePullPolicy')"
                       :options="pullPolicyOptions"
                       :mode="mode"
@@ -234,7 +232,7 @@ export default {
                 <div class="row">
                   <div class="col span-6">
                     <LabeledSelect
-                      v-model="imagePullSecrets"
+                      v-model:value="imagePullSecrets"
                       :label="t('workload.container.imagePullSecrets')"
                       :multiple="true"
                       :taggable="true"
@@ -261,7 +259,7 @@ export default {
                 </p>
                 <div class="row">
                   <WorkloadPorts
-                    v-model="allContainers[i].ports"
+                    v-model:value="allContainers[i].ports"
                     :name="value.metadata.name"
                     :services="servicesOwned"
                     :mode="mode"
@@ -272,7 +270,7 @@ export default {
               <div>
                 <h3>{{ t('workload.container.titles.command') }}</h3>
                 <Command
-                  v-model="allContainers[i]"
+                  v-model:value="allContainers[i]"
                   :secrets="namespacedSecrets"
                   :config-maps="namespacedConfigMaps"
                   :mode="mode"
@@ -287,13 +285,13 @@ export default {
                 :options="namespacedServiceNames"
                 option-label="metadata.name"
                 :loading="isLoadingSecondaryResources"
-                @input="updateServiceAccount"
+                @update:value="updateServiceAccount"
               />
               <div class="spacer" />
               <div>
                 <h3>{{ t('workload.container.titles.lifecycle') }}</h3>
                 <LifecycleHooks
-                  v-model="allContainers[i].lifecycle"
+                  v-model:value="allContainers[i].lifecycle"
                   :mode="mode"
                 />
               </div>
@@ -305,7 +303,7 @@ export default {
             >
               <!-- Resources and Limitations -->
               <ContainerResourceLimit
-                v-model="flatResources"
+                v-model:value="flatResources"
                 :mode="mode"
                 :show-tip="false"
               />
@@ -320,7 +318,7 @@ export default {
               <HealthCheck
                 :value="allContainers[i]"
                 :mode="mode"
-                @input="Object.assign(allContainers[i], $event)"
+                @update:value="Object.assign(allContainers[i], $event)"
               />
             </Tab>
             <Tab
@@ -329,7 +327,7 @@ export default {
               :weight="tabWeightMap['securityContext']"
             >
               <Security
-                v-model="allContainers[i].securityContext"
+                v-model:value="allContainers[i].securityContext"
                 :mode="mode"
               />
             </Tab>
@@ -339,7 +337,7 @@ export default {
               :weight="tabWeightMap['storage']"
             >
               <ContainerMountPaths
-                v-model="podTemplateSpec"
+                v-model:value="podTemplateSpec"
                 :namespace="value.metadata.namespace"
                 :register-before-hook="registerBeforeHook"
                 :mode="mode"
@@ -365,7 +363,7 @@ export default {
               :weight="tabWeightMap['labels']"
             >
               <Labels
-                v-model="value"
+                v-model:value="value"
                 :mode="mode"
               />
             </Tab>
@@ -376,13 +374,13 @@ export default {
             >
               <Job
                 v-if="isJob || isCronJob"
-                v-model="spec"
+                v-model:value="spec"
                 :mode="mode"
                 :type="type"
               />
               <Upgrading
                 v-else
-                v-model="spec"
+                v-model:value="spec"
                 :mode="mode"
                 :type="type"
                 :no-pod-spec="true"
@@ -402,7 +400,7 @@ export default {
               :weight="tabWeightMap['storage']"
             >
               <Storage
-                v-model="podTemplateSpec"
+                v-model:value="podTemplateSpec"
                 :namespace="value.metadata.namespace"
                 :register-before-hook="registerBeforeHook"
                 :mode="mode"
@@ -426,7 +424,7 @@ export default {
                   </h3>
                   <div class="row">
                     <Tolerations
-                      v-model="podTemplateSpec.tolerations"
+                      v-model:value="podTemplateSpec.tolerations"
                       :mode="mode"
                     />
                   </div>
@@ -447,7 +445,7 @@ export default {
                     </div>
                     <div class="col span-6">
                       <LabeledInput
-                        v-model="podTemplateSpec.priorityClassName"
+                        v-model:value="podTemplateSpec.priorityClassName"
                         :mode="mode"
                         :label="t('workload.scheduling.priority.className')"
                       />
@@ -487,13 +485,13 @@ export default {
             >
               <Job
                 v-if="isJob || isCronJob"
-                v-model="spec"
+                v-model:value="spec"
                 :mode="mode"
                 :type="type"
               />
               <Upgrading
                 v-else
-                v-model="spec"
+                v-model:value="spec"
                 :mode="mode"
                 :type="type"
                 :no-deployment-spec="true"
@@ -524,7 +522,7 @@ export default {
               :weight="tabWeightMap['networking']"
             >
               <Networking
-                v-model="podTemplateSpec"
+                v-model:value="podTemplateSpec"
                 :mode="mode"
               />
             </Tab>
@@ -535,7 +533,7 @@ export default {
               :weight="tabWeightMap['volumeClaimTemplates']"
             >
               <VolumeClaimTemplate
-                v-model="spec"
+                v-model:value="spec"
                 :mode="mode"
               />
             </Tab>
@@ -549,7 +547,7 @@ export default {
                 <div class="row mb-20">
                   <KeyValue
                     key="labels"
-                    v-model="podLabels"
+                    v-model:value="podLabels"
                     :add-label="t('labels.addLabel')"
                     :mode="mode"
                     :read-allowed="false"
@@ -561,7 +559,7 @@ export default {
                 <div class="row">
                   <KeyValue
                     key="annotations"
-                    v-model="podAnnotations"
+                    v-model:value="podAnnotations"
                     :add-label="t('labels.addAnnotation')"
                     :mode="mode"
                     :read-allowed="false"

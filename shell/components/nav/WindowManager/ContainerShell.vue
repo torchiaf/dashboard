@@ -355,7 +355,7 @@ export default {
     <template #title>
       <Select
         v-if="containerChoices.length > 0"
-        v-model="container"
+        v-model:value="container"
         :disabled="containerChoices.length === 1"
         class="containerPicker auto-width pull-left"
         :options="containerChoices"
@@ -447,7 +447,7 @@ export default {
 }
 
 .containerPicker {
-  ::v-deep &.unlabeled-select {
+  :deep() &.unlabeled-select {
     display: inline-block;
     min-width: 200px;
     height: 30px;

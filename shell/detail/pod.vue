@@ -257,7 +257,7 @@ export default {
         :value="selection"
         label-key="workload.metrics.metricsView"
         :options="metricsOptions"
-        @input="selectionChanged($event)"
+        @update:value="selectionChanged($event)"
       />
       <div id="ember-anchor">
         <EmberPage

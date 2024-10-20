@@ -87,7 +87,7 @@ export default {
 
 <template>
   <ResourceTabs
-    v-model="value"
+    v-model:value="value"
     :mode="mode"
   >
     <Tab
@@ -97,9 +97,7 @@ export default {
       :weight="3"
     >
       <div
-        v-for="(metric, index) in mappedMetrics"
-        :key="`${index}${metric.metricName}`"
-      >
+        v-for="(metric, index) in mappedMetrics" :key="index">
         <InfoBox>
           <div class="row info-row">
             <div class="col span-6 info-column">
@@ -190,7 +188,7 @@ export default {
 
 <style lang="scss" scoped>
 .hpa-metrics-table {
-  .info-box ::v-deep {
+  .info-box :deep() {
     background-color: var(--simple-box-bg);
   }
   .row {

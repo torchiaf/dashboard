@@ -76,7 +76,7 @@ export default {
 <template>
   <div>
     <SelectOrCreateAuthSecret
-      v-model="config.cloudCredentialName"
+      v-model:value="config.cloudCredentialName"
       :register-before-hook="registerBeforeHook"
       in-store="management"
       :allow-ssh="false"
@@ -90,7 +90,7 @@ export default {
     <div class="row mt-20">
       <div class="col span-6">
         <LabeledInput
-          v-model="config.bucket"
+          v-model:value="config.bucket"
           label="Bucket"
           :placeholder="ccData.defaultBucket"
           :required="!ccData.defaultBucket"
@@ -99,7 +99,7 @@ export default {
       </div>
       <div class="col span-6">
         <LabeledInput
-          v-model="config.folder"
+          v-model:value="config.folder"
           label="Folder"
           :placeholder="ccData.defaultFolder"
           @input="update"
@@ -110,7 +110,7 @@ export default {
     <div class="row mt-20">
       <div class="col span-6">
         <LabeledInput
-          v-model="config.region"
+          v-model:value="config.region"
           label="Region"
           :placeholder="ccData.defaultRegion"
           @input="update"
@@ -118,7 +118,7 @@ export default {
       </div>
       <div class="col span-6">
         <LabeledInput
-          v-model="config.endpoint"
+          v-model:value="config.endpoint"
           label="Endpoint"
           :placeholder="ccData.defaultEndpoint"
           @input="update"
@@ -131,7 +131,7 @@ export default {
       class="mt-20"
     >
       <Checkbox
-        v-model="config.skipSSLVerify"
+        v-model:value="config.skipSSLVerify"
         :mode="mode"
         label="Accept any certificate (insecure)"
         @input="update"
@@ -139,7 +139,7 @@ export default {
 
       <LabeledInput
         v-if="!config.skipSSLVerify"
-        v-model="config.endpointCA"
+        v-model:value="config.endpointCA"
         type="multiline"
         label="Endpoint CA Cert"
         :placeholder="ccData.defaultEndpointCA"

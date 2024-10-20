@@ -277,13 +277,13 @@ export default {
       return tooltipData;
     },
     toggleCollapse(val, key) {
-      this.$set(this.isCollapsed, key, val);
+      this.isCollapsed[key] = val;
     },
     toggleAll(action) {
       const val = action !== 'expand';
 
       Object.keys(this.isCollapsed).forEach((key) => {
-        this.$set(this.isCollapsed, key, val);
+        this.isCollapsed[key] = val;
       });
     }
   },
@@ -291,7 +291,7 @@ export default {
   watch: {
     fleetWorkspaces(value) {
       value?.filter(ws => ws.repos?.length).forEach((ws) => {
-        this.$set(this.isCollapsed, ws.id, false);
+        this.isCollapsed[ws.id] = false;
       });
     }
   }
@@ -364,16 +364,12 @@ export default {
       >
         <p>{{ t('fleet.dashboard.thereIsMore', { count: emptyWorkspaces.length }) }}:&nbsp;</p>
         <p
-          v-for="(ews, i) in emptyWorkspaces"
-          :key="i"
-        >
+          v-for="(ews, i) in emptyWorkspaces" :key="i">
           {{ ews.nameDisplay }}<span v-if="i != (emptyWorkspaces.length - 1)">,&nbsp;</span>
         </p>
       </div>
       <CollapsibleCard
-        v-for="ws in workspacesData"
-        :key="ws.id"
-        class="mt-20 mb-40"
+         v-for="(ws, i) in workspacesData" :key="i" class="mt-20 mb-40"
         :title="`${t('resourceDetail.masthead.workspace')}: ${ws.nameDisplay}`"
         :is-collapsed="isCollapsed[ws.id]"
         :is-title-clickable="true"
@@ -405,7 +401,7 @@ export default {
             key-field="_key"
             :search="false"
             :table-actions="false"
-            v-on="$listeners"
+            
           >
             <template #cell:clustersReady="{row}">
               <span v-if="ws.type === 'namespace'"> - </span>

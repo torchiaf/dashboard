@@ -1,5 +1,6 @@
 <script lang="ts">
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import { mapState } from 'vuex';
 import { BOTTOM, CENTER, LEFT, RIGHT } from '@shell/utils/position';
 

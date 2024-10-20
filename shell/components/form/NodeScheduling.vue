@@ -59,10 +59,10 @@ export default {
     }
 
     if (!nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution) {
-      this.$set(nodeAffinity, 'requiredDuringSchedulingIgnoredDuringExecution', { nodeSelectorTerms: [] } );
+      nodeAffinity['requiredDuringSchedulingIgnoredDuringExecution'] = { nodeSelectorTerms: [] };
     }
     if (!nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution) {
-      this.$set(nodeAffinity, 'preferredDuringSchedulingIgnoredDuringExecution', []);
+      nodeAffinity['preferredDuringSchedulingIgnoredDuringExecution'] = [];
     }
 
     return {
@@ -152,8 +152,8 @@ export default {
             }, { root: true });
 
             delete this.value.nodeSelector;
-            this.$set(this, 'nodeName', '');
-            this.$set(this, 'selectNode', null);
+            this['nodeName'] = '';
+            this['selectNode'] = null;
           }
         }
       },
@@ -166,7 +166,7 @@ export default {
   <div>
     <div class="row mb-20">
       <RadioGroup
-        v-model="selectNode"
+        v-model:value="selectNode"
         name="selectNode"
         :options="selectNodeOptions"
         :mode="mode"
@@ -177,7 +177,7 @@ export default {
       <div class="row">
         <div class="col span-6">
           <LabeledSelect
-            v-model="nodeName"
+            v-model:value="nodeName"
             :label="t('workload.scheduling.affinity.nodeName')"
             :options="nodes || []"
             :mode="mode"
@@ -190,7 +190,7 @@ export default {
     </template>
     <template v-else-if="selectNode === 'affinity'">
       <NodeAffinity
-        v-model="nodeAffinity"
+        v-model:value="nodeAffinity"
         :mode="mode"
         @input="update"
       />

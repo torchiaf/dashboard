@@ -30,4 +30,4 @@ const VCleanTooltip = {
   update: bind,
 };
 
-Vue.directive('clean-tooltip', VCleanTooltip);
+vueApp.directive('clean-tooltip', VCleanTooltip);

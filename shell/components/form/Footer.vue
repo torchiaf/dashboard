@@ -1,5 +1,6 @@
 <script lang="ts">
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import { _VIEW } from '@shell/config/query-params';
 import AsyncButton, { AsyncButtonCallback } from '@shell/components/AsyncButton.vue';
 import Banner from '@components/Banner/Banner.vue';
@@ -50,9 +51,7 @@ export default Vue.extend({
     <div class="spacer-small" />
 
     <div
-      v-for="(err,idx) in errors"
-      :key="idx"
-    >
+      v-for="(err,idx) in errors" :key="idx">
       <Banner
         color="error"
         :label="err"

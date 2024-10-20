@@ -119,8 +119,7 @@ export default {
 
   methods: {
     initSpec() {
-      this.$set(this.value, 'spec', {
-        type:           'io.k8s.api.autoscaling.v1.horizontalpodautoscalerspec',
+      this.value['spec'] = {type:           'io.k8s.api.autoscaling.v1.horizontalpodautoscalerspec',
         minReplicas:    1,
         maxReplicas:    10,
         scaleTargetRef: {
@@ -128,8 +127,7 @@ export default {
           kind:       '',
           name:       '',
         },
-        metrics: [{ ...this.defaultResourceMetric }],
-      });
+        metrics: [{ ...this.defaultResourceMetric }],};
     },
     async loadWorkloads() {
       await Promise.all(
@@ -175,7 +173,7 @@ export default {
           <div class="row mb-20">
             <div class="col span-6">
               <LabeledSelect
-                v-model="value.spec.scaleTargetRef"
+                v-model:value="value.spec.scaleTargetRef"
                 :get-option-label="(opt) => opt.name"
                 :mode="mode"
                 :label="t('hpa.workloadTab.targetReference')"
@@ -216,7 +214,7 @@ export default {
           :label="t('hpa.tabs.metrics')"
         >
           <ArrayListGrouped
-            v-model="value.spec.metrics"
+            v-model:value="value.spec.metrics"
             :default-add-value="{ ...defaultResourceMetric }"
             :mode="mode"
             :initial-empty-row="true"
@@ -234,7 +232,7 @@ export default {
             </template>
             <template #default="props">
               <MetricsRow
-                v-model="props.row.value"
+                v-model:value="props.row.value"
                 :mode="mode"
                 :metrics-available="resourceMetricsAvailable"
                 :referent="selectedTargetRef"

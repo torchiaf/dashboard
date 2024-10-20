@@ -1,4 +1,5 @@
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import {
   isSamePath as _isSamePath, joinURL, normalizeURL, withQuery, withoutTrailingSlash
 } from 'ufo';
@@ -25,8 +26,8 @@ export function createGetCounter(counterObject, defaultKey = '') {
 export function empty() {}
 
 export function globalHandleError(error) {
-  if (Vue.config.errorHandler) {
-    Vue.config.errorHandler(error);
+  if (vueApp.config.errorHandler) {
+    vueApp.config.errorHandler(error);
   }
 }
 

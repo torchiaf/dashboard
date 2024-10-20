@@ -387,9 +387,7 @@ export default {
         >
           <component
             :is="providerComponents[idx]"
-            v-for="(name, idx) in providers"
-            :key="name"
-            class="mb-10"
+            v-for="(name, idx) in providers" :key="idx"class="mb-10"
             :focus-on-mount="(idx === 0 && !showLocal)"
             :name="name"
             :open="!showLocal"
@@ -418,7 +416,7 @@ export default {
                 <Password
                   id="password"
                   ref="password"
-                  v-model="password"
+                  v-model:value="password"
                   data-testid="local-login-password"
                   :label="t('login.password')"
                   autocomplete="password"
@@ -442,7 +440,7 @@ export default {
                   class="mt-20"
                 >
                   <Checkbox
-                    v-model="remember"
+                    v-model:value="remember"
                     :label="t('login.remember.label')"
                     type="checkbox"
                   />
@@ -534,7 +532,7 @@ export default {
         margin-bottom: 0;
         border-left: 0;
 
-        ::v-deep code {
+        :deep() code {
           font-size: 12px;
           padding: 0;
         }

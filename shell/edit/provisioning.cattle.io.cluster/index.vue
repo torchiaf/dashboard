@@ -486,9 +486,7 @@ export default {
   >
     <template #subtypes>
       <div
-        v-for="(obj, i) in groupedSubTypes"
-        :key="obj.id"
-        class="mb-20"
+        v-for="(obj, i) in groupedSubTypes" :key="i"class="mb-20"
         style="width: 100%;"
       >
         <h4>
@@ -497,7 +495,7 @@ export default {
             class="grouped-type"
           >
             <ToggleSwitch
-              v-model="provisioner"
+              v-model:value="provisioner"
               data-testid="cluster-manager-create-rke-switch"
               class="rke-switch"
               off-value="rke1"
@@ -522,13 +520,13 @@ export default {
 
     <Import
       v-if="isImport"
-      v-model="value"
+      v-model:value="value"
       :mode="mode"
       :provider="subType"
     />
     <Rke2Config
       v-else-if="subType"
-      v-model="value"
+      v-model:value="value"
       :initial-value="initialValue"
       :live-value="liveValue"
       :mode="mode"

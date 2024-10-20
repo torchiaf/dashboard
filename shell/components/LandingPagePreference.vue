@@ -114,7 +114,7 @@ export default {
       :value="afterLoginRoute"
       name="login-route"
       :options="routeRadioOptions"
-      @input="updateLoginRoute"
+      @update:value="updateLoginRoute"
     >
       <template #2="{option, listeners}">
         <div class="custom-page">
@@ -125,7 +125,7 @@ export default {
             v-on="listeners"
           />
           <Select
-            v-model="routeFromDropdown"
+            v-model:value="routeFromDropdown"
             :searchable="true"
             :disabled="afterLoginRoute === 'home' || afterLoginRoute === 'last-visited'"
             :clearable="false"

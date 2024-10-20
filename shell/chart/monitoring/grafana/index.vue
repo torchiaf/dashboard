@@ -155,12 +155,12 @@ export default {
         };
         break;
       default:
-        this.$delete(this.value.grafana, 'persistence');
+        delete this.value.grafana['persistence'];
         break;
       }
 
-      this.$set(this.value.grafana, 'persistence', resetValsOut);
-      this.$set(this.value.grafana, 'persistence', newValsOut);
+      this.value.grafana['persistence'] = resetValsOut;
+      this.value.grafana['persistence'] = newValsOut;
     },
   }
 };
@@ -175,7 +175,7 @@ export default {
       <div class="row pt-10 pb-10">
         <div class="col span-12 persistent-storage-config">
           <RadioGroup
-            v-model="persistentStorageType"
+            v-model:value="persistentStorageType"
             name="persistentStorageType"
             :label="t('monitoring.grafana.storage.label')"
             :labels="persistentStorageTypeLabels"
@@ -201,7 +201,7 @@ export default {
         <div class="row">
           <div class="col span-6">
             <LabeledInput
-              v-model="value.grafana.persistence.size"
+              v-model:value="value.grafana.persistence.size"
               :label="t('monitoring.grafana.storage.size')"
               :mode="mode"
             />
@@ -221,7 +221,7 @@ export default {
         <div class="row">
           <div class="col span-6">
             <LabeledSelect
-              v-model="value.grafana.persistence.accessModes"
+              v-model:value="value.grafana.persistence.accessModes"
               :label="t('monitoring.grafana.storage.mode')"
               :localized-label="true"
               :mode="mode"
@@ -235,7 +235,7 @@ export default {
           <div class="row">
             <div class="col span-12">
               <KeyValue
-                v-model="value.grafana.persistence.annotations"
+                v-model:value="value.grafana.persistence.annotations"
                 :mode="mode"
                 :protip="true"
                 :read-allowed="false"
@@ -251,7 +251,7 @@ export default {
         <div class="row mt-20">
           <div class="col span-12">
             <ArrayList
-              v-model="value.grafana.persistence.finalizers"
+              v-model:value="value.grafana.persistence.finalizers"
               table-class="fixed"
               :mode="mode"
               :title="t('monitoring.grafana.storage.finalizers')"
@@ -267,7 +267,7 @@ export default {
         <div class="row">
           <div class="col span-6">
             <LabeledInput
-              v-model="value.grafana.persistence.size"
+              v-model:value="value.grafana.persistence.size"
               :label="t('monitoring.grafana.storage.size')"
               :mode="mode"
             />
@@ -287,7 +287,7 @@ export default {
         <div class="row">
           <div class="col span-6">
             <LabeledSelect
-              v-model="value.grafana.persistence.accessModes"
+              v-model:value="value.grafana.persistence.accessModes"
               :label="t('monitoring.grafana.storage.mode')"
               :localized-label="true"
               :mode="mode"

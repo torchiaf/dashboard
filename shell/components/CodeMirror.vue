@@ -142,7 +142,7 @@ export default {
         :options="combinedOptions"
         :disabled="isDisabled"
         @ready="onReady"
-        @input="onInput"
+        @update:value="onInput"
         @changes="onChanges"
         @focus="onFocus"
         @blur="onBlur"

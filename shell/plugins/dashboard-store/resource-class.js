@@ -33,7 +33,8 @@ import isEmpty from 'lodash/isEmpty';
 import isFunction from 'lodash/isFunction';
 import isString from 'lodash/isString';
 import uniq from 'lodash/uniq';
-import Vue from 'vue';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 
 import { normalizeType } from './normalize';
 
@@ -1575,7 +1576,7 @@ export default class Resource {
           if ( tolower !== pathValue ) {
             pathValue = tolower;
 
-            Vue.set(data, path, pathValue);
+            data[path] = pathValue;
           }
 
           errors.push(...validateDnsLikeTypes(pathValue, fieldType, displayKey, this.$rootGetters, errors));
@@ -1654,14 +1655,14 @@ export default class Resource {
 
       if (valIsString) {
         if (fieldType) {
-          Vue.set(data, key, coerceStringTypeToScalarType(val, fieldType));
+          data[key] = coerceStringTypeToScalarType(val, fieldType);
         }
 
         // Empty strings on nullable string fields -> null
         if ( field.nullable && val.length === 0 && STRING_LIKE_TYPES.includes(fieldType)) {
           val = null;
 
-          Vue.set(data, key, val);
+          data[key] = val;
         }
       }
       if (fieldType === 'boolean') {
@@ -1685,7 +1686,7 @@ export default class Resource {
         if ( tolower !== val ) {
           val = tolower;
 
-          Vue.set(data, key, val);
+          data[key] = val;
         }
 
         fieldErrors.push(...validateDnsLikeTypes(val, fieldType, displayKey, this.$rootGetters, fieldErrors));

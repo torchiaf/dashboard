@@ -49,7 +49,7 @@ export default {
 
   data() {
     if (!this.value.spec.values) {
-      this.$set(this.value.spec, 'values', {});
+      this.value.spec['values'] = {};
     }
 
     return {
@@ -111,7 +111,7 @@ export default {
     <div class="row">
       <div class="col span-6">
         <LabeledSelect
-          v-model="value.metadata.namespace"
+          v-model:value="value.metadata.namespace"
           :label="t('namespace.project.label')"
           :options="namespaces"
           required
@@ -119,7 +119,7 @@ export default {
       </div>
       <div class="col span-6">
         <LabeledInput
-          v-model="value.metadata.description"
+          v-model:value="value.metadata.description"
           :label="t('nameNsDescription.description.label')"
         />
       </div>
@@ -132,7 +132,7 @@ export default {
           :side-tabs="true"
         >
           <Questions
-            v-model="value.spec.values"
+            v-model:value="value.spec.values"
             tabbed="multiple"
             :target-namespace="value.metadata.namespace"
             :source="selectedNamespaceQuestions"

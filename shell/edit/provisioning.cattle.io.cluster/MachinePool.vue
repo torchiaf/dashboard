@@ -206,7 +206,7 @@ export default {
     <div class="row">
       <div class="col span-4">
         <LabeledInput
-          v-model="value.pool.name"
+          v-model:value="value.pool.name"
           :mode="mode"
           :label="t('cluster.machinePool.name.label')"
           :required="true"
@@ -229,19 +229,19 @@ export default {
           {{ t('cluster.machinePool.role.label') }}
         </h3>
         <Checkbox
-          v-model="value.pool.etcdRole"
+          v-model:value="value.pool.etcdRole"
           :mode="mode"
           :label="t('cluster.machinePool.role.etcd')"
           :disabled="isWindows || busy"
         />
         <Checkbox
-          v-model="value.pool.controlPlaneRole"
+          v-model:value="value.pool.controlPlaneRole"
           :mode="mode"
           :label="t('cluster.machinePool.role.controlPlane')"
           :disabled="isWindows || busy"
         />
         <Checkbox
-          v-model="value.pool.workerRole"
+          v-model:value="value.pool.workerRole"
           :mode="mode"
           :label="t('cluster.machinePool.role.worker')"
           :disabled="busy"
@@ -306,7 +306,7 @@ export default {
             :output-modifier="true"
             :base-unit="t('cluster.machinePool.autoReplace.unit')"
             :disabled="busy"
-            @input="value.pool.unhealthyNodeTimeout = `${unhealthyNodeTimeoutInteger}s`"
+            @update:value="value.pool.unhealthyNodeTimeout = `${unhealthyNodeTimeoutInteger}s`"
           />
         </div>
         <div class="col span-4">
@@ -314,7 +314,7 @@ export default {
             {{ t('cluster.machinePool.drain.header') }}
           </h3>
           <Checkbox
-            v-model="value.pool.drainBeforeDelete"
+            v-model:value="value.pool.drainBeforeDelete"
             :mode="mode"
             :label="t('cluster.machinePool.drain.label')"
             :disabled="busy"
@@ -323,7 +323,7 @@ export default {
       </div>
       <div class="spacer" />
       <KeyValue
-        v-model="value.pool.labels"
+        v-model:value="value.pool.labels"
         :add-label="t('labels.addLabel')"
         :disabled="busy"
         :title="t('cluster.machinePool.labels.label')"
@@ -334,7 +334,7 @@ export default {
       <div class="spacer" />
 
       <Taints
-        v-model="value.pool.taints"
+        v-model:value="value.pool.taints"
         :mode="mode"
         :disabled="busy"
       />
@@ -348,8 +348,8 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-  .advanced ::v-deep >.vue-portal-target:empty,
-  .advanced ::v-deep >.vue-portal-target:empty + .spacer {
+  .advanced :deep() >.vue-portal-target:empty,
+  .advanced :deep() >.vue-portal-target:empty + .spacer {
     display: none;
   }
 </style>

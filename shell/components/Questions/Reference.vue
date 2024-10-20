@@ -96,7 +96,7 @@ export default {
         :placeholder="question.description"
         :required="question.required"
         :value="value"
-        @input="!$fetchState.pending && $emit('input', $event)"
+        @update:value="!$fetchState.pending && $emit('input', $event)"
       />
     </div>
     <div class="col span-6 mt-10">
@@ -118,7 +118,7 @@ export default {
         :placeholder="question.description"
         :required="question.required"
         :value="value"
-        @input="!$fetchState.pending && $emit('input', $event)"
+        @update:value="!$fetchState.pending && $emit('input', $event)"
       />
     </div>
     <div class="col span-6 mt-10">

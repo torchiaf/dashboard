@@ -183,7 +183,7 @@ export default {
     >
       <Markdown
         ref="scrollPanel"
-        v-model="doc.body"
+        v-model:value="doc.body"
         class="doc-content-document"
         :class="{'nuxt-content-side-toc': sideToc}"
       />
