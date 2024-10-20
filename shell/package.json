@@ -1,5 +1,6 @@
 {
   "name": "@rancher/shell",
+  "uniqueName": "pippo4",
   "version": "3.0.0-rc.6",
   "description": "Rancher Dashboard Shell",
   "repository": "https://github.com/rancherlabs/dashboard",

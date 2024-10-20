@@ -8,6 +8,10 @@ import { HARVESTER_NAME as VIRTUAL } from '@shell/config/features';
 import { CAPI, HCI, MANAGEMENT } from '@shell/config/types';
 import { isHarvesterCluster } from '@shell/utils/cluster';
 import { allHash } from '@shell/utils/promise';
+// import Vue2App from 'vue2App';
+
+import { defineAsyncComponent } from 'vue';
+
 
 export default {
   components: {
@@ -15,7 +19,8 @@ export default {
     ResourceTable,
     Masthead,
     TypeDescription,
-    Loading
+    Loading,
+    Vue2App: defineAsyncComponent(() => import('vue2App')),
   },
 
   props: {
@@ -111,84 +116,13 @@ export default {
 <template>
   <Loading v-if="$fetchState.pending" />
   <div v-else>
-    <Masthead
-      :schema="realSchema"
-      :resource="resource"
-      :is-creatable="false"
-      :type-display="typeDisplay"
-    >
-      <template #typeDescription>
-        <TypeDescription :resource="hResource" />
-      </template>
+    
+    <Vue2App />
 
-      <template
-        v-if="canCreateCluster"
-        #extraActions
-      >
-        <router-link
-          :to="importLocation"
-          class="btn role-primary"
-        >
-          {{ t('cluster.importAction') }}
-        </router-link>
-      </template>
-    </Masthead>
+    <iframe
+        src='http://localhost:3002'
+        title='Child Application'></iframe>
 
-    <ResourceTable
-      v-if="rows && rows.length"
-      :schema="schema"
-      :rows="rows"
-      :is-creatable="true"
-      :namespaced="false"
-      :use-query-params-for-simple-filtering="useQueryParamsForSimpleFiltering"
-    >
-      <template #col:name="{row}">
-        <td>
-          <span class="cluster-link">
-            <a
-              v-if="row.isReady"
-              class="link"
-              :disabled="navigating ? true : null"
-              @click="goToCluster(row)"
-            >{{ row.nameDisplay }}</a>
-            <span v-else>
-              {{ row.nameDisplay }}
-            </span>
-            <i
-              class="icon icon-spinner icon-spin ml-5"
-              :class="{'navigating': navigating === row.id}"
-            />
-          </span>
-        </td>
-      </template>
-
-      <template #cell:harvester="{row}">
-        <router-link
-          class="btn btn-sm role-primary"
-          :to="row.detailLocation"
-        >
-          {{ t('harvesterManager.manage') }}
-        </router-link>
-      </template>
-    </ResourceTable>
-    <div v-else>
-      <div class="no-clusters">
-        {{ t('harvesterManager.cluster.none') }}
-      </div>
-      <hr class="info-section">
-      <div class="logo">
-        <BrandImage
-          file-name="harvester.png"
-          height="64"
-        />
-      </div>
-      <div class="tagline">
-        <div>{{ t('harvesterManager.cluster.description') }}</div>
-      </div>
-      <div class="tagline sub-tagline">
-        <div v-clean-html="t('harvesterManager.cluster.learnMore', {}, true)" />
-      </div>
-    </div>
   </div>
 </template>
 

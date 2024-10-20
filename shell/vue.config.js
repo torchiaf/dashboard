@@ -10,6 +10,7 @@ const {
 const har = require('./server/har-file');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const VirtualModulesPlugin = require('webpack-virtual-modules');
+const { ModuleFederationPlugin } = webpack.container;
 
 // Suppress info level logging messages from http-proxy-middleware
 // This hides all of the "[HPM Proxy created] ..." messages
@@ -547,6 +548,14 @@ module.exports = function(dir, _appConfig) {
       config.plugins.push(getPackageImport(dir));
       config.plugins.push(createEnvVariablesPlugin(routerBasePath, rancherEnv));
       config.plugins.push(new NodePolyfillPlugin()); // required from Webpack 5 to polyfill node modules
+      config.plugins.push(new ModuleFederationPlugin({
+        name: 'vue3',
+        filename: 'remoteEntry.js',
+        remotes: {
+          vue2App: 'vue2App@http://localhost:3001/remoteEntry.js',
+          // vue2App: 'vue2App@https://localhost:8006/remoteEntry.js',
+        },
+      }))
 
       // The static assets need to be in the built assets directory in order to get served (primarily the favicon)
       config.plugins.push(new CopyWebpackPlugin({ patterns: [{ from: path.join(SHELL_ABS, 'static'), to: '.' }] }));

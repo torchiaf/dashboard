@@ -1,5 +1,6 @@
 {
   "name": "dashboard",
+  "uniqueName": "pippo1",
   "description": "Rancher Dashboard",
   "repository": "https://github.com/rancherlabs/dashboard",
   "license": "Apache-2.0",
