@@ -4,6 +4,107 @@ const serveStatic = require('serve-static');
 const webpack = require('webpack');
 const { generateDynamicTypeImport } = require('./pkg/auto-import');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const { ModuleFederationPlugin } = webpack.container;
+const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
+
+const getWatcherIgnored = (excludes) => {
+  const paths = [
+    /node_modules/,
+    /dist-pkg/,
+    /scripts\/standalone/,
+  ];
+  const pathExcludedPkg = excludes.map((excluded) => new RegExp(`/pkg.${ excluded }`));
+  const pathsCombined = [...paths, ...pathExcludedPkg];
+  const regexCombined = new RegExp(pathsCombined.map(({ source }) => source).join('|'));
+
+  return regexCombined;
+};
+
+const getDevServerConfig = (proxy) => {
+  const harFile = process.env.HAR_FILE;
+  // HAR File support - load network responses from the specified .har file and use those rather than communicating to the Rancher server
+  const harData = harFile ? har.loadFile(harFile, devPorts ? 8005 : 80, '') : undefined;
+
+  return {
+    client: { webSocketURL: { hostname: '0.0.0.0', port: devPorts ? 8005 : 80 } },
+    server: {
+      type:    'https',
+      options: {
+        key:  fs.readFileSync(path.resolve(__dirname, 'server/server.key')),
+        cert: fs.readFileSync(path.resolve(__dirname, 'server/server.crt'))
+      }
+    },
+    port: (devPorts ? 8005 : 80),
+    host: '0.0.0.0',
+    setupMiddlewares(middlewares, devServer) {
+      const socketProxies = {};
+
+      if (!devServer) {
+        // eslint-disable-next-line no-console
+        console.error('webpack-dev-server is not defined');
+
+        return middlewares;
+      }
+
+      const app = devServer.app;
+
+      // Close down quickly in response to CTRL + C
+      process.once('SIGINT', () => {
+        devServer.close();
+        console.log('\n'); // eslint-disable-line no-console
+        process.exit(1);
+      });
+
+      // app.use(serverMiddlewares);
+
+      if (harData) {
+        console.log('Installing HAR file middleware'); // eslint-disable-line no-console
+        app.use(har.harProxy(harData, process.env.HAR_DIR));
+
+        devServer.webSocketProxies.push({
+          upgrade(req, socket, head) {
+            const responseHeaders = ['HTTP/1.1 101 Web Socket Protocol Handshake', 'Upgrade: WebSocket', 'Connection: Upgrade'];
+
+            socket.write(`${ responseHeaders.join('\r\n') }\r\n\r\n`);
+          }
+        });
+      }
+
+      Object.keys(proxy).forEach((p) => {
+        const px = createProxyMiddleware({
+          ...proxy[p],
+          ws: false // We will handle the web socket upgrade
+        });
+
+        if (proxy[p].ws) {
+          socketProxies[p] = px;
+        }
+        app.use(p, px);
+      });
+
+      // TODO: Verify after migration completed
+      devServer.webSocketProxies.push({
+        upgrade(req, socket, head) {
+          const path = Object.keys(socketProxies).find((path) => req.url.startsWith(path));
+
+          if (path) {
+            const proxy = socketProxies[path];
+
+            if (proxy.upgrade) {
+              proxy.upgrade(req, socket, head);
+            } else {
+              console.log(`Upgrade for Proxy is not defined. Cannot upgrade Web socket for ${ req.url }`); // eslint-disable-line no-console
+            }
+          } else {
+            console.log(`Unknown Web socket upgrade request for ${ req.url }`); // eslint-disable-line no-console
+          }
+        }
+      });
+
+      return middlewares;
+    }
+  };
+};
 
 // Suppress info level logging messages from http-proxy-middleware
 // This hides all of the "[HPM Proxy created] ..." messages
@@ -298,55 +399,7 @@ module.exports = function(dir, _appConfig) {
 
   const config = {
     // Vue server
-    devServer: {
-      https: (devPorts ? {
-        key:  fs.readFileSync(path.resolve(__dirname, 'server/server.key')),
-        cert: fs.readFileSync(path.resolve(__dirname, 'server/server.crt'))
-      } : null),
-      port:   (devPorts ? 8005 : 80),
-      host:   '0.0.0.0',
-      public: `https://0.0.0.0:${ devPorts ? 8005 : 80 }`,
-      before(app, server) {
-        const socketProxies = {};
-
-        // Close down quickly in response to CTRL + C
-        process.once('SIGINT', () => {
-          server.close();
-          console.log('\n'); // eslint-disable-line no-console
-          process.exit(1);
-        });
-
-        Object.keys(proxy).forEach((p) => {
-          const px = createProxyMiddleware({
-            ...proxy[p],
-            ws: false // We will handle the web socket upgrade
-          });
-
-          if (proxy[p].ws) {
-            socketProxies[p] = px;
-          }
-          app.use(p, px);
-        });
-
-        server.websocketProxies.push({
-          upgrade(req, socket, head) {
-            const path = Object.keys(socketProxies).find(path => req.url.startsWith(path));
-
-            if (path) {
-              const proxy = socketProxies[path];
-
-              if (proxy.upgrade) {
-                proxy.upgrade(req, socket, head);
-              } else {
-                console.log(`Upgrade for Proxy is not defined. Cannot upgrade Web socket for ${ req.url }`); // eslint-disable-line no-console
-              }
-            } else {
-              console.log(`Unknown Web socket upgrade request for ${ req.url }`); // eslint-disable-line no-console
-            }
-          }
-        });
-      },
-    },
+    devServer:  getDevServerConfig(proxy),
     publicPath: resourceBase || undefined,
     css:        {
       extract:       false, // inline css styles instead of including with `<links`
@@ -384,7 +437,15 @@ module.exports = function(dir, _appConfig) {
       config.resolve.modules.push(__dirname);
       config.plugins.push(virtualModules);
       config.plugins.push(autoImport);
+      config.plugins.push(new NodePolyfillPlugin()); // required from Webpack 5 to polyfill node modules
       config.plugins.push(new VirtualModulesPlugin(autoImportTypes));
+
+      config.plugins.push(new ModuleFederationPlugin({
+        name: 'vue2App',
+        filename: 'remoteEntry.js',
+        library: { type: 'var', name: 'vue2App' },
+      }));
+
       config.plugins.push(pkgImport);
       // DefinePlugin does string replacement within our code. We may want to consider replacing it with something else. In code we'll see something like
       // process.env.commit even though process and env aren't even defined objects. This could cause people to be mislead.
@@ -409,11 +470,13 @@ module.exports = function(dir, _appConfig) {
       }));
 
       // The static assets need to be in the built assets directory in order to get served (primarily the favicon)
-      config.plugins.push(new CopyWebpackPlugin([{ from: path.join(SHELL_ABS, 'static'), to: '.' }]));
+      config.plugins.push(new CopyWebpackPlugin({ patterns: [{ from: path.join(SHELL_ABS, 'static'), to: '.' }] }));
 
       config.resolve.extensions.push(...['.tsx', '.ts', '.js', '.vue', '.scss']);
-      config.watchOptions = config.watchOptions || {};
-      config.watchOptions.ignored = watcherIgnores;
+      config.watchOptions = {
+        ...(config.watchOptions || {}),
+        ignored: getWatcherIgnored(excludes)
+      };
 
       if (dev) {
         config.devtool = 'cheap-module-source-map';

@@ -1,7 +1,7 @@
-import { version } from '../package.json';
+// import { version } from '../package.json';
 import semver from 'semver';
 
-const docVersion = `v${ semver.major(version) }.${ semver.minor(version) }`;
+const docVersion = `v${ semver.major('v1.0.0') }.${ semver.minor('v1.0.0') }`;
 
 export const DOC_LINKS = {
   CONSOLE_URL:             `https://docs.harvesterhci.io/${ docVersion }/host/`,
