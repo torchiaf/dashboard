@@ -30,12 +30,44 @@ export default {
   mixins: [CreateEditView],
 
   async fetch() {
-    await this.$store.dispatch('harvester/findAll', { type: SECRET });
+
+    const schemas = this.$store.getters['harvester/all'](SCHEMA);
+
+    const resourceSchema = this.$store.getters['harvester/byId'](SCHEMA, LOGGING.OUTPUT);
+    
+    const schemaDefinition = await resourceSchema.fetchResourceFields();
+
+    let bufferYaml = '';
+
+    if ( !isEmpty(this.value.spec[this.selectedProvider]?.buffer) ) {
+      bufferYaml = jsyaml.dump(this.value.spec[this.selectedProvider].buffer);
+    } else if (schemaDefinition) {
+      bufferYaml = createYaml(
+        schemas,
+        `io.banzaicloud.logging.v1beta1.Output.spec.${ this.selectedProvider }.buffer`,
+        {},
+        true,
+        1,
+        '',
+        LOGGING.OUTPUT
+      );
+
+      // createYaml doesn't support passing reference types (array, map) as the first type. As such
+      // I'm manipulating the output since I'm not sure it's something we want to actually support
+      // seeing as it's really createResourceYaml and this here is a gray area between spoofed types
+      // and just a field within a spec.
+      bufferYaml = bufferYaml.substring(bufferYaml.indexOf('\n') + 1).replace(/# {2}/g, '#');
+    }
+
+    if (bufferYaml.length) {
+      this.bufferYaml = bufferYaml;
+      this.initialBufferYaml = bufferYaml;
+
+      this.$refs.yaml.updateValue(this.bufferYaml);
+    }
   },
 
   data() {
-    const schemas = this.$store.getters['harvester/all'](SCHEMA);
-
     if (this.isCreate) {
       this.value.metadata.namespace = 'default';
     }
@@ -65,22 +97,9 @@ export default {
 
     const selectedProvider = selectedProviders?.[0]?.value || providers[0].value;
 
-    let bufferYaml;
-
-    if ( !isEmpty(this.value.spec[selectedProvider]?.buffer) ) {
-      bufferYaml = jsyaml.dump(this.value.spec[selectedProvider].buffer);
-    } else {
-      bufferYaml = createYaml(schemas, `logging.banzaicloud.io.v1beta1.output.spec.${ selectedProvider }.buffer`, []);
-      // createYaml doesn't support passing reference types (array, map) as the first type. As such
-      // I'm manipulating the output since I'm not sure it's something we want to actually support
-      // seeing as it's really createResourceYaml and this here is a gray area between spoofed types
-      // and just a field within a spec.
-      bufferYaml = bufferYaml.substring(bufferYaml.indexOf('\n') + 1).replaceAll('#  ', '#');
-    }
-
     return {
-      bufferYaml,
-      initialBufferYaml:            bufferYaml,
+      bufferYaml:        '',
+      initialBufferYaml: '',
       providers,
       selectedProvider,
       hasMultipleProvidersSelected: selectedProviders.length > 1,
