@@ -8,9 +8,9 @@ import Tab from '@shell/components/Tabbed/Tab';
 import Tabbed from '@shell/components/Tabbed';
 
 export default {
-  name:         'CruConfigMap',
-  inheritAttrs: false,
-  components:   {
+  name: 'CruConfigMap',
+
+  components: {
     CruResource,
     NameNsDescription,
     KeyValue,
@@ -40,8 +40,7 @@ export default {
       return {
         data: Object.keys(this.data).reduce((acc, key) => ({
           ...acc,
-          lineWidth: -1,
-          [key]:     { chomping: '+' },
+          [key]: { chomping: '+' },
         }), {}),
       };
     },
@@ -61,17 +60,11 @@ export default {
   },
 
   methods: {
-    async saveConfigMap(saveCb) {
-      this.errors = [];
-      const yaml = await this.$refs.cru.createResourceYaml(this.yamlModifiers);
+    async saveConfigMap() {
+      const yaml = this.$refs.cru.createResourceYaml(this.yamlModifiers);
 
-      try {
-        await this.value.saveYaml(yaml);
-        this.done();
-      } catch (err) {
-        this.errors.push(err);
-        saveCb(false);
-      }
+      await this.value.saveYaml(yaml);
+      this.done();
     },
 
     updateValue(val, type) {

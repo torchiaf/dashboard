@@ -42,10 +42,7 @@ export default {
   },
 
   data() {
-    return {
-      fvFormRuleSets:      [{ path: 'metadata.name', rules: ['dnsLabel'] }],
-      closedErrorMessages: []
-    };
+    return { fvFormRuleSets: [{ path: 'metadata.name', rules: ['dnsLabel'] }] };
   },
 
   computed: {
@@ -57,7 +54,7 @@ export default {
         return [this.t('validation.prometheusRule.noEdit')];
       }
 
-      return this.fvUnreportedValidationErrors.filter((e) => !this.closedErrorMessages.includes(e));
+      return this.fvUnreportedValidationErrors;
     }
   },
 
@@ -98,14 +95,12 @@ export default {
           const interval = group.interval;
 
           if (isString(interval)) {
-            group['interval'] = interval.includes('s') ? interval : `${ interval }s`;
+            group['interval'] = interval.includes('s' ? interval : `${ interval }s`);
           } else {
             group['interval'] = `${ interval }s`;
           }
         }
       });
-
-      this.closedErrorMessages = [];
 
       return true;
     },
@@ -130,7 +125,7 @@ export default {
     :mode="mode"
     :resource="value"
     :validation-passed="fvFormIsValid"
-    @error="(_, closedError) => closedErrorMessages.push(closedError)"
+    @error="(e) => (errors = e)"
     @finish="save"
   >
     <div class="row">
@@ -153,9 +148,7 @@ export default {
         @removeTab="removeGroupRule"
       >
         <Tab
-          v-for="(group, idx) in filteredGroups"
-          :key="idx"
-          :name="'group-' + idx"
+          v-for="(group, idx) in filteredGroups" :key="idx":name="'group-' + idx"
           :label="ruleGroupLabel(idx)"
           class="container-group"
         >
@@ -166,7 +159,6 @@ export default {
                 :label="t('prometheusRule.groups.name')"
                 :mode="mode"
                 :required="true"
-                :data-testid="`v2-monitoring-prom-rules-group-name-${idx}`"
               />
             </div>
           </div>
@@ -180,7 +172,6 @@ export default {
                 "
                 :label="t('prometheusRule.groups.groupInterval.label')"
                 :mode="mode"
-                :data-testid="`v2-monitoring-prom-rules-group-interval-${idx}`"
                 @update:value="(e) => updateGroupInterval(filteredGroups[idx], e)"
               />
             </div>

@@ -42,12 +42,12 @@ export default {
 
 <template>
   <span>
-    <router-link
+    <n-link
       v-if="to"
       :to="to"
     >
       {{ value }}
-    </router-link>
+    </n-link>
     <span v-else>
       {{ value }}
       <template v-if="!value && col.dashIfEmpty">

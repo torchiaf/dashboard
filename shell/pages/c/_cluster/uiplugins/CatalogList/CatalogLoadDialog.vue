@@ -2,15 +2,16 @@
 import { mapGetters } from 'vuex';
 import isEmpty from 'lodash/isEmpty';
 
-import { CATALOG, SECRET, SERVICE, WORKLOAD_TYPES } from '@shell/config/types';
+import {
+  CATALOG, SECRET, SERVICE, UI_PLUGIN, WORKLOAD_TYPES
+} from '@shell/config/types';
 import { UI_PLUGIN_LABELS, UI_PLUGIN_NAMESPACE } from '@shell/config/uiplugins';
 import { TYPES as SECRET_TYPES } from '@shell/models/secret';
 import { allHash } from '@shell/utils/promise';
 
 import ResourceManager from '@shell/mixins/resource-manager';
-
-import AsyncButton from '@shell/components/AsyncButton';
 import AppModal from '@shell/components/AppModal';
+import AsyncButton from '@shell/components/AsyncButton';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import Loading from '@shell/components/Loading.vue';
 import { Banner } from '@components/Banner';
@@ -98,10 +99,8 @@ const initialState = () => {
 };
 
 export default {
-  emits: ['closed', 'refresh'],
-
   components: {
-    AsyncButton, Banner, LabeledInput, Loading, LabeledSelect, AppModal,
+    AsyncButton, Banner, LabeledInput, Loading, LabeledSelect, AppModal
   },
 
   mixins: [ResourceManager],
@@ -135,11 +134,11 @@ export default {
     ...mapGetters({ allRepos: 'catalog/repos' }),
 
     namespacedDeployments() {
-      return this.$store.getters['management/all'](WORKLOAD_TYPES.DEPLOYMENT).filter((dep) => dep.metadata.namespace === UI_PLUGIN_NAMESPACE);
+      return this.$store.getters['management/all'](WORKLOAD_TYPES.DEPLOYMENT).filter(dep => dep.metadata.namespace === UI_PLUGIN_NAMESPACE);
     },
 
     namespacedServices() {
-      return this.$store.getters['management/all'](SERVICE).filter((svc) => svc.metadata.namespace === UI_PLUGIN_NAMESPACE);
+      return this.$store.getters['management/all'](SERVICE).filter(svc => svc.metadata.namespace === UI_PLUGIN_NAMESPACE);
     }
   },
 
@@ -153,7 +152,7 @@ export default {
               {
                 var:         'imagePullNamespacedSecrets',
                 parsingFunc: (data) => {
-                  return data.filter((secret) => (secret._type === SECRET_TYPES.DOCKER || secret._type === SECRET_TYPES.DOCKER_JSON));
+                  return data.filter(secret => (secret._type === SECRET_TYPES.DOCKER || secret._type === SECRET_TYPES.DOCKER_JSON));
                 }
               }
             ]
@@ -197,15 +196,11 @@ export default {
             }
 
             if (this.extensionRepo) {
-              btnCb(true);
-              this.closeDialog();
-              this.$store.dispatch('growl/success', {
-                title:   this.t('plugins.manageCatalog.imageLoad.success.title', { name }),
-                message: this.t('plugins.manageCatalog.imageLoad.success.message'),
-                timeout: 4000,
-              }, { root: true });
-              this.$emit('refresh');
+              // Create uiplugin crd
+              await this.loadPlugin(name, this.extensionUrl, image);
             }
+
+            btnCb(true);
           } else {
             throw new Error('Unable to determine image name');
           }
@@ -217,7 +212,7 @@ export default {
     },
 
     async loadDeployment(image, name, btnCb) {
-      const exists = this.namespacedDeployments.find((dep) => dep.spec.template.spec.containers[0].image === image);
+      const exists = this.namespacedDeployments.find(dep => dep.spec.template.spec.containers[0].image === image);
 
       if (!exists) {
         // Sets deploymentValues with name, labels, and imagePullSecrets
@@ -244,7 +239,7 @@ export default {
 
     async loadService(name, btnCb) {
       const serviceName = `${ name }-svc`;
-      const exists = this.namespacedServices.find((svc) => svc.metadata.name === serviceName);
+      const exists = this.namespacedServices.find(svc => svc.metadata.name === serviceName);
 
       if (exists) {
         const error = {
@@ -291,7 +286,7 @@ export default {
 
     async loadRepo(name, btnCb) {
       const chartName = `${ name }-charts`;
-      const exists = this.allRepos.find((repo) => repo.metadata.name === chartName);
+      const exists = this.allRepos.find(repo => repo.metadata.name === chartName);
 
       if (exists) {
         const error = {
@@ -313,6 +308,62 @@ export default {
 
       try {
         await this.extensionRepo.save();
+      } catch (e) {
+        this.handleGrowlError(e, true);
+        btnCb(false);
+      }
+    },
+
+    async loadPlugin(name, url, image, btnCb) {
+      // Try and parse version number from the image
+      const version = this.extractImageVersion(image) || 'latest';
+
+      if (!this.extractImageVersion(image)) {
+        this.$store.dispatch('growl/warning', {
+          title:   this.t('plugins.manageCatalog.imageLoad.imageVersion.title'),
+          message: this.t('plugins.manageCatalog.imageLoad.imageVersion.message', { image }),
+          timeout: 4000,
+        }, { root: true });
+      }
+
+      let crdName = name;
+
+      const parts = name.split('-');
+
+      if (parts.length >= 2) {
+        crdName = parts.join('-');
+      }
+
+      this.extensionCrd = await this.$store.dispatch('management/create', {
+        type:     UI_PLUGIN,
+        metadata: {
+          name,
+          namespace: UI_PLUGIN_NAMESPACE,
+          labels:    {
+            [UI_PLUGIN_LABELS.CATALOG_IMAGE]: name,
+            [UI_PLUGIN_LABELS.REPOSITORY]:    this.extensionRepo.metadata.name
+          }
+        },
+        spec: {
+          plugin: {
+            name:     crdName,
+            version,
+            endpoint: url,
+            noCache:  false,
+            metadata: { [UI_PLUGIN_LABELS.CATALOG]: 'true' }
+          }
+        }
+      });
+
+      try {
+        await this.extensionCrd.save({ url: `/v1/${ UI_PLUGIN }`, method: 'POST' });
+
+        this.closeDialog();
+        this.$store.dispatch('growl/success', {
+          title:   this.t('plugins.manageCatalog.imageLoad.success.title', { name }),
+          message: this.t('plugins.manageCatalog.imageLoad.success.message'),
+          timeout: 4000,
+        }, { root: true });
       } catch (e) {
         this.handleGrowlError(e, true);
         btnCb(false);
@@ -409,6 +460,9 @@ export default {
       if (this.extensionRepo) {
         this.extensionRepo.remove();
       }
+      if (this.extensionCrd) {
+        this.extensionCrd.remove();
+      }
     },
 
     handleGrowlError(e, clean = false) {
@@ -444,52 +498,53 @@ export default {
       v-else
       class="plugin-install-dialog"
     >
-      <div>
-        <h4>
-          {{ t('plugins.manageCatalog.imageLoad.load') }}
-        </h4>
-        <p>
-          {{ t('plugins.manageCatalog.imageLoad.prompt') }}
-        </p>
+      <template>
+        <div>
+          <h4>
+            {{ t('plugins.manageCatalog.imageLoad.load') }}
+          </h4>
+          <p>
+            {{ t('plugins.manageCatalog.imageLoad.prompt') }}
+          </p>
 
-        <div class="custom mt-10">
-          <Banner
-            color="info"
-            :label="t('plugins.manageCatalog.imageLoad.banner')"
-            class="mt-10"
-          />
-        </div>
-
-        <div class="custom mt-10">
-          <div class="fields">
-            <LabeledInput
-              v-model:value.trim="deploymentValues.spec.template.spec.containers[0].image"
-              label-key="plugins.manageCatalog.imageLoad.fields.image.label"
-              placeholder-key="plugins.manageCatalog.imageLoad.fields.image.placeholder"
-            />
-          </div>
-        </div>
-        <div class="custom mt-10">
-          <div class="fields">
-            <LabeledSelect
-              v-model:value="imagePullSecrets"
-              :label="t('plugins.manageCatalog.imageLoad.fields.imagePullSecrets.label')"
-              :tooltip="t('plugins.manageCatalog.imageLoad.fields.imagePullSecrets.tooltip')"
-              :multiple="true"
-              :taggable="true"
-              :options="imagePullNamespacedSecrets"
-              option-label="metadata.name"
-              :reduce="service => service.metadata.name"
-            />
+          <div class="custom mt-10">
             <Banner
-              color="warning"
+              color="info"
+              :label="t('plugins.manageCatalog.imageLoad.banner')"
               class="mt-10"
-            >
-              <span v-clean-html="t('plugins.manageCatalog.imageLoad.fields.secrets.banner', {}, true)" />
-            </Banner>
+            />
+          </div>
+
+          <div class="custom mt-10">
+            <div class="fields">
+              <LabeledInput
+                v-model.trim="deploymentValues.spec.template.spec.containers[0].image"
+                label-key="plugins.manageCatalog.imageLoad.fields.image.label"
+                placeholder-key="plugins.manageCatalog.imageLoad.fields.image.placeholder"
+              />
+            </div>
+          </div>
+          <div class="custom mt-10">
+            <div class="fields">
+              <LabeledSelect
+                v-model:value="imagePullSecrets"
+                :label="t('workload.container.imagePullSecrets')"
+                :multiple="true"
+                :taggable="true"
+                :options="imagePullNamespacedSecrets"
+                option-label="metadata.name"
+                :reduce="service => service.metadata.name"
+              />
+              <Banner
+                color="warning"
+                class="mt-10"
+              >
+                <span v-clean-html="t('plugins.manageCatalog.imageLoad.fields.secrets.banner', {}, true)" />
+              </Banner>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
 
       <div class="custom mt-10">
         <div class="fields">

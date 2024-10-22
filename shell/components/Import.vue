@@ -11,7 +11,9 @@ import SortableTable from '@shell/components/SortableTable';
 import { sortBy } from '@shell/utils/sort';
 import { exceptionToErrorsArray } from '@shell/utils/error';
 import { NAMESPACE } from '@shell/config/types';
-import { NAME as NAME_COL, TYPE, NAMESPACE as NAMESPACE_COL, AGE } from '@shell/config/table-headers';
+import {
+  NAME as NAME_COL, STATE, TYPE, NAMESPACE as NAMESPACE_COL, AGE
+} from '@shell/config/table-headers';
 
 export default {
   emits: ['close'],
@@ -64,6 +66,7 @@ export default {
 
     headers() {
       return [
+        STATE,
         TYPE,
         NAME_COL,
         NAMESPACE_COL,

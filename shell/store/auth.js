@@ -12,8 +12,7 @@ export const BASE_SCOPES = {
   github:       ['read:org'],
   googleoauth:  ['openid profile email'],
   azuread:      [],
-  keycloakoidc: ['openid profile email'],
-  genericoidc:  ['openid profile email'],
+  keycloakoidc: ['openid profile email']
 };
 
 const KEY = 'rc_nonce';
@@ -38,7 +37,7 @@ export const state = function() {
 };
 
 export const getters = {
-  fromHeader(state) {
+  fromHeader() {
     return state.fromHeader;
   },
 
@@ -161,10 +160,7 @@ export const actions = {
     return findBy(authConfigs, 'id', id);
   },
 
-  /**
-   * Create the basic json object used for the nonce (this includes the random nonce/state)
-   */
-  createNonce(ctx, opt) {
+  setNonce({ dispatch }, opt) {
     const out = { nonce: randomStr(16), to: 'vue' };
 
     if ( opt.test ) {
@@ -175,15 +171,7 @@ export const actions = {
       out.provider = opt.provider;
     }
 
-    return out;
-  },
-
-  /**
-   * Save nonce details. Information it contains will be used to validate auth requests/responses
-   * Note - this may be structurally different than the nonce we encode and send
-   */
-  saveNonce(ctx, opt) {
-    const strung = JSON.stringify(opt);
+    const strung = JSON.stringify(out);
 
     this.$cookies.set(KEY, strung, {
       path:     '/',
@@ -192,15 +180,6 @@ export const actions = {
     });
 
     return strung;
-  },
-
-  /**
-   * Convert the nonce into something we can send
-   */
-  encodeNonce(ctx, nonce) {
-    const stringify = JSON.stringify(nonce);
-
-    return base64Encode(stringify, 'url');
   },
 
   async redirectTo({ state, commit, dispatch }, opt = {}) {
@@ -221,16 +200,10 @@ export const actions = {
       returnToUrl = `${ window.location.origin }/verify-auth-azure`;
     }
 
-    // The base nonce that will be sent server way
-    const baseNonce = opt.nonce || await dispatch('createNonce', opt);
-
-    // Save a possibly expanded nonce
-    await dispatch('saveNonce', opt.persistNonce || baseNonce);
-    // Convert the base nonce in to something we can transmit
-    const encodedNonce = await dispatch('encodeNonce', baseNonce);
+    const nonce = await dispatch('setNonce', opt);
 
     const fromQuery = unescape(parseUrl(redirectUrl).query?.[GITHUB_SCOPE] || '');
-    const scopes = fromQuery.split(/[, ]+/).filter((x) => !!x);
+    const scopes = fromQuery.split(/[, ]+/).filter(x => !!x);
 
     if (BASE_SCOPES[provider]) {
       addObjects(scopes, BASE_SCOPES[provider]);
@@ -243,8 +216,8 @@ export const actions = {
     let url = removeParam(redirectUrl, GITHUB_SCOPE);
 
     const params = {
-      [GITHUB_SCOPE]: scopes.join(opt.scopesJoinChar || ','), // Some providers won't accept comma separated scopes
-      [GITHUB_NONCE]: encodedNonce
+      [GITHUB_SCOPE]: scopes.join(','),
+      [GITHUB_NONCE]: base64Encode(nonce, 'url')
     };
 
     if (!url.includes(GITHUB_REDIRECT)) {
@@ -276,16 +249,9 @@ export const actions = {
       return ERR_NONCE;
     }
 
-    const body = { code };
-
-    // If the request came with a pkce code ensure we also sent that in the verify
-    if (parsed.pkceCodeVerifier) {
-      body.code_verifier = parsed.pkceCodeVerifier;
-    }
-
     return dispatch('login', {
       provider,
-      body
+      body: { code }
     });
   },
 
@@ -335,8 +301,6 @@ export const actions = {
     } catch (err) {
       if (err._status === 401) {
         return Promise.reject(LOGIN_ERRORS.CLIENT_UNAUTHORIZED);
-      } else if (err.message) {
-        return Promise.reject(err.message);
       } else if ( err._status >= 400 && err._status <= 499 ) {
         return Promise.reject(LOGIN_ERRORS.CLIENT);
       }
@@ -345,60 +309,24 @@ export const actions = {
     }
   },
 
-  uiLogout({ commit, dispatch }) {
+  async logout({ dispatch, commit }) {
+    // Unload plugins - we will load again on login
+    await this.$plugin.logout();
+
+    try {
+      await dispatch('rancher/request', {
+        url:                  '/v3/tokens?action=logout',
+        method:               'post',
+        data:                 {},
+        headers:              { 'Content-Type': 'application/json' },
+        redirectUnauthorized: false,
+      }, { root: true });
+    } catch (e) {
+    }
+
     removeEmberPage();
 
     commit('loggedOut');
     dispatch('onLogout', null, { root: true });
-  },
-
-  async logout({ dispatch, getters, rootState }, options = {}) {
-    // So, we only do this check if auth has been initialized.
-    //
-    // It's possible to be logged in and visit auth/logout directly instead
-    // of navigating from the app while being logged in. Unfortunately auth/logout
-    // doesn't use the authenticated middleware which means auth will never be
-    // initialized and this check will be invalid. This interferes with how we sometimes
-    // logout in our e2e tests.
-    //
-    // I'm going to leave this as is because we will be modifying and removing authenticated
-    // middleware soon and we should remove `force` at that time.
-    //
-    // TODO: remove `force` once authenticated middleware is removed/made sane.
-    if (!options?.force && !getters['loggedIn']) {
-      return;
-    }
-
-    // Unload plugins - we will load again on login
-    await rootState.$plugin.logout();
-
-    let logoutAction = 'logout';
-    const data = {};
-
-    // SLO - Single-sign logout - will logout auth provider from all places where it's logged in
-    if (options.slo) {
-      logoutAction = 'logoutAll';
-      data.finalRedirectUrl = returnTo({ isSlo: true }, this);
-    }
-
-    try {
-      const res = await dispatch('rancher/request', {
-        url:                  `/v3/tokens?action=${ logoutAction }`,
-        method:               'post',
-        data,
-        headers:              { 'Content-Type': 'application/json' },
-        redirectUnauthorized: false,
-      }, { root: true });
-
-      // Single-sign logout for SAML providers that allow for it
-      if (res.baseType === 'samlConfigLogoutOutput' && res.idpRedirectUrl) {
-        window.location.href = res.idpRedirectUrl;
-
-        return;
-      }
-    } catch (e) {
-    }
-
-    dispatch('uiLogout');
   }
 };

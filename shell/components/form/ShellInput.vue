@@ -2,8 +2,6 @@
 import { LabeledInput } from '@components/Form/LabeledInput';
 
 export default {
-  emits: ['update:value'],
-
   components: { LabeledInput },
 
   props: {
@@ -44,9 +42,9 @@ export default {
       let out = null;
 
       if ( userValue ) {
-        out = userValue.match(/('[^']+')|("[^"]+")|\S+/g).map((string) => string.replace(/^'|'$|^"|"$/g, ''));
+        out = userValue.match(/('[^']+')|("[^"]+")|\S+/g).map(string => string.replace(/^'|'$|^"|"$/g, ''));
       }
-      this.$emit('update:value', out);
+      this.$emit('input', out);
     },
   }
 };
@@ -86,6 +84,6 @@ export function unparse(xs) {
   <LabeledInput
     v-model:value="userValue"
     v-bind="$attrs"
-    @update:value="update($event)"
+    @input="update($event)"
   />
 </template>

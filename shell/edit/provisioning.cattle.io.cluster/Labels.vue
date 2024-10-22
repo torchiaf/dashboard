@@ -3,8 +3,6 @@ import Labels from '@shell/components/form/Labels';
 import Tab from '@shell/components/Tabbed/Tab';
 
 export default {
-  emits: ['update:value', 'input'],
-
   components: { Labels, Tab },
 
   props: {
@@ -18,16 +16,6 @@ export default {
       required: true,
     },
   },
-  computed: {
-    localValue: {
-      get() {
-        return this.value;
-      },
-      set(newValue) {
-        this.$emit('update:value', newValue);
-      }
-    },
-  },
 };
 </script>
 
@@ -37,10 +25,9 @@ export default {
     label-key="generic.labelsAndAnnotations"
   >
     <Labels
-      v-model:value="localValue"
+      v-model:value="value"
       :mode="mode"
       :display-side-by-side="false"
-      @input="$emit('input', $event)"
     />
   </Tab>
 </template>

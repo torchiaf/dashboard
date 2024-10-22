@@ -1,18 +1,17 @@
 <script lang="ts">
-import { PropType, defineComponent } from 'vue';
+import Vue, { PropType, VueConstructor } from 'vue';
 import CreateEditView from '@shell/mixins/create-edit-view';
 import CruResource from '@shell/components/CruResource.vue';
 import PodSecurityAdmission from '@shell/components/PodSecurityAdmission.vue';
 import Loading from '@shell/components/Loading.vue';
 import NameNsDescription from '@shell/components/form/NameNsDescription.vue';
-import { PSA, PSAConfig, PSADefaults, PSAExemptions } from '@shell/types/resources/pod-security-admission';
+import { PSA, PSAConfig, PSADefaults, PSAExemptions } from '@shell/types/pod-security-admission';
 import { PSADimensions } from '@shell/config/pod-security-admission';
 import { MANAGEMENT } from '@shell/config/types';
 
-export default defineComponent({
-  mixins:       [CreateEditView],
-  inheritAttrs: false,
-  components:   {
+export default (Vue as VueConstructor<Vue & InstanceType<typeof CreateEditView>>).extend({
+  mixins:     [CreateEditView],
+  components: {
     CruResource,
     Loading,
     NameNsDescription,
@@ -72,7 +71,7 @@ export default defineComponent({
     if (!this.value.configuration) {
       this.value.configuration = {
         defaults:   {},
-        exemptions: Object.assign({}, ...PSADimensions.map((dimension) => ({ [dimension]: [] }))),
+        exemptions: Object.assign({}, ...PSADimensions.map(dimension => ({ [dimension]: [] }))),
       } as PSAConfig;
     }
   }

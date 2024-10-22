@@ -20,8 +20,6 @@ const NAMESPACE_SELECTION_OPTION_VALUES = {
 };
 
 export default {
-  emits: ['update'],
-
   components: {
     ArrayListGrouped, MatchExpressions, LabeledSelect, RadioGroup, LabeledInput
   },
@@ -343,7 +341,7 @@ export default {
 
       // namespaces would be String if there is no namespace
       if (typeof namespaces === 'string') {
-        nsArray = namespaces.split(',').map((ns) => ns.trim()).filter((ns) => ns?.length);
+        nsArray = namespaces.split(',').map(ns => ns.trim()).filter(ns => ns?.length);
       }
 
       term['namespaces'] = nsArray;
@@ -387,7 +385,7 @@ export default {
                 :value="props.row.value._anti ?t('workload.scheduling.affinity.antiAffinityOption') :t('workload.scheduling.affinity.affinityOption') "
                 :label="t('workload.scheduling.affinity.type')"
                 :data-testid="`pod-affinity-type-index${props.i}`"
-                @update:value="props.row.value._anti = !props.row.value._anti"
+                @update:value="$set(props.row.value, '_anti',!props.row.value._anti)"
               />
             </div>
             <div class="col span-6">
@@ -480,7 +478,7 @@ export default {
               class="col span-3"
             >
               <LabeledInput
-                v-model:value.number="props.row.value.weight"
+                v-model.number="props.row.value.weight"
                 :mode="mode"
                 type="number"
                 min="1"
@@ -488,7 +486,6 @@ export default {
                 :label="t('workload.scheduling.affinity.weight.label')"
                 :placeholder="t('workload.scheduling.affinity.weight.placeholder')"
                 :data-testid="`pod-affinity-weight-index${props.i}`"
-                @update:value="update"
               />
             </div>
           </div>

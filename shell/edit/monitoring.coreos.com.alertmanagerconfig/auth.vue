@@ -39,9 +39,9 @@ export default {
         default: {},
       },
     ];
-    const authTypes = authOptions.map((option) => option.value);
+    const authTypes = authOptions.map(option => option.value);
     const authType =
-      authTypes.find((authType) => !isEmpty(this.value[authType])) ||
+      authTypes.find(authType => !isEmpty(this.value[authType])) ||
       authTypes[0];
 
     this.initializeType(authOptions, authType);
@@ -64,7 +64,11 @@ export default {
     initializeType(authOptions, type) {
       authOptions.forEach((authOption) => {
         if (authOption.value === type && type !== 'none') {
-          this.value.authOption.value = this.value[authOption.value] || authOption.default;
+          this.$set(
+            this.value,
+            authOption.value,
+            this.value[authOption.value] || authOption.default
+          );
         } else if (typeof this.value[authOption.value] !== 'undefined') {
           delete this.value[authOption.value];
         }

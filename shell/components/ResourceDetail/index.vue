@@ -28,6 +28,7 @@ function modeFor(route) {
 }
 
 async function getYaml(store, model) {
+  const inStore = store.getters['currentStore'](model.type);
   let yaml;
   const opt = { headers: { accept: 'application/yaml' } };
 
@@ -35,12 +36,12 @@ async function getYaml(store, model) {
     yaml = (await model.followLink('view', opt)).data;
   }
 
-  return model.cleanForDownload(yaml);
+  const cleanedYaml = await store.dispatch(`${ inStore }/cleanForDownload`, yaml);
+
+  return cleanedYaml;
 }
 
 export default {
-  emits: ['input'],
-
   components: {
     Loading,
     DetailTop,
@@ -82,28 +83,26 @@ export default {
       default: 'resource-details'
     }
   },
-
   async fetch() {
     const store = this.$store;
     const route = this.$route;
     const params = route.params;
-    let resourceType = this.resourceOverride || params.resource;
-
-    const inStore = this.storeOverride || store.getters['currentStore'](resourceType);
+    const inStore = this.storeOverride || store.getters['currentStore'](params.resource);
     const realMode = this.realMode;
 
     // eslint-disable-next-line prefer-const
     let { namespace, id } = params;
+    let resource = this.resourceOverride || params.resource;
 
     // There are 6 "real" modes that can be put into the query string
     // These are mapped down to the 3 regular page "mode"s that create-edit-view components
     // know about:  view, edit, create (stage, import and clone become "create")
     const mode = ([_CLONE, _IMPORT, _STAGE].includes(realMode) ? _CREATE : realMode);
 
-    const getGraphConfig = store.getters['type-map/hasGraph'](resourceType);
+    const getGraphConfig = store.getters['type-map/hasGraph'](resource);
     const hasGraph = !!getGraphConfig;
-    const hasCustomDetail = store.getters['type-map/hasCustomDetail'](resourceType, id);
-    const hasCustomEdit = store.getters['type-map/hasCustomEdit'](resourceType, id);
+    const hasCustomDetail = store.getters['type-map/hasCustomDetail'](resource, id);
+    const hasCustomEdit = store.getters['type-map/hasCustomEdit'](resource, id);
 
     const schemas = store.getters[`${ inStore }/all`](SCHEMA);
 
@@ -124,16 +123,16 @@ export default {
 
     this.as = as;
 
-    const options = store.getters[`type-map/optionsFor`](resourceType);
+    const options = store.getters[`type-map/optionsFor`](resource);
 
     this.showMasthead = [_CREATE, _EDIT].includes(mode) ? options.resourceEditMasthead : true;
     const canViewYaml = options.canYaml;
 
     if ( options.resource ) {
-      resourceType = options.resource;
+      resource = options.resource;
     }
 
-    const schema = store.getters[`${ inStore }/schemaFor`](resourceType);
+    const schema = store.getters[`${ inStore }/schemaFor`](resource);
     let model, initialModel, liveModel, yaml;
 
     if ( realMode === _CREATE || realMode === _IMPORT ) {
@@ -141,7 +140,7 @@ export default {
         namespace = store.getters['defaultNamespace'];
       }
 
-      const data = { type: resourceType };
+      const data = { type: resource };
 
       if ( schema?.attributes?.namespaced ) {
         data.metadata = { namespace };
@@ -157,12 +156,7 @@ export default {
       }
 
       if ( as === _YAML ) {
-        if (schema?.fetchResourceFields) {
-          // fetch resourceFields for createYaml
-          await schema.fetchResourceFields();
-        }
-
-        yaml = createYaml(schemas, resourceType, data);
+        yaml = createYaml(schemas, resource, data);
       }
     } else {
       if ( as === _GRAPH ) {
@@ -194,14 +188,11 @@ export default {
 
       try {
         liveModel = await store.dispatch(`${ inStore }/find`, {
-          type: resourceType,
+          type: resource,
           id:   fqid,
           opt:  { watch: true }
         });
       } catch (e) {
-        if (e.status === 404 || e.status === 403) {
-          store.dispatch('loadingError', new Error(this.t('nav.failWhale.resourceIdNotFound', { resource: resourceType, fqid }, true)));
-        }
         liveModel = {};
         notFound = fqid;
       }
@@ -237,7 +228,7 @@ export default {
       hasCustomDetail,
       hasCustomEdit,
       canViewYaml,
-      resourceType,
+      resource,
       as,
       yaml,
       initialModel,
@@ -264,7 +255,7 @@ export default {
       hasGraph:        null,
       hasCustomDetail: null,
       hasCustomEdit:   null,
-      resourceType:    null,
+      resource:        null,
       asYaml:          null,
       yaml:            null,
       liveModel:       null,
@@ -275,7 +266,6 @@ export default {
       model:           null,
       notFound:        null,
       canViewChart:    true,
-      canViewYaml:     null,
     };
   },
 
@@ -318,12 +308,9 @@ export default {
   },
 
   watch: {
-    '$route'(current, prev) {
-      if (current.name !== prev.name) {
-        return;
-      }
-      const neu = clone(current.query);
-      const old = clone(prev.query);
+    '$route.query'(inNeu, inOld) {
+      const neu = clone(inNeu);
+      const old = clone(inOld);
 
       delete neu[PREVIEW];
       delete old[PREVIEW];
@@ -335,7 +322,7 @@ export default {
 
       const queryDiff = Object.keys(diff(neu, old));
 
-      if (queryDiff.includes(MODE) || queryDiff.includes(AS)) {
+      if ( queryDiff.includes(MODE) || queryDiff.includes(AS)) {
         this.$fetch();
       }
     },
@@ -380,11 +367,22 @@ export default {
 </script>
 
 <template>
-  <Loading v-if="$fetchState.pending || notFound" />
+  <Loading v-if="$fetchState.pending" />
+  <div v-else-if="notFound">
+    <IconMessage icon="icon-warning">
+      <template v-slot:message>
+        {{ t('generic.notFound') }}
+        <div>
+          <div>{{ t('generic.type') }}: {{ resource }}</div>
+          <div>{{ t('generic.id') }}: {{ notFound }}</div>
+        </div>
+      </template>
+    </IconMessage>
+  </div>
   <div v-else>
     <Masthead
       v-if="showMasthead"
-      :resource="resourceType"
+      :resource="resource"
       :value="liveModel"
       :mode="mode"
       :real-mode="realMode"
@@ -412,14 +410,13 @@ export default {
     <ResourceYaml
       v-else-if="isYaml"
       ref="resourceyaml"
-      :value="value"
+      v-model:value="value"
       :mode="mode"
       :yaml="yaml"
       :offer-preview="offerPreview"
       :done-route="doneRoute"
       :done-override="value.doneOverride"
       :class="{'flex-content': flexContent}"
-      @update:value="$emit('input', $event)"
     />
 
     <component
@@ -427,7 +424,7 @@ export default {
       v-else
       ref="comp"
       v-model:value="value"
-      v-bind="$data"
+      v-bind="_data"
       :done-params="doneParams"
       :done-route="doneRoute"
       :mode="mode"
@@ -435,7 +432,6 @@ export default {
       :live-value="liveModel"
       :real-mode="realMode"
       :class="{'flex-content': flexContent}"
-      @update:value="$emit('input', $event)"
       @set-subtype="setSubtype"
     />
 

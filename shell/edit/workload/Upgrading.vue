@@ -8,7 +8,6 @@ import { mapGetters } from 'vuex';
 import InputWithSelect from '@shell/components/form/InputWithSelect';
 
 export default {
-  emits:      ['update:value'],
   components: {
     RadioGroup, UnitInput, InputWithSelect
   },
@@ -41,13 +40,12 @@ export default {
   data() {
     const {
       strategy:strategyObj = {},
-      updateStrategy: updateStrategyObj = {},
       minReadySeconds = 0,
       progressDeadlineSeconds = 600,
       revisionHistoryLimit = 10,
       podManagementPolicy = 'OrderedReady'
     } = this.value;
-    const strategy = strategyObj.type || updateStrategyObj.type || 'RollingUpdate';
+    const strategy = strategyObj.type || 'RollingUpdate';
     let maxSurge = '25';
     let maxUnavailable = '25';
     let surgeUnits = '%';
@@ -99,7 +97,7 @@ export default {
       case WORKLOAD_TYPES.DAEMON_SET:
       case WORKLOAD_TYPES.STATEFUL_SET:
         return {
-          options: ['RollingUpdate', 'OnDelete'],
+          options: ['RollingUpdate', 'Delete'],
           labels:  [this.t('workload.upgrading.strategies.labels.rollingUpdate'), this.t('workload.upgrading.strategies.labels.delete')]
         };
       default:
@@ -197,7 +195,7 @@ export default {
         break;
       }
 
-      this.$emit('update:value', this.value);
+      this.$emit('input', this.value);
     },
 
     updateWithUnits({ selected:units, text:value }, target) {

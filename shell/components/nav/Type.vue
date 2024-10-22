@@ -1,16 +1,12 @@
 <script>
 import Favorite from '@shell/components/nav/Favorite';
-import { TYPE_MODES } from '@shell/store/type-map';
+import { FAVORITE, USED } from '@shell/store/type-map';
 
-import TabTitle from '@shell/components/TabTitle';
-
-const showFavoritesFor = [TYPE_MODES.FAVORITE, TYPE_MODES.USED];
+const showFavoritesFor = [FAVORITE, USED];
 
 export default {
 
-  components: { Favorite, TabTitle },
-
-  emits: ['selected'],
+  components: { Favorite },
 
   props: {
     type: {
@@ -30,7 +26,10 @@ export default {
   },
 
   data() {
-    return { near: false };
+    return {
+      near: false,
+      over: false,
+    };
   },
 
   computed: {
@@ -39,43 +38,8 @@ export default {
     },
 
     showCount() {
-      return this.count !== undefined && this.count !== null;
+      return typeof this.type.count !== 'undefined';
     },
-
-    namespaceIcon() {
-      return this.type.namespaced;
-    },
-
-    count() {
-      if (this.type.count !== undefined) {
-        return this.type.count;
-      }
-
-      const inStore = this.$store.getters['currentStore'](this.type.name);
-
-      return this.$store.getters[`${ inStore }/count`]({ name: this.type.name });
-    },
-
-    isActive() {
-      const typeFullPath = this.$router.resolve(this.type.route)?.fullPath.toLowerCase();
-      const pageFullPath = this.$route.fullPath?.toLowerCase();
-
-      if ( !this.type.exact) {
-        const typeSplit = typeFullPath.split('/');
-        const pageSplit = pageFullPath.split('/');
-
-        for (let index = 0; index < typeSplit.length; ++index) {
-          if ( index >= pageSplit.length || typeSplit[index] !== pageSplit[index] ) {
-            return false;
-          }
-        }
-
-        return true;
-      }
-
-      return typeFullPath === pageFullPath;
-    }
-
   },
 
   methods: {
@@ -83,10 +47,18 @@ export default {
       this.near = val;
     },
 
+    setOver(val) {
+      this.over = val;
+    },
+
+    removeFavorite() {
+      this.$store.dispatch('type-map/removeFavorite', this.type.name);
+    },
+
     selectType() {
       // Prevent issues if custom NavLink is used #5047
       if (this.type?.route) {
-        const typePath = this.$router.resolve(this.type.route)?.fullPath;
+        const typePath = this.$router.resolve(this.type.route)?.route?.fullPath;
 
         if (typePath !== this.$route.fullPath) {
           this.$emit('selected');
@@ -98,72 +70,53 @@ export default {
 </script>
 
 <template>
-  <router-link
+  <n-link
     v-if="type.route"
     :key="type.name"
-    v-slot="{ href, navigate,isExactActive }"
-    custom
     :to="type.route"
+    tag="li"
+    class="child nav-type"
+    :class="{'root': isRoot, [`depth-${depth}`]: true}"
+    :exact="type.exact"
   >
-    <li
-      class="child nav-type"
-      :class="{'root': isRoot, [`depth-${depth}`]: true, 'router-link-active': isActive, 'router-link-exact-active': isExactActive}"
-      @click="navigate"
-      @keypress.enter="navigate"
+    <a
+      @click="selectType"
+      @mouseenter="setNear(true)"
+      @mouseleave="setNear(false)"
     >
-      <TabTitle
-        v-if="isExactActive"
-        :show-child="false"
+      <span
+        v-if="type.labelKey"
+        class="label"
+      ><t :k="type.labelKey" /></span>
+      <span
+        v-else
+        v-clean-html="type.labelDisplay || type.label"
+        class="label"
+        :class="{'no-icon': !type.icon}"
+      />
+      <span
+        v-if="showFavorite || showCount"
+        class="count"
       >
-        {{ type.labelKey ? t(type.labelKey) : (type.labelDisplay || type.label) }}
-      </TabTitle>
-      <a
-        :href="href"
-        @click="selectType(); navigate($event);"
-        @mouseenter="setNear(true)"
-        @mouseleave="setNear(false)"
-      >
-        <span
-          v-if="type.labelKey"
-          class="label"
-        ><t :k="type.labelKey" /></span>
-        <span
-          v-else
-          v-clean-html="type.labelDisplay || type.label"
-          class="label"
-          :class="{'no-icon': !type.icon}"
+        <Favorite
+          v-if="showFavorite"
+          :resource="type.name"
         />
-        <span
-          v-if="showFavorite || namespaceIcon || showCount"
-          class="count"
-        >
-          <Favorite
-            v-if="showFavorite"
-            :resource="type.name"
-          />
-          <i
-            v-if="namespaceIcon"
-            class="icon icon-namespace"
-            :class="{'ns-and-icon': showCount}"
-            data-testid="type-namespaced"
-          />
-          <span
-            v-if="showCount"
-            data-testid="type-count"
-          >{{ count }}</span>
-        </span>
-      </a>
-    </li>
-  </router-link>
+        {{ type.count }}
+      </span>
+    </a>
+  </n-link>
   <li
     v-else-if="type.link"
-    class="child nav-type nav-link"
-    data-testid="link-type"
+    class="child nav-type"
   >
     <a
       :href="type.link"
       :target="type.target"
       rel="noopener noreferrer nofollow"
+      @click="selectType"
+      @mouseenter="setNear(true)"
+      @mouseleave="setNear(false)"
     >
       <span class="label">{{ type.label }}&nbsp;<i class="icon icon-external-link" /></span>
     </a>
@@ -174,16 +127,13 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-  .ns-and-icon {
-    margin-right: 4px;
-  }
-
   .child {
     margin: 0 var(--outline) 0 0;
 
     .label {
       align-items: center;
       grid-area: label;
+      display: flex;
       overflow: hidden;
       text-overflow: ellipsis;
 
@@ -216,7 +166,6 @@ export default {
       text-overflow: ellipsis;
       white-space: nowrap;
       color: var(--body-text);
-      height: 33px;
 
       &:hover {
         background: var(--nav-hover);
@@ -232,44 +181,24 @@ export default {
       grid-area: favorite;
       font-size: 12px;
       position: relative;
-      vertical-align: middle;
-      margin-right: 4px;
     }
 
     .count {
+      grid-area: count;
       font-size: 12px;
+      text-align: right;
       justify-items: center;
       padding-right: 4px;
-      display: flex;
-      align-items: center;
-    }
-
-    &.nav-type.nav-link {
-      a .label {
-        display: flex;
-      }
     }
 
     &.nav-type:not(.depth-0) {
       A {
-        padding-left: 16px;
+        font-size: 13px;
+        padding: 5.5px 7px 5.5px 10px;
       }
 
       :deep() .label I {
         padding-right: 2px;
-      }
-    }
-
-    &.nav-type:is(.depth-1) {
-      A {
-        font-size: 13px;
-        padding-left: 23px;
-      }
-    }
-
-    &.nav-type:not(.depth-0):not(.depth-1) {
-      A {
-        padding-left: 14px;
       }
     }
   }

@@ -65,9 +65,9 @@ export default {
     async loadPluginVersionInfo(version) {
       const versionName = version || this.info.displayVersion;
 
-      const isVersionNotCompatible = this.info.versions?.find((v) => v.version === versionName && !v.isVersionCompatible);
+      const isVersionNotCompatibleWithUi = this.info.versions?.find(v => v.version === versionName && !v.isCompatibleWithUi);
 
-      if (!this.info.chart || isVersionNotCompatible) {
+      if (!this.info.chart || isVersionNotCompatibleWithUi) {
         return;
       }
 
@@ -103,18 +103,6 @@ export default {
         this.versionError = true;
         console.error('Unable to fetch VersionInfo: ', e); // eslint-disable-line no-console
       }
-    },
-
-    handleVersionBtnTooltip(version) {
-      if (!version.isVersionCompatible && Object.keys(version.versionIncompatibilityData).length) {
-        return this.t(version.versionIncompatibilityData?.tooltipKey, { required: version.versionIncompatibilityData?.required, mainHost: version.versionIncompatibilityData?.mainHost });
-      }
-
-      return '';
-    },
-
-    handleVersionBtnClass(version) {
-      return { 'version-active': version.version === this.infoVersion, disabled: !version.isVersionCompatible };
     }
   }
 };
@@ -182,6 +170,12 @@ export default {
         </div>
         <div>
           <Banner
+            v-if="info.error"
+            color="error"
+            :label="info.error"
+            class="mt-10"
+          />
+          <Banner
             v-if="info.builtin"
             color="warning"
             :label="t('plugins.descriptions.built-in')"
@@ -208,13 +202,11 @@ export default {
         </h3>
         <div class="plugin-versions mb-10">
           <div
-            v-for="v in info.versions"
-            :key="`${v.name}-${v.version}`"
-          >
+             v-for="(v, i) in info.versions" :key="i" >
             <a
-              v-clean-tooltip="handleVersionBtnTooltip(v)"
+              v-clean-tooltip="v.requiredUiVersion ? t('plugins.info.requiresVersion', { version: v.requiredUiVersion }) : ''"
               class="version-link"
-              :class="handleVersionBtnClass(v)"
+              :class="{'version-active': v.version === infoVersion, 'disabled': !v.isCompatibleWithUi}"
               @click="loadPluginVersionInfo(v.version)"
             >
               {{ v.version }}

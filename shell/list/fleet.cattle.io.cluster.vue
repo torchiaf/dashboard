@@ -1,7 +1,7 @@
 <script>
 import FleetClusters from '@shell/components/fleet/FleetClusters';
 import { FLEET, MANAGEMENT } from '@shell/config/types';
-import { filterOnlyKubernetesClusters } from '@shell/utils/cluster';
+import { isHarvesterCluster } from '@shell/utils/cluster';
 import { Banner } from '@components/Banner';
 import ResourceFetch from '@shell/mixins/resource-fetch';
 
@@ -56,11 +56,11 @@ export default {
     },
 
     filteredRows() {
-      return filterOnlyKubernetesClusters(this.fleetClusters, this.$store);
+      return this.fleetClusters.filter(c => !isHarvesterCluster(c));
     },
 
     fleetClusters() {
-      return this.allClusters.filter((c) => c.type === FLEET.CLUSTER);
+      return this.allClusters.filter(c => c.type === FLEET.CLUSTER);
     },
 
     hiddenHarvesterCount() {

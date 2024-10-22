@@ -72,5 +72,6 @@ export default {
     key-field="_key"
     :loading="loading"
     :use-query-params-for-simple-filtering="useQueryParamsForSimpleFiltering"
+    
   />
 </template>

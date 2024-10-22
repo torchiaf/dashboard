@@ -5,22 +5,18 @@ import { sortBy } from '@shell/utils/sort';
 import { MODE, _EDIT } from '@shell/config/query-params';
 import { authProvidersInfo } from '@shell/utils/auth';
 import { Banner } from '@components/Banner';
-import Loading from '@shell/components/Loading';
 
 export default {
-  components: {
-    SelectIconGrid, Banner, Loading
-  },
+  components: { SelectIconGrid, Banner },
 
-  async fetch() {
-    const authProvs = await authProvidersInfo(this.$store);
+  async asyncData({ store, redirect }) {
+    const authProvs = await authProvidersInfo(store);
 
     if (!!authProvs.enabledLocation) {
-      return this.$router.replace(authProvs.enabledLocation);
+      redirect(authProvs.enabledLocation);
     }
 
-    this['enabled'] = authProvs.enabled;
-    this['nonLocal'] = authProvs.nonLocal;
+    return { nonLocal: authProvs.nonLocal, enabled: authProvs.enabled };
   },
 
   data() {
@@ -37,8 +33,7 @@ export default {
       hasListComponent,
       hasEditComponent,
 
-      // Provided by fetch later
-      enabled:  false,
+      // Provided by asyncData later
       nonLocal: null,
     };
   },
@@ -87,8 +82,7 @@ export default {
 </script>
 
 <template>
-  <Loading v-if="$fetchState.pending" />
-  <div v-else>
+  <div>
     <h1 class="m-0">
       {{ displayName }}
     </h1>
@@ -99,9 +93,9 @@ export default {
     >
       <div>
         {{ t('authConfig.localEnabled') }}
-        <router-link :to="localUsersRoute">
+        <nuxt-link :to="localUsersRoute">
           {{ t('authConfig.manageLocal') }}
-        </router-link>
+        </nuxt-link>
         <br>
         {{ t('authConfig.noneEnabled') }}
       </div>

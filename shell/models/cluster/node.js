@@ -92,17 +92,16 @@ export default class ClusterNode extends SteveModel {
     return this.metadata.name;
   }
 
-  get addresses() {
-    return this.status?.addresses || [];
-  }
-
   get internalIp() {
-    return findLast(this.addresses, (address) => address.type === 'InternalIP')?.address;
+    const addresses = this.status?.addresses || [];
+
+    return findLast(addresses, address => address.type === 'InternalIP')?.address;
   }
 
   get externalIp() {
+    const addresses = this.status?.addresses || [];
     const annotationAddress = this.metadata.annotations[RKE.EXTERNAL_IP];
-    const statusAddress = findLast(this.addresses, (address) => address.type === 'ExternalIP')?.address;
+    const statusAddress = findLast(addresses, address => address.type === 'ExternalIP')?.address;
 
     return statusAddress || annotationAddress;
   }
@@ -187,7 +186,7 @@ export default class ClusterNode extends SteveModel {
   }
 
   get cpuCapacity() {
-    return parseSi(this.status.allocatable?.cpu);
+    return parseSi(this.status.allocatable.cpu);
   }
 
   get cpuUsagePercentage() {
@@ -203,7 +202,7 @@ export default class ClusterNode extends SteveModel {
   }
 
   get ramCapacity() {
-    return parseSi(this.status.capacity?.memory);
+    return parseSi(this.status.capacity.memory);
   }
 
   get ramUsagePercentage() {
@@ -219,7 +218,7 @@ export default class ClusterNode extends SteveModel {
   }
 
   get podUsage() {
-    return calculatePercentage(this.status.allocatable?.pods, this.status.capacity?.pods);
+    return calculatePercentage(this.status.allocatable.pods, this.status.capacity.pods);
   }
 
   get podConsumedUsage() {
@@ -227,11 +226,11 @@ export default class ClusterNode extends SteveModel {
   }
 
   get podCapacity() {
-    return Number.parseInt(this.status.capacity?.pods);
+    return Number.parseInt(this.status.capacity.pods);
   }
 
   get podConsumed() {
-    const runningPods = this.pods.filter((pod) => pod.state === 'running');
+    const runningPods = this.pods.filter(pod => pod.state === 'running');
 
     return runningPods.length || 0;
   }
@@ -261,7 +260,7 @@ export default class ClusterNode extends SteveModel {
   }
 
   get drainedState() {
-    const sNodeCondition = this.managementNode?.status.conditions.find((c) => c.type === 'Drained');
+    const sNodeCondition = this.managementNode?.status.conditions.find(c => c.type === 'Drained');
 
     if (sNodeCondition) {
       if (sNodeCondition.status === 'True') {
@@ -410,7 +409,7 @@ export default class ClusterNode extends SteveModel {
   get pods() {
     const allPods = this.$rootGetters['cluster/all'](POD);
 
-    return allPods.filter((pod) => pod.spec.nodeName === this.name);
+    return allPods.filter(pod => pod.spec.nodeName === this.name);
   }
 
   get confirmRemove() {
@@ -449,10 +448,6 @@ export default class ClusterNode extends SteveModel {
 
   get provider() {
     return this.$rootGetters['currentCluster'].provisioner.toLowerCase();
-  }
-
-  get displayTaintsAndLabels() {
-    return !!this.spec.taints?.length || !!this.customLabelCount;
   }
 }
 

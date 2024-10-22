@@ -2,12 +2,9 @@
 import debounce from 'lodash/debounce';
 import Group from '@shell/components/nav/Group';
 import { isMac } from '@shell/utils/platform';
-import { BOTH, TYPE_MODES } from '@shell/store/type-map';
-import { COUNT } from '@shell/config/types';
+import { BOTH, ALL } from '@shell/store/type-map';
 
 export default {
-  emits: ['closeSearch'],
-
   components: { Group },
 
   data() {
@@ -34,26 +31,17 @@ export default {
   methods: {
     updateMatches() {
       const clusterId = this.$store.getters['clusterId'];
-      const productId = this.$store.getters['productId'];
-      const product = this.$store.getters['currentProduct'];
+      const isAllNamespaces = this.$store.getters['isAllNamespaces'];
+      const product = this.$store.getters['productId'];
 
-      const allTypesByMode = this.$store.getters['type-map/allTypes'](productId, [TYPE_MODES.ALL]) || {};
-      const allTypes = allTypesByMode[TYPE_MODES.ALL];
-      const out = this.$store.getters['type-map/getTree'](productId, TYPE_MODES.ALL, allTypes, clusterId, BOTH, null, this.value);
+      let namespaces = null;
 
-      // Suplement the output with count info. Usualy the `Type` component would handle this individualy... but scales real bad so give it
-      // some help
-      const counts = this.$store.getters[`${ product.inStore }/all`](COUNT)?.[0]?.counts || {};
+      if ( !isAllNamespaces ) {
+        namespaces = Object.keys(this.$store.getters['activeNamespaceCache']);
+      }
 
-      out.forEach((o) => {
-        o.children?.forEach((t) => {
-          const count = counts[t.name];
-
-          t.count = count ? count.summary.count || 0 : null;
-          t.byNamespace = count ? count.namespaces : {};
-          t.revision = count ? count.revision : null;
-        });
-      });
+      const allTypes = this.$store.getters['type-map/allTypes'](product) || {};
+      const out = this.$store.getters['type-map/getTree'](product, ALL, allTypes, clusterId, BOTH, namespaces, null, this.value);
 
       this.groups = out;
 
@@ -73,7 +61,7 @@ export default {
   <div>
     <input
       ref="input"
-      v-model="value"
+      v-model:value="value"
       :placeholder="t('nav.resourceSearch.placeholder')"
       class="search"
       @keyup.esc="$emit('closeSearch')"
@@ -93,7 +81,7 @@ export default {
           :fixed-open="true"
           @close="$emit('closeSearch')"
         >
-          <template #accordion>
+          <template slot="accordion">
             <h6>{{ g.label }}</h6>
           </template>
         </Group>

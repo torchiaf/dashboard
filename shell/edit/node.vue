@@ -8,8 +8,6 @@ import CruResource from '@shell/components/CruResource';
 import NameNsDescription from '@shell/components/form/NameNsDescription';
 
 export default {
-  emits: ['input'],
-
   components: {
     CruResource,
     Labels,
@@ -19,9 +17,9 @@ export default {
     Taints,
   },
 
-  mixins:       [createEditView],
-  inheritAttrs: false,
-  props:        {
+  mixins: [createEditView],
+
+  props: {
     value: {
       type:     Object,
       required: true,
@@ -48,9 +46,8 @@ export default {
       :mode="mode"
     />
     <ResourceTabs
-      :value="value"
+      v-model:value="value"
       :mode="mode"
-      @update:value="$emit('input', $event)"
     >
       <Tab
         name="taints"

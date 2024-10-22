@@ -3,5 +3,3 @@ export const STORE = {
   RANCHER:    'rancher',
   MANAGEMENT: 'management',
 };
-
-export const BLANK_CLUSTER = '_';

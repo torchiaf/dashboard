@@ -1,8 +1,6 @@
 <script>
 import { mapGetters } from 'vuex';
-import { defineAsyncComponent } from 'vue';
 import day from 'dayjs';
-import isEmpty from 'lodash/isEmpty';
 import { dasherize, ucFirst } from '@shell/utils/string';
 import { get, clone } from '@shell/utils/object';
 import { removeObject } from '@shell/utils/array';
@@ -21,36 +19,44 @@ import actions from './actions';
 import AdvancedFiltering from './advanced-filtering';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import { getParent } from '@shell/utils/dom';
-import { FORMATTERS } from '@shell/components/SortableTable/sortable-config';
-import ButtonMultiAction from '@shell/components/ButtonMultiAction.vue';
 
 // Uncomment for table performance debugging
 // import tableDebug from './debug';
+
+// Its quicker to render if we directly supply the components for the formatters
+// rather than just the name of a global component - so create a map of the formatter comoponents
+// NOTE: This is populated by a plugin (formatters.js) to avoid issues with plugins
+export const FORMATTERS = {};
+
+export const COLUMN_BREAKPOINTS = {
+  /**
+   * Only show column if at tablet width or wider
+   */
+  TABLET:  'tablet',
+  /**
+   * Only show column if at laptop width or wider
+   */
+  LAPTOP:  'laptop',
+  /**
+   * Only show column if at desktop width or wider
+   */
+  DESKTOP: 'desktop'
+};
 
 // @TODO:
 // Fixed header/scrolling
 
 // Data Flow:
 // rows prop
-// --> sorting.js arrangedRows
-// --> filtering.js handleFiltering()
-// --> filtering.js filteredRows
-// --> paging.js pageRows
-// --> grouping.js groupedRows
-// --> index.vue displayedRows
+// -> arrangedRows (sorting.js)
+// -> filteredRows (filtering.js)
+// -> pagedRows    (paging.js)
+// -> groupedRows  (grouping.js)
 
 export default {
-  name: 'SortableTable',
-
-  emits: ['clickedActionButton', 'pagination-changed', 'group-value-change', 'selection', 'rowClick'],
-
+  name:       'SortableTable',
   components: {
-    THead,
-    Checkbox,
-    AsyncButton,
-    ActionDropdown,
-    LabeledSelect,
-    ButtonMultiAction,
+    THead, Checkbox, AsyncButton, ActionDropdown, LabeledSelect
   },
   mixins: [
     filtering,
@@ -89,16 +95,6 @@ export default {
     },
 
     loading: {
-      type:     Boolean,
-      required: false
-    },
-
-    /**
-     * Alt Loading - True: Always show table rows and obscure them when `loading`. Intended for use with server-side pagination.
-     *
-     * Alt Loading - False: Hide the table rows when `loading`. Intended when all resources are provided up front.
-     */
-    altLoading: {
       type:     Boolean,
       required: false
     },
@@ -165,11 +161,6 @@ export default {
       // If there are sub-rows, your main row must have <tr class="main-row"> to identify it
       type:    Boolean,
       default: false,
-    },
-
-    subRowsDescription: {
-      type:    Boolean,
-      default: true,
     },
 
     subExpandable: {
@@ -274,7 +265,7 @@ export default {
      */
     noDataKey: {
       type:    String,
-      default: 'sortableTable.noData' // i18n-uses sortableTable.noData
+      default: 'sortableTable.noData'
     },
 
     /**
@@ -287,14 +278,6 @@ export default {
 
     sortGenerationFn: {
       type:    Function,
-      default: null,
-    },
-
-    /**
-     * The list will always be sorted by these regardless of what the user has selected
-     */
-    mandatorySort: {
-      type:    Array,
       default: null,
     },
 
@@ -329,22 +312,6 @@ export default {
     forceUpdateLiveAndDelayed: {
       type:    Number,
       default: 0
-    },
-
-    /**
-     * True if pagination is executed outside of the component
-     */
-    externalPaginationEnabled: {
-      type:    Boolean,
-      default: false
-    },
-
-    /**
-     * If `externalPaginationEnabled` is true this will be used as the current page
-     */
-    externalPaginationResult: {
-      type:    Object,
-      default: null
     }
   },
 
@@ -359,18 +326,12 @@ export default {
     }
 
     return {
-      refreshButtonPhase:         ASYNC_BUTTON_STATES.WAITING,
-      expanded:                   {},
+      currentPhase:     ASYNC_BUTTON_STATES.WAITING,
+      expanded:         {},
       searchQuery,
       eventualSearchQuery,
-      subMatches:                 null,
-      actionOfInterest:           null,
-      loadingDelay:               false,
-      debouncedPaginationChanged: null,
-      /**
-       * The is the bool the DOM uses to show loading state. it's proxied from `loading` to avoid blipping the indicator (see usages)
-       */
-      isLoading:                  false,
+      actionOfInterest: null,
+      loadingDelay:     false,
     };
   },
 
@@ -384,14 +345,12 @@ export default {
 
     this._onScroll = this.onScroll.bind(this);
     $main?.addEventListener('scroll', this._onScroll);
-
-    this.debouncedPaginationChanged();
   },
 
-  beforeUnmount() {
+  beforeDestroy() {
+    clearTimeout(this.loadingDelayTimer);
     clearTimeout(this._scrollTimer);
     clearTimeout(this._loadingDelayTimer);
-    clearTimeout(this._altLoadingDelayTimer);
     clearTimeout(this._liveColumnsTimer);
     clearTimeout(this._delayedColumnsTimer);
     clearTimeout(this.manualRefreshTimer);
@@ -423,27 +382,21 @@ export default {
     descending(neu, old) {
       this.watcherUpdateLiveAndDelayed(neu, old);
     },
-
     searchQuery(neu, old) {
       this.watcherUpdateLiveAndDelayed(neu, old);
     },
-
     sortFields(neu, old) {
       this.watcherUpdateLiveAndDelayed(neu, old);
     },
-
     groupBy(neu, old) {
       this.watcherUpdateLiveAndDelayed(neu, old);
     },
-
     namespaces(neu, old) {
       this.watcherUpdateLiveAndDelayed(neu, old);
     },
-
     page(neu, old) {
       this.watcherUpdateLiveAndDelayed(neu, old);
     },
-
     forceUpdateLiveAndDelayed(neu, old) {
       this.watcherUpdateLiveAndDelayed(neu, old);
     },
@@ -464,40 +417,17 @@ export default {
     manualRefreshLoadingFinished: {
       handler(neu, old) {
         // this is merely to update the manual refresh button status
-        this.refreshButtonPhase = !neu ? ASYNC_BUTTON_STATES.WAITING : ASYNC_BUTTON_STATES.ACTION;
+        this.currentPhase = !neu ? ASYNC_BUTTON_STATES.WAITING : ASYNC_BUTTON_STATES.ACTION;
         if (neu && neu !== old) {
           this.$nextTick(() => this.updateLiveAndDelayed());
         }
       },
       immediate: true
-    },
-
-    loading: {
-      handler(neu, old) {
-        // Always ensure the Refresh button phase aligns with loading state (to ensure external phase changes which can then reset the internal phase changed by click)
-        this.refreshButtonPhase = neu ? ASYNC_BUTTON_STATES.WAITING : ASYNC_BUTTON_STATES.ACTION;
-
-        if (this.altLoading) {
-          // Delay setting the actual loading indicator. This should avoid flashing up the indicator if the API responds quickly
-          if (neu) {
-            this._altLoadingDelayTimer = setTimeout(() => {
-              this.isLoading = true;
-            }, 200); // this should be higher than the targetted quick response
-          } else {
-            clearTimeout(this._altLoadingDelayTimer);
-            this.isLoading = false;
-          }
-        } else {
-          this.isLoading = neu;
-        }
-      },
-      immediate: true
-    },
+    }
   },
 
   created() {
     this.debouncedRefreshTableData = debounce(this.refreshTableData, 500);
-    this.debouncedPaginationChanged = debounce(this.paginationChanged, 50);
   },
 
   computed: {
@@ -508,16 +438,11 @@ export default {
     },
 
     initalLoad() {
-      return !!(!this.isLoading && !this._didinit && this.rows?.length);
+      return !!(!this.loading && !this._didinit && this.rows?.length);
     },
 
     manualRefreshLoadingFinished() {
-      const res = !!(!this.isLoading && this._didinit && this.rows?.length && !this.isManualRefreshLoading);
-
-      // Always ensure the Refresh button phase aligns with loading state (regardless of if manualRefreshLoadingFinished has changed or not)
-      this.refreshButtonPhase = !res || this.loading ? ASYNC_BUTTON_STATES.WAITING : ASYNC_BUTTON_STATES.ACTION;
-
-      return res;
+      return !!(!this.loading && this._didinit && this.rows?.length && !this.isManualRefreshLoading);
     },
 
     fullColspan() {
@@ -555,17 +480,17 @@ export default {
     showHeaderRow() {
       return this.search ||
         this.tableActions ||
-        this.$slots['header-left']?.() ||
-        this.$slots['header-middle']?.() ||
-        this.$slots['header-right']?.();
+        this.$slots['header-left']()?.length ||
+        this.$slots['header-middle']()?.length ||
+        this.$slots['header-right']()?.length;
     },
 
     columns() {
       // Filter out any columns that are too heavy to show for large page sizes
-      const out = this.headers.slice().filter((c) => !c.maxPageSize || (c.maxPageSize && c.maxPageSize >= this.perPage));
+      const out = this.headers.slice().filter(c => !c.maxPageSize || (c.maxPageSize && c.maxPageSize >= this.perPage));
 
       if ( this.groupBy ) {
-        const entry = out.find((x) => x.name === this.groupBy);
+        const entry = out.find(x => x.name === this.groupBy);
 
         if ( entry ) {
           removeObject(out, entry);
@@ -573,10 +498,10 @@ export default {
       }
 
       // If all columns have a width, try to remove it from a column that can be variable (name)
-      const missingWidth = out.find((x) => !x.width);
+      const missingWidth = out.find(x => !x.width);
 
       if ( !missingWidth ) {
-        const variable = out.find((x) => x.canBeVariable);
+        const variable = out.find(x => x.canBeVariable);
 
         if ( variable ) {
           const neu = clone(variable);
@@ -617,19 +542,18 @@ export default {
         'body-dividers': this.bodyDividers,
         'overflow-y':    this.overflowY,
         'overflow-x':    this.overflowX,
-        'alt-loading':   this.altLoading && this.isLoading
       };
     },
 
     // Do we have any live columns?
     hasLiveColumns() {
-      const liveColumns = this.columns.find((c) => c.formatter?.startsWith('Live') || c.liveUpdates);
+      const liveColumns = this.columns.find(c => c.formatter?.startsWith('Live') || c.liveUpdates);
 
       return !!liveColumns;
     },
 
     hasDelayedColumns() {
-      const delaeydColumns = this.columns.find((c) => c.delayLoading);
+      const delaeydColumns = this.columns.find(c => c.delayLoading);
 
       return !!delaeydColumns;
     },
@@ -692,7 +616,7 @@ export default {
                 const pluginFormatter = this.$plugin?.getDynamic('formatters', c.formatter);
 
                 if (pluginFormatter) {
-                  component = defineAsyncComponent(pluginFormatter);
+                  component = pluginFormatter;
                   needRef = true;
                 }
               }
@@ -759,7 +683,7 @@ export default {
         return;
       }
 
-      const delayedColumns = this.$refs.column.filter((c) => c.startDelayedLoading && !c.__delayedLoading);
+      const delayedColumns = this.$refs.column.filter(c => c.startDelayedLoading && !c.__delayedLoading);
       // We add 100 pixels here - so we will render the delayed columns for a few extra rows below what is visible
       // This way if you scroll slowly, you won't see the columns being loaded
       const clientHeight = (window.innerHeight || document.documentElement.clientHeight) + 100;
@@ -794,7 +718,7 @@ export default {
       }
 
       const clientHeight = window.innerHeight || document.documentElement.clientHeight;
-      const liveColumns = this.$refs.column.filter((c) => !!c.liveUpdate);
+      const liveColumns = this.$refs.column.filter(c => !!c.liveUpdate);
       const now = day();
       let next = Number.MAX_SAFE_INTEGER;
 
@@ -846,12 +770,6 @@ export default {
       // console.warn(`Performance: Table valueFor: ${ col.name } ${ col.value }`); // eslint-disable-line no-console
 
       const expr = col.value || col.name;
-
-      if (!expr) {
-        console.error('No path has been defined for this column, unable to get value of cell', col); // eslint-disable-line no-console
-
-        return '';
-      }
       const out = get(row, expr);
 
       if ( out === null || out === undefined ) {
@@ -883,11 +801,11 @@ export default {
 
     // Can the action of interest be applied to the specified resource?
     canRunBulkActionOfInterest(resource) {
-      if ( !this.actionOfInterest || isEmpty(resource?.availableActions) ) {
+      if (!this.actionOfInterest) {
         return false;
       }
 
-      const matchingResourceAction = resource.availableActions?.find((a) => a.action === this.actionOfInterest.action);
+      const matchingResourceAction = resource.availableActions.find(a => a.action === this.actionOfInterest.action);
 
       return matchingResourceAction?.enabled;
     },
@@ -960,7 +878,7 @@ export default {
 
     showSubRow(row, keyField) {
       const hasInjectedSubRows = this.subRows && (!this.subExpandable || this.expanded[get(row, keyField)]);
-      const hasStateDescription = this.subRowsDescription && row.stateDescription;
+      const hasStateDescription = row.stateDescription;
 
       return hasInjectedSubRows || hasStateDescription;
     },
@@ -979,33 +897,13 @@ export default {
         event,
         targetElement: this.$refs[`actionButton${ i }`][0],
       });
-    },
-
-    paginationChanged() {
-      if (!this.externalPaginationEnabled) {
-        return;
-      }
-
-      this.$emit('pagination-changed', {
-        page:    this.page,
-        perPage: this.perPage,
-        filter:  {
-          searchFields: this.searchFields,
-          searchQuery:  this.searchQuery
-        },
-        sort:       this.sortFields,
-        descending: this.descending
-      });
     }
   }
 };
 </script>
 
 <template>
-  <div
-    ref="container"
-    :data-testid="componentTestid + '-list-container'"
-  >
+  <div ref="container">
     <div
       :class="{'titled': $slots.title && $slots.title.length}"
       class="sortable-table-header"
@@ -1023,7 +921,7 @@ export default {
           <slot name="header-left">
             <template v-if="tableActions">
               <button
-                v-for="(act) in availableActions"
+                 v-for="(act, i) in availableActions" :key="i" 
                 :id="act.action"
                 :key="act.action"
                 v-clean-tooltip="actionTooltip"
@@ -1062,9 +960,7 @@ export default {
                 <template #popover-content>
                   <ul class="list-unstyled menu">
                     <li
-                      v-for="(act, i) in hiddenActions"
-                      :key="i"
-                      v-close-popper
+                       v-for="(act, i) in hiddenActions" :key="i" v-close-popover
                       v-clean-tooltip="{
                         content: actionTooltip,
                         placement: 'right'
@@ -1094,25 +990,22 @@ export default {
           </slot>
         </div>
         <div
-          v-if="!hasAdvancedFiltering && $slots['header-middle']"
+          v-if="!hasAdvancedFiltering && ($slots['header-middle'] && $slots['header-middle'].length)"
           class="middle"
         >
           <slot name="header-middle" />
         </div>
 
         <div
-          v-if="search || hasAdvancedFiltering || isTooManyItemsToAutoUpdate || $slots['header-right']"
+          v-if="search || hasAdvancedFiltering || isTooManyItemsToAutoUpdate || ($slots['header-right'] && $slots['header-right'].length)"
           class="search row"
-          data-testid="search-box-filter-row"
         >
           <ul
             v-if="hasAdvancedFiltering"
             class="advanced-filters-applied"
           >
             <li
-              v-for="(filter, i) in advancedFilteringValues"
-              :key="i"
-            >
+              v-for="(filter, i) in advancedFilteringValues" :key="i">
               <span class="label">{{ `"${filter.value}" ${ t('sortableTable.in') } ${filter.label}` }}</span>
               <span
                 class="cross"
@@ -1124,9 +1017,10 @@ export default {
           <slot name="header-right" />
           <AsyncButton
             v-if="isTooManyItemsToAutoUpdate"
+            v-clean-tooltip="t('performance.manualRefresh.buttonTooltip')"
             class="manual-refresh"
-            mode="manual-refresh"
-            :current-phase="refreshButtonPhase"
+            mode="refresh"
+            :current-phase="currentPhase"
             @click="debouncedRefreshTableData"
           />
           <div
@@ -1146,7 +1040,7 @@ export default {
             >
               <input
                 ref="advancedSearchQuery"
-                v-model="advFilterSearchTerm"
+                v-model:value="advFilterSearchTerm"
                 type="search"
                 class="advanced-search-box"
                 :placeholder="t('sortableTable.filterFor')"
@@ -1187,7 +1081,7 @@ export default {
           <input
             v-else-if="search"
             ref="searchQuery"
-            v-model="eventualSearchQuery"
+            v-model:value="eventualSearchQuery"
             type="search"
             class="input-sm search-box"
             :placeholder="t('sortableTable.search')"
@@ -1219,7 +1113,7 @@ export default {
         :default-sort-by="_defaultSortBy"
         :descending="descending"
         :no-rows="noRows"
-        :loading="isLoading && !loadingDelay"
+        :loading="loading && !loadingDelay"
         :no-results="noResults"
         @on-toggle-all="onToggleAll"
         @on-sort-change="changeSort"
@@ -1229,9 +1123,9 @@ export default {
       />
 
       <!-- Don't display anything if we're loading and the delay has yet to pass -->
-      <div v-if="isLoading && !loadingDelay" />
+      <div v-if="loading && !loadingDelay" />
 
-      <tbody v-else-if="isLoading && !altLoading">
+      <tbody v-else-if="loading">
         <slot name="loading">
           <tr>
             <td :colspan="fullColspan">
@@ -1271,7 +1165,7 @@ export default {
         </slot>
       </tbody>
       <tbody
-        v-for="(groupedRows) in displayRows"
+         v-for="(groupedRows, i) in displayRows" :key="i" 
         v-else
         :key="groupedRows.key"
         :class="{ group: groupBy }"
@@ -1298,10 +1192,7 @@ export default {
             </td>
           </tr>
         </slot>
-        <template
-          v-for="(row, i) in groupedRows.rows"
-          :key="i"
-        >
+        <template v-for="(row, i) in groupedRows.rows" :key="i">
           <slot
             name="main-row"
             :row="row.row"
@@ -1347,10 +1238,7 @@ export default {
                     @click.stop="toggleExpand(row.row)"
                   />
                 </td>
-                <template
-                  v-for="(col, j) in row.columns"
-                  :key="j"
-                >
+                <template v-for="(col, j) in row.columns" :key="j">
                   <slot
                     :name="'col:' + col.col.name"
                     :row="row.row"
@@ -1421,15 +1309,18 @@ export default {
                     name="row-actions"
                     :row="row.row"
                   >
-                    <ButtonMultiAction
+                    <button
                       :id="`actionButton+${i}+${(row.row && row.row.name) ? row.row.name : ''}`"
                       :ref="`actionButton${i}`"
+                      :data-testid="componentTestid + '-' + i + '-action-button'"
                       aria-haspopup="true"
                       aria-expanded="false"
-                      :data-testid="componentTestid + '-' + i + '-action-button'"
-                      :borderless="true"
+                      type="button"
+                      class="btn btn-sm role-multi-action actions"
                       @click="handleActionButtonClick(i, $event)"
-                    />
+                    >
+                      <i class="icon icon-actions" />
+                    </button>
                   </slot>
                 </td>
               </tr>
@@ -1478,8 +1369,7 @@ export default {
       <button
         type="button"
         class="btn btn-sm role-multi-action"
-        data-testid="pagination-first"
-        :disabled="page == 1 || loading"
+        :disabled="page == 1"
         @click="goToPage('first')"
       >
         <i class="icon icon-chevron-beginning" />
@@ -1487,8 +1377,7 @@ export default {
       <button
         type="button"
         class="btn btn-sm role-multi-action"
-        data-testid="pagination-prev"
-        :disabled="page == 1 || loading"
+        :disabled="page == 1"
         @click="goToPage('prev')"
       >
         <i class="icon icon-chevron-left" />
@@ -1499,8 +1388,7 @@ export default {
       <button
         type="button"
         class="btn btn-sm role-multi-action"
-        data-testid="pagination-next"
-        :disabled="page == totalPages || loading"
+        :disabled="page == totalPages"
         @click="goToPage('next')"
       >
         <i class="icon icon-chevron-right" />
@@ -1508,8 +1396,7 @@ export default {
       <button
         type="button"
         class="btn btn-sm role-multi-action"
-        data-testid="pagination-last"
-        :disabled="page == totalPages || loading"
+        :disabled="page == totalPages"
         @click="goToPage('last')"
       >
         <i class="icon icon-chevron-end" />
@@ -1547,11 +1434,7 @@ export default {
   </div>
 </template>
 
-<style lang="scss" scoped>
-  .sortable-table.alt-loading {
-    opacity: 0.5;
-    pointer-events: none;
-  }
+  <style lang="scss" scoped>
 
   .manual-refresh {
     height: 40px;
@@ -1664,7 +1547,17 @@ export default {
     }
   }
 
+  // Remove colors from multi-action buttons in the table
   td {
+    .actions.role-multi-action {
+      background-color: transparent;
+      border: none;
+      &:hover, &:focus {
+        background-color: var(--accent-btn);
+        box-shadow: none;
+      }
+    }
+
     // Aligns with COLUMN_BREAKPOINTS
     @media only screen and (max-width: map-get($breakpoints, '--viewport-4')) {
       // HIDE column on sizes below 480px
@@ -1705,9 +1598,9 @@ export default {
     margin-left: 10px;
     min-width: 180px;
   }
-</style>
+  </style>
 
-<style lang="scss">
+  <style lang="scss">
   //
   // Important: Almost all selectors in here need to be ">"-ed together so they
   // apply only to the current table, not one nested inside another table.
@@ -2039,4 +1932,4 @@ export default {
       min-width: 200px;
     }
   }
-</style>
+  </style>

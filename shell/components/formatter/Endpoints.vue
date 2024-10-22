@@ -24,7 +24,7 @@ export default {
     // value may be JSON from "field.cattle.io/publicEndpoints" label
     parsed() {
       const nodes = this.nodes;
-      const nodeWithExternal = nodes.find((node) => !!node.externalIp) || {};
+      const nodeWithExternal = nodes.find(node => !!node.externalIp) || {};
       const externalIp = nodeWithExternal.externalIp;
 
       if ( this.value && this.value.length ) {
@@ -82,10 +82,7 @@ export default {
 
 <template>
   <span>
-    <template
-      v-for="(endpoint, index) in parsed"
-      :key="index"
-    >
+    <template v-for="(endpoint, index) in parsed" :key="index">
       <span
         v-if="endpoint.display"
         :key="endpoint.display"

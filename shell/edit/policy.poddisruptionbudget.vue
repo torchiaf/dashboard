@@ -11,11 +11,9 @@ import { POD } from '@shell/config/types';
 import FormValidation from '@shell/mixins/form-validation';
 
 export default {
-  name:  'PodDisruptionBudget',
-  emits: ['input'],
+  name: 'PodDisruptionBudget',
 
-  inheritAttrs: false,
-  components:   {
+  components: {
     ResourceSelector,
     CruResource,
     Labels,
@@ -29,12 +27,10 @@ export default {
 
   data() {
     if ( !this.value.spec ) {
-      this.value['spec'] = {
-        selector: {
+      this.value['spec'] = {selector: {
           matchExpressions: [],
           matchLabels:      {},
-        }
-      };
+        }};
     }
 
     return { POD };
@@ -97,10 +93,9 @@ export default {
     />
 
     <ResourceTabs
-      :value="value"
+      v-model:value="value"
       :mode="mode"
       :side-tabs="true"
-      @update:value="$emit('input', $event)"
     >
       <Tab
         name="volumeclaim"

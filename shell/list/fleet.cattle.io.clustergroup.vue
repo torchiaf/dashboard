@@ -70,6 +70,7 @@ export default {
     :loading="loading"
     :use-query-params-for-simple-filtering="useQueryParamsForSimpleFiltering"
     key-field="_key"
+    
   >
     <template #cell:clusters="{row}">
       <template v-if="row.status">

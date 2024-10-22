@@ -4,8 +4,6 @@ import Row from './ProjectRow';
 import { QUOTA_COMPUTED } from './shared';
 
 export default {
-  emits: ['remove', 'input'],
-
   components: { ArrayList, Row },
 
   props: {
@@ -43,7 +41,7 @@ export default {
     },
     remainingTypes(currentType) {
       return this.mappedTypes
-        .filter((mappedType) => !this.typeValues.includes(mappedType.value) || mappedType.value === currentType);
+        .filter(mappedType => !this.typeValues.includes(mappedType.value) || mappedType.value === currentType);
     },
     emitRemove(data) {
       this.$emit('remove', data.row?.value);
@@ -75,11 +73,10 @@ export default {
     >
       <template #columns="props">
         <Row
-          :value="value"
+          v-model:value="value"
           :mode="mode"
           :types="remainingTypes(typeValues[props.i])"
           :type="typeValues[props.i]"
-          @input="$emit('input', $event)"
           @type-change="updateType(props.i, $event)"
         />
       </template>

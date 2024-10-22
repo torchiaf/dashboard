@@ -37,7 +37,6 @@
 //   ifHaveType,              -- Show this product only if the given type exists in the store [inStore], This can also be specified as an object { type: TYPE, store: 'management' } if the type isn't in the current [inStore]
 //   ifHaveVerb,              -- In combination with ifHaveTYpe, show it only if the type also has this collectionMethod
 //   inStore,                 -- Which store to look at for if* above and the left-nav, defaults to "cluster"
-//   rootProduct,             -- Optional root (parent) product - if set, used to optimize navigation when product changes stays within root product
 //   inExplorer,              -- Determines if the product is to be scoped to the explorer
 //   public,                  -- If true, show to all users.  If false, only show when the Developer Tools pref is on (default true)
 //   category,                -- Group to show the product in for the nav hamburger menu
@@ -134,14 +133,14 @@ import {
 } from '@shell/config/types';
 import { VIEW_IN_API, EXPANDED_GROUPS, FAVORITE_TYPES } from '@shell/store/prefs';
 import {
-  addObject, findBy, isArray, removeObject, filterBy
+  addObject, findBy, insertAt, isArray, removeObject, filterBy
 } from '@shell/utils/array';
 import { clone, get } from '@shell/utils/object';
 import {
   ensureRegex, escapeHtml, escapeRegex, ucFirst, pluralize
 } from '@shell/utils/string';
 import {
-  importChart, importList, importDetail, importEdit, listProducts, loadProduct, importCustomPromptRemove, resolveList, resolveEdit, resolveWindowComponent, importWindowComponent, importLogin, resolveChart, resolveDetail, importDialog, importMachineConfig, resolveMachineConfigComponent, resolveCloudCredentialComponent, importCloudCredential
+  importChart, importList, importDetail, importEdit, listProducts, loadProduct, importCustomPromptRemove, resolveList, resolveEdit, resolveWindowComponent, importWindowComponent, resolveChart, resolveDetail, importDialog, importMachineConfig, resolveMachineConfigComponent, resolveCloudCredentialComponent, importCloudCredential
 } from '@shell/utils/dynamic-importer';
 
 import { NAME as EXPLORER } from '@shell/config/product/explorer';
@@ -149,57 +148,19 @@ import isObject from 'lodash/isObject';
 import { normalizeType } from '@shell/plugins/dashboard-store/normalize';
 import { sortBy } from '@shell/utils/sort';
 
-import { haveV2Monitoring } from '@shell/utils/monitoring';
+import { haveV1Monitoring, haveV2Monitoring } from '@shell/utils/monitoring';
 import { NEU_VECTOR_NAMESPACE } from '@shell/config/product/neuvector';
-import { createHeaders, rowValueGetter } from '@shell/store/type-map.utils';
-import { defineAsyncComponent } from 'vue';
+
+import { ExtensionPoint, TableColumnLocation } from '@shell/core/types';
 
 export const NAMESPACED = 'namespaced';
 export const CLUSTER_LEVEL = 'cluster';
 export const BOTH = 'both';
 
-export const TYPE_MODES = {
-  /**
-   * allTypes usage: All resource types
-   *
-   * getTree usage: Remove ignored schemas, resources not applicable to ns, etc
-   */
-  ALL:      'all',
-  /**
-   * Represents resource types that should be shown at the top of the side nav.
-   *
-   * For example all fixed resource types above `More Resources` in the cluster explorer
-   *
-   * These will always be shown in the side nav
-   *
-   * allTypes usage: Resources that are in a group
-   *
-   * getTree usage: Remove ignored schemas, resources not applicable to ns, etc
-   */
-  BASIC:    'basic',
-  /**
-   * Represents any type of resource type that has been favourited
-   *
-   * These will always be shown in the side nav.
-   *
-   * allTypes usage: Resource types that have been favorited
-   *
-   * getTree usage: Remove ignored schemas, resources not applicable to ns, etc
-   */
-  FAVORITE: 'favorite',
-  /**
-   * Represents no virtual or spoofed types that have a count.
-   *
-   * For example the `More Resource` in the cluster explorer
-   *
-   * These will be shown in the side nav if there are resources in the ns filter OR the resource is not namespaces
-   *
-   * allTypes usage: All resource types that are not virtual or spoofed
-   *
-   * getTree usage: Remove types with no counts. Remove ignored schemas, resources not applicable to ns, etc
-   */
-  USED:     'used',
-};
+export const ALL = 'all';
+export const BASIC = 'basic';
+export const FAVORITE = 'favorite';
+export const USED = 'used';
 
 export const ROOT = 'root';
 
@@ -209,7 +170,10 @@ export const SPOOFED_API_PREFIX = '__[[spoofedapi]]__';
 const instanceMethods = {};
 const graphConfigMap = {};
 
+const FIELD_REGEX = /^\$\.metadata\.fields\[([0-9]*)\]/;
+
 export const IF_HAVE = {
+  V1_MONITORING:            'v1-monitoring',
   V2_MONITORING:            'v2-monitoring',
   PROJECT:                  'project',
   NO_PROJECT:               'no-project',
@@ -239,14 +203,9 @@ export function DSL(store, product, module = 'type-map') {
         ...inOpt
       };
 
-      // Convert strings to regex's - we do this once here for efficiency
       for ( const k of ['ifHaveGroup', 'ifHaveType'] ) {
         if ( opt[k] ) {
-          if (Array.isArray(opt[k])) {
-            opt[k] = opt[k].map((r) => regexToString(ensureRegex(r)));
-          } else {
-            opt[k] = regexToString(ensureRegex(opt[k]));
-          }
+          opt[k] = regexToString(ensureRegex(opt[k]));
         }
       }
 
@@ -269,7 +228,34 @@ export function DSL(store, product, module = 'type-map') {
       store.commit(`${ module }/groupBy`, { type, field });
     },
 
-    headers(type, headers, paginationHeaders = []) {
+    headers(type, headers) {
+      // gate it so that we prevent errors on older versions of dashboard
+      if (store.$plugin?.getUIConfig) {
+        const extensionCols = store.$plugin.getUIConfig(ExtensionPoint.TABLE_COL, TableColumnLocation.RESOURCE);
+
+        // Try and insert the columns before the Age column, if that is the last column
+        let insertPosition = headers.length;
+
+        if (headers.length > 0) {
+          const lastColumn = headers[headers.length - 1];
+
+          if (lastColumn?.name === AGE.name) {
+            insertPosition--;
+          }
+        }
+
+        // adding extension defined cols to the correct header config
+        extensionCols.forEach((col) => {
+          if (col.locationConfig.resource) {
+            col.locationConfig.resource.forEach((resource) => {
+              if (resource && type === resource) {
+                headers.splice(insertPosition, 0, col);
+              }
+            });
+          }
+        });
+      }
+
       headers.forEach((header) => {
         // If on the client, then use the value getter if there is one
         if (header.getValue) {
@@ -282,7 +268,6 @@ export function DSL(store, product, module = 'type-map') {
       });
 
       store.commit(`${ module }/headers`, { type, headers });
-      store.commit(`${ module }/paginationHeaders`, { type, paginationHeaders });
     },
 
     hideBulkActions(type, field) {
@@ -412,7 +397,6 @@ export const state = function() {
     typeOptions:             [],
     groupBy:                 {},
     headers:                 {},
-    paginationHeaders:       {},
     hideBulkActions:         {},
     schemaGeneration:        1,
     cache:                   {
@@ -441,7 +425,6 @@ export const getters = {
   labelFor(state, getters, rootState, rootGetters) {
     return (schema, count = 1, language = null) => {
       return _applyMapping(schema, state.typeMappings, 'id', false, () => {
-        // i18n-uses typeLabel.*
         const key = `typeLabel."${ schema.id.toLowerCase() }"`;
 
         if ( rootGetters['i18n/exists'](key, language) ) {
@@ -493,7 +476,7 @@ export const getters = {
         const match = group.match(/^(.*)\.k8s\.io$/);
 
         if ( match ) {
-          return match[1].split(/\./).map((x) => ucFirst(x)).join('.');
+          return match[1].split(/\./).map(x => ucFirst(x)).join('.');
         }
 
         return group;
@@ -509,26 +492,22 @@ export const getters = {
     };
   },
 
-  optionsFor(state, getters, rootState, rootGetters) {
+  optionsFor(state) {
     const def = {
-      isCreatable:            true,
-      isEditable:             true,
-      isRemovable:            true,
-      showState:              true,
-      showAge:                true,
-      canYaml:                true,
-      namespaced:             null,
-      listGroups:             [],
-      listGroupsWillOverride: false,
-      listMandatorySort:      null,
-      depaginate:             false,
-      customRoute:            undefined,
-      resourceEditMasthead:   true,
+      isCreatable:          true,
+      isEditable:           true,
+      isRemovable:          true,
+      showState:            true,
+      showAge:              true,
+      canYaml:              true,
+      namespaced:           null,
+      listGroups:           [],
+      depaginate:           false,
+      customRoute:          undefined,
+      resourceEditMasthead: true,
     };
 
-    return (schemaOrType, pagination) => {
-      // Note - This can run a LOT so needs to be performant
-
+    return (schemaOrType) => {
       if (!schemaOrType) {
         return {};
       }
@@ -542,20 +521,7 @@ export const getters = {
 
       const opts = Object.assign({}, def, found || {});
 
-      // As this runs a lot, avoid anything we don't strictly need (like going out to another store)
-      if (!pagination) {
-        return opts;
-      }
-
-      const storeOptionsFor = schemaOrType?.$ctx?.getters?.['optionsFor'];
-      const storeOpts = storeOptionsFor ? storeOptionsFor({ getters, state }, {
-        schema: schemaOrType, pagination, opts
-      }) : {};
-
-      return {
-        ...opts,
-        ...storeOpts,
-      };
+      return opts;
     };
   },
 
@@ -598,16 +564,17 @@ export const getters = {
   },
 
   getTree(state, getters, rootState, rootGetters) {
-    // Name the function so it's easily identifiable when performance tracing
-    return function getTree(productId, mode, allTypes, clusterId, namespaceMode, currentType, search) {
+    return (productId, mode, allTypes, clusterId, namespaceMode, namespaces, currentType, search) => {
       // getTree has four modes:
-      // - `basic` matches data types that should always be shown (even if there are 0 of them).
-      // - `used` matches the data types where there are more than 0 of them in the current set of namespaces.
+      // - `basic` matches data types that should always be shown even if there
+      //    are 0 of them.
+      // - `used` matches the data types where there are more than 0 of them
+      //    in the current set of namespaces.
       // - `all` matches all types.
       // - `favorite` matches starred types.
       // namespaceMode: 'namespaced', 'cluster', or 'both'
       // namespaces: null means all, otherwise it will be an array of specific namespaces to include
-      const isBasic = mode === TYPE_MODES.BASIC;
+      const isBasic = mode === BASIC;
 
       let searchRegex;
 
@@ -640,8 +607,7 @@ export const getters = {
           continue;
         }
 
-        const inStore = rootGetters.currentStore(typeObj.name);
-        const count = rootGetters[`${ inStore }/count`](typeObj);
+        const count = _matchingCounts(typeObj, namespaces);
         const groupForBasicType = getters.groupForBasicType(productId, typeObj.name);
 
         if ( typeObj.id === currentType ) {
@@ -649,15 +615,25 @@ export const getters = {
         } else if ( isBasic && !groupForBasicType ) {
           // If we want the basic tree only return basic types;
           continue;
-        } else if ( mode === TYPE_MODES.USED && count <= 0 ) {
+        } else if ( mode === USED && count <= 0 ) {
           // If there's none of this type, ignore this entry when viewing only in-use types
-          // Note: count is sometimes null, in js `null <= 0` is `true`.
+          // Note: count is sometimes null, which is <= 0.
           continue;
         }
 
         const label = typeObj.labelKey ? rootGetters['i18n/t'](typeObj.labelKey) || typeObj.label : typeObj.label;
+        const virtual = !!typeObj.virtual;
+        let icon = typeObj.icon;
 
-        const labelDisplay = highlightLabel(label, count, typeObj.schema);
+        if ( (!virtual || typeObj.isSpoofed ) && !icon ) {
+          if ( namespaced ) {
+            icon = 'folder';
+          } else {
+            icon = 'globe';
+          }
+        }
+
+        const labelDisplay = highlightLabel(label, icon, typeObj.count, typeObj.schema);
 
         if ( !labelDisplay ) {
           // Search happens in highlight and returns null if not found
@@ -668,10 +644,10 @@ export const getters = {
 
         if ( isBasic ) {
           group = _ensureGroup(root, groupForBasicType, true);
-        } else if ( mode === TYPE_MODES.FAVORITE ) {
+        } else if ( mode === FAVORITE ) {
           group = _ensureGroup(root, 'starred');
           group.weight = 1000;
-        } else if ( mode === TYPE_MODES.USED ) {
+        } else if ( mode === USED ) {
           group = _ensureGroup(root, `inUse::${ getters.groupLabelFor(typeObj.schema) }`);
         } else {
           group = _ensureGroup(root, typeObj.schema || typeObj.group || ROOT);
@@ -703,14 +679,14 @@ export const getters = {
         group.children.push({
           label,
           labelDisplay,
-          mode:         typeObj.mode,
-          exact:        typeObj.exact || false,
-          'exact-path': typeObj['exact-path'] || false,
+          mode:     typeObj.mode,
+          count,
+          exact:    typeObj.exact || false,
           namespaced,
           route,
-          name:         typeObj.name,
-          weight:       typeObj.weight || getters.typeWeightFor(typeObj.schema?.id || label, isBasic),
-          overview:     !!typeObj.overview,
+          name:     typeObj.name,
+          weight:   typeObj.weight || getters.typeWeightFor(typeObj.schema?.id || label, isBasic),
+          overview: !!typeObj.overview,
         });
       }
 
@@ -734,7 +710,6 @@ export const getters = {
 
         // Translate if an entry exists
         let label = name;
-        // i18n-uses nav.group.*
         const key = `nav.group."${ name }"`;
 
         if ( rootGetters['i18n/exists'](key) ) {
@@ -765,7 +740,7 @@ export const getters = {
         return group;
       }
 
-      function highlightLabel(original, count, schema) {
+      function highlightLabel(original, icon, count, schema) {
         let label = escapeHtml(original);
 
         if ( searchRegex ) {
@@ -789,6 +764,10 @@ export const getters = {
           }
         }
 
+        if ( icon ) {
+          label = `<i class="icon icon-fw icon-${ icon }"></i>${ label }`;
+        }
+
         return label;
       }
     };
@@ -799,16 +778,7 @@ export const getters = {
       product = product || rootGetters['productId'];
       const productSpoofedTypes = state.spoofedTypes[product] || [];
 
-      return productSpoofedTypes.some((st) => st.type === type);
-    };
-  },
-
-  isVirtual(state, getters, rootState, rootGetters) {
-    return (name, product) => {
-      product = product || rootGetters['productId'];
-      const productVirtualTypes = state.virtualTypes[product] || [];
-
-      return productVirtualTypes.some((st) => st.name === name);
+      return productSpoofedTypes.some(st => st.type === type);
     };
   },
 
@@ -841,7 +811,7 @@ export const getters = {
     return async(type, product, id) => {
       const productInstances = await getters.getSpoofedInstances(type, product);
 
-      return productInstances.find( (instance) => instance.id === id);
+      return productInstances.find( instance => instance.id === id);
     };
   },
 
@@ -856,7 +826,7 @@ export const getters = {
       return types.flatMap((type) => {
         const schemas = type.schemas || [];
 
-        return schemas.map((schema) => ({
+        return schemas.map(schema => ({
           ...schema,
           isSpoofed: true
         }));
@@ -868,100 +838,62 @@ export const getters = {
     return getters.allSpoofedTypes.flatMap((type) => {
       const schemas = type.schemas || [];
 
-      return schemas.map((schema) => ({
+      return schemas.map(schema => ({
         ...schema,
         isSpoofed: true
       }));
     });
   },
 
-  /**
-   * Given many things, create a list of menu items per schema given the mode
-   */
   allTypes(state, getters, rootState, rootGetters) {
-    // Name the function so it's easily identifiable when performance tracing
-    return function allTypes(product, modes = [TYPE_MODES.ALL]) {
-      const module = state.products.find((p) => p.name === product)?.inStore;
+    return (product, mode = ALL) => {
+      const module = findBy(state.products, 'name', product)?.inStore;
       const schemas = rootGetters[`${ module }/all`](SCHEMA);
-      const isLocal = !rootGetters.currentCluster?.isLocal;
-      const isRancher = rootGetters.isRancher;
       const counts = rootGetters[`${ module }/all`](COUNT)?.[0]?.counts || {};
+      const isDev = rootGetters['prefs/get'](VIEW_IN_API);
+      const isBasic = mode === BASIC;
 
       const out = {};
 
-      // For performance reasons this must be super quick to iterate over.
-      // For each schema...
-      // 1) Determine if it's applicable given the mode
-      // 2) For each applicable mode create a `Type` entry
       for ( const schema of schemas ) {
-        let schemaModes = { };
-
-        modes.forEach((m) => {
-          schemaModes[m] = true;
-        });
-
         const attrs = schema.attributes || {};
+        const count = counts[schema.id];
+        const label = getters.labelFor(schema, count);
+        const weight = getters.typeWeightFor(schema?.id || label, isBasic);
         const typeOptions = getters['optionsFor'](schema);
 
-        schemaModes[TYPE_MODES.BASIC] = schemaModes[TYPE_MODES.BASIC] && getters.groupForBasicType(product, schema.id);
-
-        if (Object.values(schemaModes).every((s) => !s)) {
+        if ( isBasic ) {
+          // These are separate ifs so that things with no kind can still be basic
+          if ( !getters.groupForBasicType(product, schema.id) ) {
+            continue;
+          }
+        } else if ( mode === FAVORITE && !getters.isFavorite(schema.id) ) {
+          continue;
+        } else if ( !attrs.kind ) {
+          // Skip the schemas that aren't top-level types
+          continue;
+        } else if ( typeof typeOptions.ifRancherCluster !== 'undefined' && typeOptions.ifRancherCluster !== rootGetters.isRancher ) {
+          continue;
+        } else if (typeOptions.localOnly && !rootGetters.currentCluster?.isLocal) {
           continue;
         }
 
-        schemaModes[TYPE_MODES.FAVORITE] = schemaModes[TYPE_MODES.FAVORITE] && getters.isFavorite(schema.id);
-
-        if (Object.values(schemaModes).every((s) => !s)) {
-          continue;
-        }
-
-        const onlyBasic = schemaModes[TYPE_MODES.BASIC] && modes.length === 1;
-
-        // This clause is only valid for non-basic modes. So if we have only basic... skip it
-        if (!onlyBasic) {
-          const invalidType = !attrs.kind ||
-          (typeof typeOptions.ifRancherCluster !== 'undefined' && typeOptions.ifRancherCluster !== isRancher) ||
-          (typeOptions.localOnly && isLocal);
-
-          if (invalidType) {
-            // Remove anything not basic
-            schemaModes = { [TYPE_MODES.BASIC]: schemaModes[TYPE_MODES.BASIC] };
-          }
-        }
-
-        // This is an expensive request to make, so only do it if we really need to
-        let label;
-
-        Object.entries(schemaModes).forEach(([mode, enabled]) => {
-          if (!enabled) {
-            return;
-          }
-
-          if (!out[mode]) {
-            out[mode] = {};
-          }
-
-          if (!label) {
-            label = getters.labelFor(schema, counts[schema.id]);
-          }
-
-          out[mode][schema.id] = {
-            label,
-            mode,
-            weight:     getters.typeWeightFor(schema?.id || label, mode === TYPE_MODES.BASIC),
-            schema,
-            name:       schema.id,
-            namespaced: typeOptions.namespaced === null ? attrs.namespaced : typeOptions.namespaced,
-            route:      typeOptions.customRoute
-          };
-        });
+        out[schema.id] = {
+          label,
+          mode,
+          weight,
+          schema,
+          name:        schema.id,
+          namespaced:  typeOptions.namespaced === null ? attrs.namespaced : typeOptions.namespaced,
+          count:       count ? count.summary.count || 0 : null,
+          byNamespace: count ? count.namespaces : {},
+          revision:    count ? count.revision : null,
+          route:       typeOptions.customRoute
+        };
       }
 
-      const nonUsedModes = modes.filter((m) => m !== TYPE_MODES.USED);
-      const isDev = rootGetters['prefs/get'](VIEW_IN_API);
-
       // Add virtual and spoofed types
-      if ( nonUsedModes.length ) {
+      if ( mode !== USED ) {
         const virtualTypes = state.virtualTypes[product] || [];
         const spoofedTypes = state.spoofedTypes[product] || [];
         const allTypes = [...virtualTypes, ...spoofedTypes];
@@ -969,15 +901,13 @@ export const getters = {
         for ( const type of allTypes ) {
           const item = clone(type);
           const id = item.name;
-          const virtSpoofedModes = [...nonUsedModes];
+          const weight = type.weight || getters.typeWeightFor(item.label, isBasic);
 
           // Is there a virtual/spoofed type override for schema type?
           // Currently used by harvester, this should be investigated and removed if possible
-          virtSpoofedModes.forEach((mode) => {
-            if (out[mode]?.[id]) {
-              delete out[mode][id];
-            }
-          });
+          if (out[id]) {
+            delete out[id];
+          }
 
           if ( item['public'] === false && !isDev ) {
             continue;
@@ -988,29 +918,16 @@ export const getters = {
           }
 
           if ( item.ifHaveType ) {
-            const ifHaveTypeArray = Array.isArray(item.ifHaveType) ? item.ifHaveType : [item.ifHaveType];
-            let satisfiesIfHave = true;
+            const targetedSchemas = typeof item.ifHaveType === 'string' ? schemas : rootGetters[`${ item.ifHaveType.store }/all`](SCHEMA);
+            const type = typeof item.ifHaveType === 'string' ? item.ifHaveType : item.ifHaveType?.type;
 
-            // Support an array of required types that the user must have access to
-            for (let i = 0; i < ifHaveTypeArray.length; i++) {
-              const ifHaveType = ifHaveTypeArray[i];
-              const targetedSchemas = typeof ifHaveType === 'string' ? schemas : rootGetters[`${ ifHaveType.store }/all`](SCHEMA);
-              const type = typeof ifHaveType === 'string' ? ifHaveType : ifHaveType?.type;
+            const haveIds = filterBy(targetedSchemas, 'id', normalizeType(type)).map(s => s.id);
 
-              const haveIds = filterBy(targetedSchemas, 'id', normalizeType(type)).map((s) => s.id);
-
-              if (!haveIds.length) {
-                satisfiesIfHave = false;
-                break;
-              }
-
-              if (item.ifHaveVerb && !ifHaveVerb(rootGetters, module, item.ifHaveVerb, haveIds)) {
-                satisfiesIfHave = false;
-                break;
-              }
+            if (!haveIds.length) {
+              continue;
             }
 
-            if (!satisfiesIfHave) {
+            if (item.ifHaveVerb && !ifHaveVerb(rootGetters, module, item.ifHaveVerb, haveIds)) {
               continue;
             }
           }
@@ -1029,27 +946,14 @@ export const getters = {
             continue;
           }
 
-          if (item.ifFeature) {
-            if (item.ifFeature[0] === '!') {
-              const feature = item.ifFeature.replace('!', '');
-
-              if (rootGetters['features/get'](feature)) {
-                continue;
-              }
-            } else {
-              if (!rootGetters['features/get'](item.ifFeature)) {
-                continue;
-              }
-            }
+          if ( isBasic && !getters.groupForBasicType(product, id) ) {
+            continue;
+          } else if ( mode === FAVORITE && !getters.isFavorite(id) ) {
+            continue;
           }
 
-          if (virtSpoofedModes.includes(TYPE_MODES.BASIC) && !getters.groupForBasicType(product, id) ) {
-            virtSpoofedModes.splice(virtSpoofedModes.indexOf(TYPE_MODES.BASIC), 1);
-          }
-
-          if (virtSpoofedModes.includes(TYPE_MODES.FAVORITE) && !getters.isFavorite(id) ) { // mode === TYPE_MODES.FAVORITE &&
-            virtSpoofedModes.splice(virtSpoofedModes.indexOf(TYPE_MODES.FAVORITE), 1);
-          }
+          item.mode = mode;
+          item.weight = weight;
 
           // Ensure labelKey is taken into account... with a mock count
           // This is harmless if the translation doesn't require count
@@ -1060,17 +964,7 @@ export const getters = {
             item.label = item.label || item.name;
           }
 
-          virtSpoofedModes.forEach((mode) => {
-            const isBasic = mode === TYPE_MODES.BASIC;
-            const weight = type.weight || getters.typeWeightFor(item.label, isBasic);
-
-            item.mode = mode;
-            item.weight = weight;
-            if (!out[mode]) {
-              out[mode] = {};
-            }
-            out[mode][id] = item;
-          });
+          out[id] = item;
         }
       }
 
@@ -1091,46 +985,99 @@ export const getters = {
   },
 
   headersFor(state, getters, rootState, rootGetters) {
-    return (schema, pagination) => {
-      if (pagination) {
-        const storeHeadersFor = schema?.$ctx?.getters?.['headersFor'];
+    return (schema) => {
+      const attributes = schema.attributes || {};
+      const columns = attributes.columns || [];
+      const typeOptions = getters['optionsFor'](schema);
 
-        if (storeHeadersFor) {
-          const res = storeHeadersFor({ getters, state }, { schema, pagination });
+      // A specific list has been provided
+      if ( state.headers[schema.id] ) {
+        return state.headers[schema.id].map((entry) => {
+          if ( typeof entry === 'string' ) {
+            const col = findBy(columns, 'name', entry);
 
-          if (res) {
-            return res;
+            if ( col ) {
+              return fromSchema(col, rootGetters);
+            } else {
+              return null;
+            }
+          } else {
+            return entry;
           }
+        }).filter(col => !!col);
+      }
+
+      // Otherwise make one up from schema
+      const out = typeOptions.showState ? [STATE] : [];
+      const namespaced = attributes.namespaced || false;
+      let hasName = false;
+
+      for ( const col of columns ) {
+        if ( col.format === 'name' ) {
+          hasName = true;
+          out.push(NAME);
+          if ( namespaced ) {
+            out.push(NAMESPACE_COL);
+          }
+        } else {
+          out.push(fromSchema(col, rootGetters));
         }
       }
 
-      return createHeaders({ rootGetters }, {
-        headers:     state.headers,
-        typeOptions: getters['optionsFor'](schema, false),
-        schema,
-        columns:     {
-          state:     STATE,
-          name:      NAME,
-          namespace: NAMESPACE_COL,
-          age:       AGE,
-        },
-        pagination
-      });
+      if ( !hasName ) {
+        insertAt(out, 1, NAME);
+        if ( namespaced ) {
+          insertAt(out, 2, NAMESPACE_COL);
+        }
+      }
+
+      // Age always goes last
+      if ( out.includes(AGE) ) {
+        removeObject(out, AGE);
+        if ( typeOptions.showAge ) {
+          out.push(AGE);
+        }
+      }
+
+      return out;
+
+      function fromSchema(col, rootGetters) {
+        let formatter, width, formatterOpts;
+
+        if ( (col.format === '' || col.format === 'date') && col.name === 'Age' ) {
+          return AGE;
+        }
+
+        if ( col.format === 'date' || col.type === 'date' ) {
+          formatter = 'Date';
+          width = 120;
+          formatterOpts = { multiline: true };
+        }
+
+        if ( col.type === 'number' || col.type === 'int' ) {
+          formatter = 'Number';
+        }
+
+        const colName = col.name.includes(' ') ? col.name.split(' ').map(word => word.charAt(0).toUpperCase() + word.substring(1) ).join('') : col.name;
+
+        const exists = rootGetters['i18n/exists'];
+        const t = rootGetters['i18n/t'];
+        const labelKey = `tableHeaders.${ colName.charAt(0).toLowerCase() + colName.slice(1) }`;
+        const description = col.description || '';
+        const tooltip = description && description[description.length - 1] === '.' ? description.slice(0, -1) : description;
+
+        return {
+          name:  col.name.toLowerCase(),
+          label: exists(labelKey) ? t(labelKey) : col.name,
+          value: _rowValueGetter(col),
+          sort:  [col.field],
+          formatter,
+          formatterOpts,
+          width,
+          tooltip
+        };
+      }
     };
-  },
-
-  /**
-   * Simple getter to fetch pre-configured headers used in pagination
-   */
-  configuredPaginationHeaders(state) {
-    return (schemaOrType) => state.paginationHeaders?.[schemaOrType.id || schemaOrType];
-  },
-
-  /**
-   * Simple getter to fetch pre-configured headers (not used in paginated lists)
-   */
-  configuredHeaders(state) {
-    return (schemaOrType) => state.headers?.[schemaOrType.id || schemaOrType];
   },
 
   // ------------------------------------
@@ -1145,7 +1092,7 @@ export const getters = {
     return (rawType) => {
       const key = getters.componentFor(rawType);
 
-      return hasCustom(state, rootState, 'list', key, (key) => resolveList(key));
+      return hasCustom(state, rootState, 'list', key, key => resolveList(key));
     };
   },
 
@@ -1153,7 +1100,7 @@ export const getters = {
     return (rawType) => {
       const key = getters.componentFor(rawType);
 
-      return hasCustom(state, rootState, 'chart', key, (key) => resolveChart(key));
+      return hasCustom(state, rootState, 'chart', key, key => resolveChart(key));
     };
   },
 
@@ -1161,7 +1108,7 @@ export const getters = {
     return (rawType, subType) => {
       const key = getters.componentFor(rawType, subType);
 
-      return hasCustom(state, rootState, 'detail', key, (key) => resolveDetail(key));
+      return hasCustom(state, rootState, 'detail', key, key => resolveDetail(key));
     };
   },
 
@@ -1181,13 +1128,13 @@ export const getters = {
     return (rawType, subType) => {
       const key = getters.componentFor(rawType, subType);
 
-      return hasCustom(state, rootState, 'edit', key, (key) => resolveEdit(key));
+      return hasCustom(state, rootState, 'edit', key, key => resolveEdit(key));
     };
   },
 
   hasComponent(state, getters, rootState) {
     return (path) => {
-      return hasCustom(state, rootState, 'edit', path, (path) => resolveEdit(path));
+      return hasCustom(state, rootState, 'edit', path, path => resolveEdit(path));
     };
   },
 
@@ -1203,7 +1150,7 @@ export const getters = {
     return (rawType, subType) => {
       const key = getters.componentFor(rawType, subType);
 
-      return hasCustom(state, rootState, 'windowComponents', key, (key) => resolveWindowComponent(key));
+      return hasCustom(state, rootState, 'windowComponents', key, key => resolveWindowComponent(key));
     };
   },
 
@@ -1211,7 +1158,7 @@ export const getters = {
     return (rawType, subType) => {
       const key = getters.componentFor(rawType, subType);
 
-      return hasCustom(state, rootState, 'machine-config', key, (key) => resolveMachineConfigComponent(key));
+      return hasCustom(state, rootState, 'machine-config', key, key => resolveMachineConfigComponent(key));
     };
   },
 
@@ -1219,7 +1166,7 @@ export const getters = {
     return (rawType, subType) => {
       const key = getters.componentFor(rawType, subType);
 
-      return hasCustom(state, rootState, 'cloud-credential', key, (key) => resolveCloudCredentialComponent(key));
+      return hasCustom(state, rootState, 'cloud-credential', key, key => resolveCloudCredentialComponent(key));
     };
   },
 
@@ -1268,12 +1215,6 @@ export const getters = {
   importWindowComponent(state, getters, rootState) {
     return (rawType, subType) => {
       return loadExtension(rootState, 'windowComponents', getters.componentFor(rawType, subType), importWindowComponent);
-    };
-  },
-
-  importLogin(state, getters, rootState) {
-    return (authType) => {
-      return loadExtension(rootState, 'login', authType, importLogin);
     };
   },
 
@@ -1407,7 +1348,7 @@ export const getters = {
       }
 
       if ( p.ifHaveType ) {
-        const haveIds = knownTypes[module].filter((t) => t.match(stringToRegex(p.ifHaveType)) );
+        const haveIds = knownTypes[module].filter(t => t.match(stringToRegex(p.ifHaveType)) );
 
         if ( !haveIds.length ) {
           return false;
@@ -1418,7 +1359,7 @@ export const getters = {
         }
       }
 
-      if ( p.ifHaveGroup && !knownGroups[module].find((t) => t.match(stringToRegex(p.ifHaveGroup)) ) ) {
+      if ( p.ifHaveGroup && !knownGroups[module].find(t => t.match(stringToRegex(p.ifHaveGroup)) ) ) {
         return false;
       }
 
@@ -1440,21 +1381,9 @@ export const getters = {
     return (schema, colName) => {
       const col = _findColumnByName(schema, colName);
 
-      return rowValueGetter(col);
+      return _rowValueGetter(col);
     };
   },
-
-  isProductRegistered(state) {
-    return (productName) => {
-      const prod = state.products.find((p) => p.name === productName);
-
-      return !!prod;
-    };
-  },
-
-  productByName(state) {
-    return (productName) => state.products.find((p) => p.name === productName);
-  }
 };
 
 export const mutations = {
@@ -1464,7 +1393,7 @@ export const mutations = {
 
   // Remove the specified product
   remove(state, { product, plugin }) {
-    const existing = state.products.findIndex((p) => p.name === product);
+    const existing = state.products.findIndex(p => p.name === product);
 
     // Remove the product
     if (existing !== -1) {
@@ -1514,27 +1443,12 @@ export const mutations = {
   },
 
   product(state, obj) {
-    let existing = state.products.find((p) => p.name === obj.name);
+    const existing = findBy(state.products, 'name', obj.name);
 
     if ( existing ) {
       Object.assign(existing, obj);
     } else {
       addObject(state.products, obj);
-      existing = state.products.find((p) => p.name === obj.name);
-    }
-
-    // Make sure deprecated `inExplorer` is synchronized with `rootProduct` (and vice-versa)
-    if (existing?.inExplorer) {
-      existing.rootProduct = EXPLORER;
-    } else if (existing?.rootProduct === EXPLORER) {
-      existing.inExplorer = true;
-    }
-
-    // We make an assumption that if the store for a product is 'cluster' it will be displayed within cluster explorer
-    // Detect that here and set rootProduct and inExporer in this case
-    if (!existing?.rootProduct && existing?.inStore === 'cluster') {
-      existing.rootProduct = EXPLORER;
-      existing.inExplorer = (existing.rootProduct === EXPLORER);
     }
   },
 
@@ -1630,10 +1544,6 @@ export const mutations = {
     state.headers[type] = headers;
   },
 
-  paginationHeaders(state, { type, paginationHeaders }) {
-    state.paginationHeaders[type] = paginationHeaders;
-  },
-
   hideBulkActions(state, { type, field }) {
     state.hideBulkActions[type] = field;
   },
@@ -1725,7 +1635,7 @@ export const mutations = {
   configureType(state, options) {
     const match = regexToString(ensureRegex(options.match));
 
-    const idx = state.typeOptions.findIndex((obj) => obj.match === match);
+    const idx = state.typeOptions.findIndex(obj => obj.match === match);
     let obj = { ...options, match };
 
     if ( idx >= 0 ) {
@@ -1788,6 +1698,22 @@ function _sortGroup(tree, mode) {
       _sortGroup(entry, mode);
     }
   }
+}
+
+function _matchingCounts(typeObj, namespaces) {
+  // That was easy
+  if ( !typeObj.namespaced || !typeObj.byNamespace || namespaces === null || typeObj.count === null) {
+    return typeObj.count;
+  }
+
+  let out = 0;
+
+  // Otherwise start with 0 and count up
+  for ( const namespace of namespaces ) {
+    out += typeObj.byNamespace[namespace]?.count || 0;
+  }
+
+  return out;
 }
 
 function _applyMapping(objOrValue, mappings, keyField, cache, defaultFn) {
@@ -1883,6 +1809,9 @@ function ifHave(getters, option) {
   case IF_HAVE.V2_MONITORING: {
     return haveV2Monitoring(getters);
   }
+  case IF_HAVE.V1_MONITORING: {
+    return haveV1Monitoring(getters);
+  }
   case IF_HAVE.PROJECT: {
     return !!project(getters);
   }
@@ -1896,7 +1825,7 @@ function ifHave(getters, option) {
     return getters.isMultiCluster;
   }
   case IF_HAVE.NEUVECTOR_NAMESPACE: {
-    return getters[`cluster/all`](NAMESPACE).find((n) => n.metadata.name === NEU_VECTOR_NAMESPACE);
+    return getters[`cluster/all`](NAMESPACE).find(n => n.metadata.name === NEU_VECTOR_NAMESPACE);
   }
   case IF_HAVE.ADMIN: {
     return isAdminUser(getters);
@@ -1930,6 +1859,25 @@ function _findColumnByName(schema, colName) {
   return findBy(columns, 'name', colName);
 }
 
+function _rowValueGetter(col) {
+  // 'field' comes from the schema - typically it is of the form $.metadata.field[N]
+  // We will use JsonPath to look up this value, which is costly - so if we can detect this format
+  // Use a more efficient function to get the value
+  const value = col.field.startsWith('.') ? `$${ col.field }` : col.field;
+
+  if (process.client) {
+    const found = value.match(FIELD_REGEX);
+
+    if (found && found.length === 2) {
+      const fieldIndex = parseInt(found[1], 10);
+
+      return row => row.metadata?.fields?.[fieldIndex];
+    }
+  }
+
+  return value;
+}
+
 // Is V1 Istio installed?
 function isV1Istio(getters) {
   const cluster = getters['currentCluster'];
@@ -1943,7 +1891,7 @@ function ifHaveVerb(rootGetters, module, verb, haveIds) {
     const want = verb.toLowerCase();
     const collectionMethods = schema.collectionMethods || [];
     const resourceMethods = schema.resourceMethods || [];
-    const have = [...collectionMethods, ...resourceMethods].map((x) => x.toLowerCase());
+    const have = [...collectionMethods, ...resourceMethods].map(x => x.toLowerCase());
 
     if ( !have.includes(want) && !have.includes(`blocked-${ want }`) ) {
       return false;
@@ -2045,10 +1993,10 @@ function loadExtension(rootState, kind, key, fallback) {
 
   if (ext) {
     if (typeof ext === 'function') {
-      return defineAsyncComponent(ext);
+      return ext;
     }
 
-    return () => defineAsyncComponent(ext);
+    return () => ext;
   }
 
   return fallback(key);

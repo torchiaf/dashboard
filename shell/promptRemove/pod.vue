@@ -7,8 +7,6 @@ import { isEmpty } from 'lodash';
 export default {
   name: 'PromptRemovePodDialog',
 
-  emits: ['errors'],
-
   components: {
     Banner,
     Checkbox
@@ -32,16 +30,6 @@ export default {
     type: {
       type:     String,
       required: true
-    },
-
-    close: {
-      type:     Function,
-      required: true
-    },
-
-    doneLocation: {
-      type:    Object,
-      default: () => {}
     }
   },
 
@@ -81,21 +69,23 @@ export default {
 
   methods: {
     async remove(confirm) {
+      const parentComponent = this.$parent.$parent.$parent;
+
       let goTo;
 
-      if (this.doneLocation) {
+      if (parentComponent.doneLocation) {
         // doneLocation will recompute to undefined when delete request completes
-        goTo = { ...this.doneLocation };
+        goTo = { ...parentComponent.doneLocation };
       }
 
       try {
-        await Promise.all(this.value.map((resource) => this.removePod(resource)));
+        await Promise.all(this.value.map(resource => this.removePod(resource)));
         if ( goTo && !isEmpty(goTo) ) {
-          this.value?.[0]?.currentRouter().push(goTo);
+          parentComponent.currentRouter.push(goTo);
         }
-        this.close();
+        parentComponent.close();
       } catch (err) {
-        this.$emit('errors', err);
+        parentComponent.error = err;
         confirm(false);
       }
     },
@@ -133,9 +123,7 @@ export default {
       label-key="promptForceRemove.podRemoveWarning"
     />
     <Banner
-      v-for="(error, i) in errors"
-      :key="i"
-      class=""
+      v-for="(error, i) in errors" :key="i"class=""
       color="error"
       :label="error"
     />

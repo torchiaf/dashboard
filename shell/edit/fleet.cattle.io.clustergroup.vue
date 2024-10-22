@@ -11,15 +11,11 @@ import { set } from '@shell/utils/object';
 import { FLEET } from '@shell/config/types';
 import { convert, matching, simplify } from '@shell/utils/selector';
 import throttle from 'lodash/throttle';
-import { allHash } from '@shell/utils/promise';
 
 export default {
   name: 'CruClusterGroup',
 
-  emits: ['input'],
-
-  inheritAttrs: false,
-  components:   {
+  components: {
     Banner,
     CruResource,
     Labels,
@@ -31,20 +27,10 @@ export default {
   mixins: [CreateEditView],
 
   async fetch() {
-    const _hash = {};
-
-    if (this.$store.getters['management/schemaFor'](FLEET.CLUSTER)) {
-      _hash.allClusters = await this.$store.dispatch('management/findAll', { type: FLEET.CLUSTER });
+    if (this.$store.getters['management/schemaFor']( FLEET.CLUSTER )) {
+      this.allClusters = await this.$store.getters['management/all'](FLEET.CLUSTER);
     }
-
-    if (this.$store.getters['management/schemaFor'](FLEET.WORKSPACE)) {
-      _hash.allWorkspaces = this.$store.dispatch('management/findAll', { type: FLEET.WORKSPACE });
-    }
-
-    const hash = await allHash(_hash);
-
-    this.allClusters = hash.allClusters || [];
-    this.allWorkspaces = hash.allWorkspaces || [];
+    this.allWorkspaces = await this.$store.dispatch('management/findAll', { type: FLEET.WORKSPACE });
 
     if ( !this.value.spec?.selector ) {
       this.value.spec = this.value.spec || {};
@@ -142,12 +128,11 @@ export default {
   >
     <NameNsDescription
       v-if="!isView"
-      :value="value"
+      v-model:value="value"
       :mode="mode"
       :namespaced="false"
       namespace-label="nameNsDescription.workspace.label"
       :namespace-type="FLEET_WORKSPACE"
-      @update:value="$emit('input', $event)"
     />
 
     <h2 v-t="'fleet.clusterGroup.selector.label'" />

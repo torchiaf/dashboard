@@ -6,8 +6,6 @@ import { formatSi, parseSi } from '@shell/utils/units';
 import { ROW_COMPUTED } from './shared';
 
 export default {
-  emits: ['update:value'],
-
   components: {
     Select, PercentageBar, UnitInput
   },
@@ -85,8 +83,8 @@ export default {
     },
     namespaceLimits() {
       return this.namespaceResourceQuotaLimits
-        .filter((resourceQuota) => resourceQuota[this.type] && resourceQuota.id !== this.namespace.id)
-        .map((resourceQuota) => parseSi(resourceQuota[this.type], this.siOptions));
+        .filter(resourceQuota => resourceQuota[this.type] && resourceQuota.id !== this.namespace.id)
+        .map(resourceQuota => parseSi(resourceQuota[this.type], this.siOptions));
     },
     namespaceContribution() {
       return this.namespaceLimits.reduce((sum, limit) => sum + limit, 0);
@@ -165,7 +163,7 @@ export default {
         addSuffixSpace: false
       });
 
-      this.$emit('update:value', this.type, value);
+      this.$emit('input', this.type, value);
     }
   }
 };
@@ -186,7 +184,7 @@ export default {
       <PercentageBar
         v-clean-tooltip="tooltip"
         class="percentage-bar"
-        :modelValue="percentageUsed"
+        :value="percentageUsed"
         :slices="slices"
         :color-stops="{'100': '--primary'}"
       />

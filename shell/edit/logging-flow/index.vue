@@ -16,7 +16,7 @@ import { allHash } from '@shell/utils/promise';
 import { isArray, uniq } from '@shell/utils/array';
 import { matchRuleIsPopulated } from '@shell/models/logging.banzaicloud.io.flow';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
-import { clone } from '@shell/utils/object';
+import { clone, set } from '@shell/utils/object';
 import isEmpty from 'lodash/isEmpty';
 import ArrayListGrouped from '@shell/components/form/ArrayListGrouped';
 import { exceptionToErrorsArray } from '@shell/utils/error';
@@ -41,8 +41,6 @@ function emptyMatch(include = true) {
 }
 
 export default {
-  emits: ['input'],
-
   components: {
     Banner,
     CruResource,
@@ -91,13 +89,12 @@ export default {
     const schemas = this.$store.getters[`${ inStore }/all`](SCHEMA);
     let filtersYaml;
 
-    this.value.spec = this.value.spec || {};
+    set(this.value, 'spec', this.value.spec || {});
 
     if ( this.value.spec.filters?.length ) {
       filtersYaml = jsyaml.dump(this.value.spec.filters);
     } else {
-      // Note - no need to call fetchResourceFields here (spoofed type has popoulated resourceFields)
-      filtersYaml = createYaml(schemas, LOGGING.SPOOFED.FILTERS, {});
+      filtersYaml = createYaml(schemas, LOGGING.SPOOFED.FILTERS, []);
       // createYaml doesn't support passing reference types (array, map) as the first type. As such
       // I'm manipulating the output since I'm not sure it's something we want to actually support
       // seeing as it's really createResourceYaml and this here is a gray area between spoofed types
@@ -122,8 +119,8 @@ export default {
       matches.push(emptyMatch(true));
     }
 
-    const globalOutputRefs = (this.value.spec.globalOutputRefs || []).map((ref) => ({ label: ref, value: ref }));
-    const localOutputRefs = (this.value.spec.localOutputRefs || []).map((ref) => ({ label: ref, value: ref }));
+    const globalOutputRefs = (this.value.spec.globalOutputRefs || []).map(ref => ({ label: ref, value: ref }));
+    const localOutputRefs = (this.value.spec.localOutputRefs || []).map(ref => ({ label: ref, value: ref }));
 
     return {
       formSupported,
@@ -275,7 +272,7 @@ export default {
           }
         });
 
-        this.value.spec.match = matches;
+        set(this.value.spec, 'match', matches);
       }
     },
     filtersYaml: {
@@ -285,9 +282,9 @@ export default {
           const filterJson = jsyaml.load(this.filtersYaml);
 
           if ( isArray(filterJson) ) {
-            this.value.spec.filters = filterJson;
+            set(this.value.spec, 'filters', filterJson);
           } else {
-            this.value.spec.filters = undefined;
+            set(this.value.spec, 'filters', undefined);
           }
         } catch (e) {
           this.errors = exceptionToErrorsArray(e);
@@ -297,13 +294,13 @@ export default {
     globalOutputRefs: {
       deep: true,
       handler() {
-        this.value.spec.globalOutputRefs = this.globalOutputRefs;
+        set(this.value.spec, 'globalOutputRefs', this.globalOutputRefs);
       }
     },
     localOutputRefs: {
       deep: true,
       handler() {
-        this.value.spec.localOutputRefs = this.localOutputRefs;
+        set(this.value.spec, 'localOutputRefs', this.localOutputRefs);
       }
     }
   },
@@ -318,7 +315,7 @@ export default {
 
   methods: {
     addMatch(include) {
-      this.matches = [...this.matches, emptyMatch(include)];
+      this.matches.push(emptyMatch(include));
     },
 
     removeMatch(idx) {
@@ -351,7 +348,7 @@ export default {
 
         const select = match.select || {};
         const exclude = match.exclude || {};
-        const allValuesAreEmpty = (o) => Object.values(o).every(isEmpty);
+        const allValuesAreEmpty = o => Object.values(o).every(isEmpty);
 
         return allValuesAreEmpty(select) && allValuesAreEmpty(exclude);
       });
@@ -366,14 +363,14 @@ export default {
       }
 
       if (this.loggingType === FLOW_AUDIT) {
-        this.$set(this.value.spec, 'loggingRef', 'harvester-kube-audit-log-ref');
+        this.value.spec['loggingRef'] = 'harvester-kube-audit-log-ref';
       }
 
       if (this.loggingType === FLOW_EVENT) {
         const eventSelector = { select: { labels: { 'app.kubernetes.io/name': 'event-tailer' } } };
 
         if (!this.value.spec.match) {
-          this.$set(this.value.spec, 'match', [eventSelector]);
+          this.value.spec['match'] = [eventSelector];
         } else {
           this.value.spec.match.push(eventSelector);
         }
@@ -385,7 +382,7 @@ export default {
       cm.execCommand('unfold');
     },
     isTag(options, option) {
-      return !options.find((o) => o.value === option.value);
+      return !options.find(o => o.value === option.value);
     }
   }
 };
@@ -409,10 +406,9 @@ export default {
   >
     <NameNsDescription
       v-if="!isView"
-      :value="value"
+      v-model:value="value"
       :mode="mode"
       :namespaced="value.type !== LOGGING.CLUSTER_FLOW"
-      @update:value="$emit('input', $event)"
     />
 
     <Tabbed
@@ -453,6 +449,7 @@ export default {
               :mode="mode"
               :namespaces="namespaceChoices"
               :nodes="nodeChoices"
+              :containers="containerChoices"
               :is-cluster-flow="value.type === LOGGING.CLUSTER_FLOW"
               @remove="e=>removeMatch(props.row.i)"
               @update:value="e=>updateMatch(e,props.row.i)"

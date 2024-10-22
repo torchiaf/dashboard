@@ -1,8 +1,5 @@
 import { ProductFunction } from './plugin';
-import { RouteRecordRaw } from 'vue-router';
-
-// Cluster Provisioning types
-export * from './types-provisioning';
+import {RouteRecordRaw , RouteLocation } from 'vue-router';
 
 // package.json metadata
 export interface PackageMetadata {
@@ -26,7 +23,7 @@ export type CoreStoreInit = (store: any, ctx: any) => void;
 export type RegisterStore = () => (store: any) => void
 export type UnregisterStore = (store: any) => void
 
-export type PluginRouteRecordRaw = { [key: string]: any }
+export type PluginRouteConfig = {parent?: string, route: RouteConfig}
 
 export type OnEnterLeavePackageConfig = {
   clusterId: string,
@@ -65,7 +62,6 @@ export enum PanelLocation {
 /** Enum regarding tab locations that are extensionable in the UI */
 export enum TabLocation {
   RESOURCE_DETAIL = 'tab', // eslint-disable-line no-unused-vars
-  CLUSTER_CREATE_RKE2 = 'cluster-create-rke2', // eslint-disable-line no-unused-vars
 }
 
 /** Enum regarding card locations that are extensionable in the UI */
@@ -101,8 +97,8 @@ export type Action = {
   svg?: Function;
   icon?: string;
   multiple?: boolean;
-  enabled?: Function | boolean;
-  invoke: (opts: ActionOpts, resources: any[], globals?: any) => void | boolean | Promise<boolean>;
+  enabled?: (ctx: any) => boolean;
+  invoke: (opts: ActionOpts, resources: any[]) => void | boolean | Promise<boolean>;
 };
 
 /** Definition of a panel (options that can be passed when defining an extension panel enhancement) */
@@ -138,22 +134,7 @@ export type LocationConfig = {
   namespace?: string[],
   cluster?: string[],
   id?: string[],
-  mode?: string[],
-  hash?: string[],
-  /**
-   * path match from URL (excludes host address)
-   */
-  path?: { [key: string]: string | boolean}[],
-  /**
-   * Query Params from URL
-   */
-  queryParam?: { [key: string]: string},
-  /**
-   * Context specific params.
-   *
-   * Components can provide additional context specific params that this value must match
-   */
-  context?: { [key: string]: string},
+  mode?: string[]
 };
 
 export interface ProductOptions {
@@ -324,11 +305,6 @@ export interface ConfigureTypeOptions {
   isRemovable?: boolean;
 
   /**
-   * Resources of this type can be edited
-   */
-  isEditable?: boolean;
-
-  /**
    * This type should be grouped by namespaces when displayed in a table
    */
   namespaced?: boolean;
@@ -349,17 +325,15 @@ export interface ConfigureTypeOptions {
   showState?: boolean;
 
   /**
-   * Define where this type/page should navigate to (menu entry routing)
-   */
-  customRoute?: Object;
-
-  /**
    * Leaving these here for completeness but I don't think these should be advertised as useable to plugin creators.
    */
   // alias
+  // customRoute
+  // customRoute
   // depaginate
   // graphConfig
   // hasGraph
+  // isEditable
   // limit
   // listGroups
   // localOnly
@@ -370,23 +344,6 @@ export interface ConfigureTypeOptions {
   // resourceDetail
   // resourceEdit
   // showConfigView
-}
-
-export interface ConfigureVirtualTypeOptions extends ConfigureTypeOptions {
-  /**
-   * The translation key displayed anywhere this type is referenced
-   */
-  labelKey: string;
-
-  /**
-   * An identifier that should be unique across all types
-   */
-  name: string;
-
-  /**
-   * The route that this type should correspond to {@link PluginRouteRecordRaw} {@link RouteRecordRaw}
-   */
-  route: PluginRouteRecordRaw | RouteRecordRaw | Object;
 }
 
 export interface DSLReturnType {
@@ -430,13 +387,6 @@ export interface DSLReturnType {
   mapGroup: (groupName: string, label: string) => void;
 
   /**
-   * Create and configure a myriad of options for a type
-   * @param options {@link ConfigureVirtualTypeOptions}
-   * @returns {@link void}
-   */
-  virtualType: (options: ConfigureVirtualTypeOptions) => void;
-
-  /**
    * Leaving these here for completeness but I don't think these should be advertised as useable to plugin creators.
    */
   // componentForType: (type: string, replacementType: string)
@@ -449,6 +399,7 @@ export interface DSLReturnType {
   // moveType: (match, group)
   // setGroupDefaultType: (input, defaultType)
   // spoofedType: (obj)
+  // virtualType: (obj)
   // weightGroup: (input, weight, forBasic)
   // weightType: (input, weight, forBasic)
 }
@@ -488,8 +439,8 @@ export interface IPlugin {
   /**
    * Add a route to the Vue Router
    */
-  addRoute(route: RouteRecordRaw): void;
-  addRoute(parent: string, route: RouteRecordRaw): void;
+  addRoute(route: RouteConfig): void;
+  addRoute(parent: string, route: RouteConfig): void;
 
   /**
    * Adds an action/button to the UI
@@ -525,7 +476,7 @@ export interface IPlugin {
   /**
    * Add routes to the Vue Router
    */
-  addRoutes(routes: PluginRouteRecordRaw[] | RouteRecordRaw[]): void;
+  addRoutes(routes: PluginRouteConfig[] | RouteConfig[]): void;
 
    /**
     * Add a hook to be called when the plugin is uninstalled
@@ -565,7 +516,7 @@ export interface IPlugin {
    * @param {String} name unique name of 'something'
    * @param {Function} fn function that dynamically loads the module for the thing being registered
    */
-  register(type: string, name: string, fn: Function | Boolean): void;
+  register(type: string, name: string, fn: Function): void;
 
   /**
    * Will return all of the configuration functions used for creating a new product.
@@ -574,8 +525,3 @@ export interface IPlugin {
    */
   DSL(store: any, productName: string): DSLReturnType;
 }
-
-// Internal interface
-// Built-in extensions may use this, but external extensions should not, as this is subject to change
-// Defined as any for now
-export type IInternal = any;

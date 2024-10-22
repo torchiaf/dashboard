@@ -2,7 +2,6 @@ import { sortableNumericSuffix } from '@shell/utils/sort';
 import semver from 'semver';
 import { MANAGEMENT } from '@shell/config/types';
 import { READ_WHATS_NEW, SEEN_WHATS_NEW } from '@shell/store/prefs';
-import { SETTING } from '@shell/config/settings';
 
 export function parse(str) {
   str = `${ str }`;
@@ -18,7 +17,7 @@ export function parse(str) {
 }
 
 export function sortable(str) {
-  return parse(str).map((x) => sortableNumericSuffix(x)).join('.');
+  return parse(str).map(x => sortableNumericSuffix(x)).join('.');
 }
 
 export function compare(in1, in2) {
@@ -75,7 +74,7 @@ export function isPrerelease(version) {
 }
 
 export function isDevBuild(version) {
-  if ( ['dev', 'master', 'head'].includes(version) || version.endsWith('-head') || version.match(/-rc\d+$/) || version.match(/-alpha\d+$/) ) {
+  if ( ['dev', 'master', 'head'].includes(version) || version.endsWith('-head') || version.match(/-rc\d+$/) ) {
     return true;
   }
 
@@ -83,7 +82,7 @@ export function isDevBuild(version) {
 }
 
 export function getVersionInfo(store) {
-  const setting = store.getters['management/byId'](MANAGEMENT.SETTING, SETTING.VERSION_RANCHER);
+  const setting = store.getters['management/byId'](MANAGEMENT.SETTING, 'server-version');
   const fullVersion = setting?.value || 'unknown';
   let displayVersion = fullVersion;
 

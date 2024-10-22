@@ -100,9 +100,9 @@ export default {
       >
         <div v-if="secretTo">
           We don't support the current route format stored in alertmanager.yaml. Click
-          <router-link :to="secretTo">
+          <nuxt-link :to="secretTo">
             here
-          </router-link> to update manually.
+          </nuxt-link> to update manually.
         </div>
         <ResourceTable
           v-else

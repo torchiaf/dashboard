@@ -5,8 +5,6 @@ import { Checkbox } from '@components/Form/Checkbox';
 import { SCALE_POOL_PROMPT } from '@shell/store/prefs';
 
 export default {
-  emits: ['close'],
-
   components: { Card, Checkbox },
 
   props: {
@@ -73,29 +71,31 @@ export default {
     class="prompt-remove"
     :show-highlight-border="false"
   >
-    <template #title>
-      <h4 class="text-default-text">
-        {{ t('promptForceRemove.modalTitle') }}
-      </h4>
-    </template>
-    <template #body>
-      <div class="pl-10 pr-10">
-        <div>
-          {{ t('promptRemove.attemptingToRemove', { type }) }} <b>{{ machinenName }}</b>
-        </div>
-        <div>
-          <Checkbox
-            v-model:value="promptConfirmation"
-            :label="t('promptRemove.promptConfirmation')"
-            class="mt-10"
-            @update:value="update()"
-          />
-        </div>
-        <div class="text-info mt-20">
-          {{ protip }}
-        </div>
+    <h4
+      slot="title"
+      class="text-default-text"
+    >
+      {{ t('promptForceRemove.modalTitle') }}
+    </h4>
+    <div
+      slot="body"
+      class="pl-10 pr-10"
+    >
+      <div>
+        {{ t('promptRemove.attemptingToRemove', { type }) }} <b>{{ machinenName }}</b>
       </div>
-    </template>
+      <div>
+        <Checkbox
+          v-model:value="promptConfirmation"
+          :label="t('promptRemove.promptConfirmation')"
+          class="mt-10"
+          @update:value="update()"
+        />
+      </div>
+      <div class="text-info mt-20">
+        {{ protip }}
+      </div>
+    </div>
     <template #actions>
       <button
         class="btn role-secondary mr-10"

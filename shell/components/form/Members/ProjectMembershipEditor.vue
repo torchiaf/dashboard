@@ -1,7 +1,8 @@
 <script>
 import { NORMAN } from '@shell/config/types';
 import { _CREATE, _VIEW } from '@shell/config/query-params';
-import MembershipEditor, { canViewMembershipEditor } from '@shell/components/form/Members/MembershipEditor';
+import MembershipEditor from '@shell/components/form/Members/MembershipEditor';
+import { canViewMembershipEditor } from '@shell/components/form/Members/MembershipEditor.vue';
 
 export function canViewProjectMembershipEditor(store) {
   return canViewMembershipEditor(store, true);
@@ -59,5 +60,6 @@ export default {
     :mode="mode"
     parent-key="projectId"
     :parent-id="parentId"
+    
   />
 </template>

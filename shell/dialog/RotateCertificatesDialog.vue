@@ -10,8 +10,6 @@ import { get, set } from '@shell/utils/object';
 import { exceptionToErrorsArray } from '@shell/utils/error';
 
 export default {
-  emits: ['close'],
-
   components: {
     Select,
     RadioGroup,
@@ -164,21 +162,22 @@ export default {
         />
       </div>
     </template>
-    <template #actions>
-      <div class="buttons">
-        <button
-          class="btn role-secondary mr-20"
-          @click="close"
-        >
-          {{ t('generic.cancel') }}
-        </button>
-        <AsyncButton
-          mode="rotate"
-          :disabled="!rotateAllServices && !selectedService"
-          @click="rotate"
-        />
-      </div>
-    </template>
+    <div
+      slot="actions"
+      class="buttons"
+    >
+      <button
+        class="btn role-secondary mr-20"
+        @click="close"
+      >
+        {{ t('generic.cancel') }}
+      </button>
+      <AsyncButton
+        mode="rotate"
+        :disabled="!rotateAllServices && !selectedService"
+        @click="rotate"
+      />
+    </div>
   </Card>
 </template>
 
@@ -202,4 +201,25 @@ export default {
       min-width: 260px;
     }
   }
+
+.rotate-modal :deep().v--modal-box{
+  border:none;
+
+  & .card-container{
+    margin: 0;
+
+    & .card-wrap {
+      display:flex;
+      flex-direction:column;
+    }
+
+    & .card-body {
+      flex: 1;
+    }
+
+    & .card-actions{
+      align-self: center
+    };
+  }
+}
 </style>

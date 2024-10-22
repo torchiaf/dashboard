@@ -7,11 +7,10 @@ import CruResource from '@shell/components/CruResource';
 import { LabeledInput } from '@components/Form/LabeledInput';
 import { RadioGroup } from '@components/Form/Radio';
 import FileImageSelector from '@shell/components/form/FileImageSelector';
+import NameNsDescription, { normalizeName } from '@shell/components/form/NameNsDescription';
+import Tab from '@shell/components/Tabbed/Tab';
+import Tabbed from '@shell/components/Tabbed';
 import LabeledSelect from '@shell/components/form/LabeledSelect.vue';
-import NameNsDescription from '@shell/components/form/NameNsDescription';
-import { Banner } from '@components/Banner';
-import FormValidation from '@shell/mixins/form-validation';
-import { normalizeName } from '@shell/utils/kube';
 
 const LINK_TYPE_URL = 'url';
 const LINK_TYPE_SERVICE = 'service';
@@ -20,16 +19,16 @@ const LINK_TARGET_BLANK = '_blank';
 const LINK_TARGET_SELF = '_self';
 
 export default {
-  emits:      ['update:value.spec.iconSrc ', 'input'],
-  mixins:     [CreateEditView, FormValidation],
+  mixins:     [CreateEditView],
   components: {
     CruResource,
     LabeledInput,
     RadioGroup,
     NameNsDescription,
+    Tabbed,
+    Tab,
     FileImageSelector,
-    LabeledSelect,
-    Banner
+    LabeledSelect
   },
   data() {
     return {
@@ -57,19 +56,12 @@ export default {
           label: this.t('navLink.tabs.link.type.service')
         }
       ],
-      currentLinkType:   null,
-      targetName:        null,
-      currentTarget:     LINK_TARGET_BLANK,
-      protocolsOptions:  PROTOCOLS,
-      services:          [],
-      currentService:    null,
-      imageErrorMessage: '',
-      fvFormRuleSets:    [
-        { path: 'metadata.name', rules: ['nameRequired'] },
-        { path: 'spec.toURL', rules: ['urlRequired'] },
-        { path: 'spec.toService.namespace', rules: ['serviceNamespaceRequired'] },
-        { path: 'spec.toService.scheme', rules: ['serviceSchemeRequired'] }],
-
+      currentLinkType:  null,
+      targetName:       null,
+      currentTarget:    LINK_TARGET_BLANK,
+      protocolsOptions: PROTOCOLS,
+      services:         [],
+      currentService:   null,
     };
   },
   props: {
@@ -120,44 +112,6 @@ export default {
         label: id, id, name, namespace
       }) );
     },
-    imageError() {
-      return !!this.imageErrorMessage && !this.value.spec.iconSrc;
-    },
-    fvExtraRules() {
-      const isLinkTypeUrl = this.currentLinkType === LINK_TYPE_URL;
-      const isServiceTypeUrl = this.currentLinkType === LINK_TYPE_SERVICE;
-
-      return {
-        nameRequired: () => {
-          if (!this.value.metadata.name) {
-            return this.getError('navLink.name.label');
-          }
-        },
-
-        urlRequired: () => {
-          const condition = this.value.spec.toURL;
-
-          if (isLinkTypeUrl && !condition) {
-            return this.getError('navLink.tabs.link.toURL.label');
-          }
-        },
-        serviceNamespaceRequired: () => {
-          const condition = this.value.spec.toService.name && this.value.spec.toService.namespace;
-
-          if (isServiceTypeUrl && !condition) {
-            return this.getError('navLink.tabs.link.toService.service.label');
-          }
-        },
-        serviceSchemeRequired: () => {
-          const condition = this.value.spec.toService.scheme;
-
-          if (isServiceTypeUrl && !condition) {
-            return this.getError('navLink.tabs.link.toService.scheme.label');
-          }
-        }
-
-      };
-    }
   },
   async fetch() {
     this.services = await this.$store
@@ -260,20 +214,50 @@ export default {
     getError(label) {
       return this.$store.getters['i18n/t']('validation.required', { key: this.t(label) });
     },
+    /**
+     * Verify all fields are fulfilled or display footer notification
+     */
+    validate() {
+      const errors = [];
 
-    setImageError(e) {
-      this.imageErrorMessage = e;
+      switch (this.currentLinkType) {
+      case LINK_TYPE_URL:
+        if (!this.value.spec.toURL) {
+          errors.push(this.getError('navLink.tabs.link.toURL.label'));
+        }
+        break;
+
+      case LINK_TYPE_SERVICE:
+        if (!this.value.spec.toService.name || !this.value.spec.toService.namespace) {
+          errors.push(this.getError(`navLink.tabs.link.toService.service.label`));
+        }
+
+        if (!this.value.spec.toService.scheme) {
+          errors.push(this.getError(`navLink.tabs.link.toService.scheme.label`));
+        }
+        break;
+
+        // no default
+      }
+
+      if (!this.value.metadata.name) {
+        errors.push(this.getError('navLink.name.label'));
+      }
+
+      if (errors.length) {
+        throw (errors.join('\n'));
+      }
     },
-    setIcon(value) {
-      this.imageErrorMessage = '';
-      this.$emit('update:value.spec.iconSrc ', value);
-    }
   },
   created() {
     this.setDefaultValues();
     this.setUrlType();
     this.setTargetOption();
     this.setCurrentService();
+    // Validate error presence by allowing or resetting submission process
+    if (this.registerBeforeHook) {
+      this.registerBeforeHook(this.validate);
+    }
   }
 };
 </script>
@@ -283,16 +267,14 @@ export default {
     :can-yaml="!isCreate"
     :mode="mode"
     :resource="value"
-    :errors="fvUnreportedValidationErrors"
+    :errors="errors"
     :cancel-event="true"
-    :validation-passed="fvFormIsValid"
-    data-testid="Navlink-CRU"
     @error="e=>errors = e"
     @finish="save"
     @cancel="done()"
   >
     <NameNsDescription
-      :value="value"
+      v-model:value="value"
       :namespaced="false"
       :namespace-disabled="true"
       :mode="mode"
@@ -302,159 +284,147 @@ export default {
       name-placeholder="navLink.name.placeholder"
       description-label="navLink.label.label"
       description-placeholder="navLink.label.placeholder"
-      data-testid="Navlink-name-field"
-      :rules="{ name: fvGetAndReportPathRules('metadata.name'), namespace: [], description: [] }"
-      @update:value="$emit('input', $event)"
     />
 
-    <div class="spacer" />
-    <h2 v-t="'navLink.tabs.link.label'" />
-    <div class="row mb-20">
-      <div class="col span-6">
-        <RadioGroup
-          v-model:value="linkType"
-          name="type"
-          :mode="mode"
-          :options="urlTypeOptions"
-          data-testid="Navlink-link-radiogroup"
-        />
-      </div>
-    </div>
-
-    <template v-if="isURL">
-      <div class="row mb-20">
-        <LabeledInput
-          v-model:value="value.spec.toURL"
-          :mode="mode"
-          :label="t('navLink.tabs.link.toURL.label')"
-          :required="isURL"
-          :placeholder="t('navLink.tabs.link.toURL.placeholder')"
-          :rules="fvGetAndReportPathRules('spec.toURL')"
-          data-testid="Navlink-url-field"
-        />
-      </div>
-    </template>
-    <template v-if="isService">
-      <div class="row mb-20">
-        <div class="col span-2">
-          <LabeledSelect
-            v-model:value="value.spec.toService.scheme"
-            :mode="mode"
-            :label="t('navLink.tabs.link.toService.scheme.label')"
-            :required="isService"
-            :options="protocolsOptions"
-            :placeholder="t('navLink.tabs.link.toService.scheme.placeholder')"
-            :rules="fvGetAndReportPathRules('spec.toService.scheme')"
-            data-testid="Navlink-scheme-field"
-          />
-        </div>
-        <div class="col span-5">
-          <LabeledSelect
-            v-model:value="currentService"
-            :mode="mode"
-            :label="t('navLink.tabs.link.toService.service.label')"
-            :options="mappedServices"
-            :required="isService"
-            :placeholder="t('navLink.tabs.link.toService.service.placeholder')"
-            :rules="fvGetAndReportPathRules('spec.toService.namespace')"
-            data-testid="Navlink-currentService-field"
-            @update:value="setService"
-          />
-        </div>
-        <div class="col span-2">
-          <LabeledInput
-            v-model:value="value.spec.toService.port"
-            :mode="mode"
-            :label="t('navLink.tabs.link.toService.port.label')"
-            type="number"
-            :placeholder="t('navLink.tabs.link.toService.port.placeholder')"
-          />
-        </div>
-        <div class="col span-3">
-          <LabeledInput
-            v-model:value="value.spec.toService.path"
-            :mode="mode"
-            :label="t('navLink.tabs.link.toService.path.label')"
-            :placeholder="t('navLink.tabs.link.toService.path.placeholder')"
-          />
-        </div>
-      </div>
-    </template>
-    <div class="spacer" />
-    <h2 v-t="'navLink.tabs.target.label'" />
-    <div class="row mb-20">
-      <div class="col span-6">
-        <RadioGroup
-          v-model:value="currentTarget"
-          name="type"
-          :mode="mode"
-          :options="targetOptions"
-          @update:value="setTargetValue($event)"
-        />
-      </div>
-      <div class="col span-6">
-        <LabeledInput
-          v-if="isNamedWindow"
-          v-model:value="targetName"
-          :mode="mode"
-          :label="t('navLink.tabs.target.namedValue.label')"
-          @update:value="setTargetValue($event);"
-        />
-      </div>
-    </div>
-    <div class="spacer" />
-    <h2 v-t="'navLink.tabs.group.label'" />
-
-    <div class="row mb-20">
-      <div class="col span-6">
-        <LabeledInput
-          v-model:value="value.spec.group"
-          :mode="mode"
-          :tooltip="t('navLink.tabs.group.group.tooltip')"
-          :label="t('navLink.tabs.group.group.label')"
-        />
-      </div>
-      <div class="col span-6">
-        <LabeledInput
-          v-model:value="value.spec.sideLabel"
-          :mode="mode"
-          :label="t('navLink.tabs.group.sideLabel.label')"
-        />
-      </div>
-    </div>
-
-    <div class="row mb-20">
-      <div class="col span-6">
-        <LabeledInput
-          v-model:value="value.spec.description"
-          :mode="mode"
-          :label="t('navLink.tabs.group.description.label')"
-        />
-      </div>
-    </div>
-
-    <h4 v-t="'navLink.tabs.groupImage.label'" />
-    <div class="row">
-      <label class="text-label">
-        {{ t('navLink.tabs.groupImage.iconSrc.tip', {}, true) }}
-      </label>
-    </div>
-    <div class="row">
-      <FileImageSelector
-        v-model:value="value.spec.iconSrc"
-        :read-as-data-url="true"
-        :mode="mode"
-        :label="t('navLink.tabs.groupImage.iconSrc.label')"
-        accept="image/jpeg,image/png,image/svg+xml"
-        @error="setImageError"
-        @update:value="setIcon"
-      />
-    </div>
-    <Banner
-      v-if="imageError"
-      color="error"
+    <Tabbed
+      :side-tabs="true"
     >
-      {{ imageErrorMessage }}
-    </Banner>
+      <Tab
+        name="link"
+        :label="t('navLink.tabs.link.label')"
+      >
+        <div class="row mb-20">
+          <div class="col span-6">
+            <RadioGroup
+              v-model:value="linkType"
+              name="type"
+              :mode="mode"
+              :options="urlTypeOptions"
+            />
+          </div>
+        </div>
+
+        <template v-if="isURL">
+          <div class="row mb-20">
+            <LabeledInput
+              v-model:value="value.spec.toURL"
+              :mode="mode"
+              :label="t('navLink.tabs.link.toURL.label')"
+              :required="isURL"
+              :placeholder="t('navLink.tabs.link.toURL.placeholder')"
+            />
+          </div>
+        </template>
+        <template v-if="isService">
+          <div class="row mb-20">
+            <div class="col span-2">
+              <LabeledSelect
+                v-model:value="value.spec.toService.scheme"
+                :mode="mode"
+                :label="t('navLink.tabs.link.toService.scheme.label')"
+                :required="isService"
+                :options="protocolsOptions"
+                :placeholder="t('navLink.tabs.link.toService.scheme.placeholder')"
+              />
+            </div>
+            <div class="col span-5">
+              <LabeledSelect
+                v-model:value="currentService"
+                :mode="mode"
+                :label="t('navLink.tabs.link.toService.service.label')"
+                :options="mappedServices"
+                :required="isService"
+                :placeholder="t('navLink.tabs.link.toService.service.placeholder')"
+                @update:value="setService"
+              />
+            </div>
+            <div class="col span-2">
+              <LabeledInput
+                v-model:value="value.spec.toService.port"
+                :mode="mode"
+                :label="t('navLink.tabs.link.toService.port.label')"
+                type="number"
+                :placeholder="t('navLink.tabs.link.toService.port.placeholder')"
+              />
+            </div>
+            <div class="col span-3">
+              <LabeledInput
+                v-model:value="value.spec.toService.path"
+                :mode="mode"
+                :label="t('navLink.tabs.link.toService.path.label')"
+                :placeholder="t('navLink.tabs.link.toService.path.placeholder')"
+              />
+            </div>
+          </div>
+        </template>
+      </Tab>
+
+      <Tab
+        name="target"
+        :label="t('navLink.tabs.target.label')"
+      >
+        <div class="row mb-20">
+          <div class="col span-6">
+            <RadioGroup
+              v-model:value="currentTarget"
+              name="type"
+              :mode="mode"
+              :options="targetOptions"
+              :required="true"
+              @update:value="setTargetValue($event)"
+            />
+          </div>
+          <div class="col span-6">
+            <LabeledInput
+              v-if="isNamedWindow"
+              v-model:value="targetName"
+              :mode="mode"
+              :label="t('navLink.tabs.target.namedValue.label')"
+              @update:value="setTargetValue($event);"
+            />
+          </div>
+        </div>
+      </Tab>
+
+      <Tab
+        name="group"
+        :label="t('navLink.tabs.group.label')"
+      >
+        <div class="row mb-20">
+          <div class="col span-6">
+            <LabeledInput
+              v-model:value="value.spec.group"
+              :mode="mode"
+              :tooltip="t('navLink.tabs.group.group.tooltip')"
+              :label="t('navLink.tabs.group.group.label')"
+            />
+          </div>
+          <div class="col span-6">
+            <LabeledInput
+              v-model:value="value.spec.sideLabel"
+              :mode="mode"
+              :label="t('navLink.tabs.group.sideLabel.label')"
+            />
+          </div>
+        </div>
+
+        <div class="row mb-20">
+          <div class="col span-6">
+            <LabeledInput
+              v-model:value="value.spec.description"
+              :mode="mode"
+              :label="t('navLink.tabs.group.description.label')"
+            />
+          </div>
+          <div class="col span-2">
+            <FileImageSelector
+              v-model:value="value.spec.iconSrc"
+              :mode="mode"
+              :label="t('navLink.tabs.group.iconSrc.label')"
+            />
+          </div>
+        </div>
+      </Tab>
+    </Tabbed>
   </CruResource>
 </template>

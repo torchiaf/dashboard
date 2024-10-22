@@ -1,6 +1,5 @@
 import { NORMAN } from '@shell/config/types';
 import HybridModel, { cleanHybridResources } from '@shell/plugins/steve/hybrid-class';
-import day from 'dayjs';
 
 export default class User extends HybridModel {
   // Preserve description
@@ -34,13 +33,13 @@ export default class User extends HybridModel {
   get isCurrentUser() {
     const currentPrincipal = this.$rootGetters['auth/principalId'];
 
-    return !!(this.principalIds || []).find((p) => p === currentPrincipal);
+    return !!(this.principalIds || []).find(p => p === currentPrincipal);
   }
 
   get principals() {
     return this.principalIds
-      .map((id) => this.$rootGetters['rancher/byId'](NORMAN.PRINCIPAL, id))
-      .filter((p) => p);
+      .map(id => this.$rootGetters['rancher/byId'](NORMAN.PRINCIPAL, id))
+      .filter(p => p);
   }
 
   get nameDisplay() {
@@ -100,57 +99,12 @@ export default class User extends HybridModel {
     return this.$rootGetters['i18n/withFallback'](`model.authConfig.provider."${ this.provider }"`, null, this.provider);
   }
 
-  /**
-   * Gets the last-login label in milliseconds
-   * @returns {number}
-   */
-  get userLastLogin() {
-    return this.metadata?.labels?.['cattle.io/last-login'] * 1000 || 0;
-  }
-
-  /**
-   * Gets the disabled-after label in milliseconds
-   * @returns {number}
-   */
-  get userDisabledIn() {
-    return this.metadata?.labels?.['cattle.io/disable-after'] * 1000 || 0;
-  }
-
-  /**
-   * Provides a display value for the userDisabledIn date based on the user
-   * state.
-   */
-  get userDisabledInDisplay() {
-    return this.state === 'inactive' ? null : this.userDisabledIn;
-  }
-
-  /**
-   * Gets the delete-after label in milliseconds
-   * @returns {number}
-   */
-  get userDeletedIn() {
-    return this.metadata?.labels?.['cattle.io/delete-after'] * 1000 || 0;
-  }
-
   get state() {
     if ( this.enabled === false ) {
       return 'inactive';
     }
 
     return this.metadata?.state?.name || 'unknown';
-  }
-
-  get stateDisplay() {
-    switch (this.state) {
-    case 'inactive':
-      return this.t('user.state.inactive');
-    case 'active':
-      return this.t('user.state.active');
-    case 'unknown':
-      return this.t('user.state.unknown');
-    default:
-      return this.state;
-    }
   }
 
   get description() {
@@ -192,7 +146,7 @@ export default class User extends HybridModel {
   }
 
   async activateBulk(items) {
-    await Promise.all(items.map((item) => item.setEnabled(true)));
+    await Promise.all(items.map(item => item.setEnabled(true)));
   }
 
   async deactivate() {
@@ -200,7 +154,7 @@ export default class User extends HybridModel {
   }
 
   async deactivateBulk(items) {
-    await Promise.all(items.map((item) => item.setEnabled(false)));
+    await Promise.all(items.map(item => item.setEnabled(false)));
   }
 
   async refreshGroupMembership() {
@@ -223,7 +177,7 @@ export default class User extends HybridModel {
     return [
       {
         action:     'activate',
-        label:      this.t('action.enable'),
+        label:      this.t('action.activate'),
         icon:       'icon icon-play',
         bulkable:   true,
         bulkAction: 'activateBulk',
@@ -232,7 +186,7 @@ export default class User extends HybridModel {
       },
       {
         action:     'deactivate',
-        label:      this.t('action.disable'),
+        label:      this.t('action.deactivate'),
         icon:       'icon icon-pause',
         bulkable:   true,
         bulkAction: 'deactivateBulk',
@@ -256,25 +210,6 @@ export default class User extends HybridModel {
         label:     this.t('user.detail.username'),
         formatter: 'CopyToClipboard',
         content:   this.username
-      },
-      { separator: true },
-      {
-        label:         this.t('tableHeaders.userLastLogin'),
-        formatter:     'LiveDate',
-        formatterOpts: { addSuffix: true, suffix: `${ this.t('suffix.ago') } (${ day(this.userLastLogin) })` },
-        content:       this.userLastLogin,
-      },
-      {
-        label:         this.t('tableHeaders.userDisabledIn'),
-        formatter:     'LiveDate',
-        formatterOpts: { isCountdown: true },
-        content:       this.userDisabledInDisplay,
-      },
-      {
-        label:         this.t('tableHeaders.userDeletedIn'),
-        formatter:     'LiveDate',
-        formatterOpts: { isCountdown: true },
-        content:       this.userDeletedIn,
       },
       ...this._details
     ];

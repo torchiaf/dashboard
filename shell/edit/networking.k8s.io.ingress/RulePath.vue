@@ -6,7 +6,6 @@ import { get, set } from '@shell/utils/object';
 import debounce from 'lodash/debounce';
 
 export default {
-  emits:      ['update:value', 'remove'],
   components: {
     InputWithSelect, LabeledInput, Select
   },
@@ -56,13 +55,13 @@ export default {
   },
   computed: {
     portOptions() {
-      const service = this.serviceTargets.find((s) => s.label === this.serviceName);
+      const service = this.serviceTargets.find(s => s.label === this.serviceName);
 
       return service?.ports || [];
     },
     serviceTargetStatus() {
       const serviceName = this.serviceName?.label || this.serviceName;
-      const isValueAnOption = !serviceName || this.serviceTargets.find((target) => serviceName === target.value);
+      const isValueAnOption = !serviceName || this.serviceTargets.find(target => serviceName === target.value);
 
       return isValueAnOption ? null : 'warning';
     },
@@ -89,7 +88,7 @@ export default {
       set(out.backend, this.ingress.servicePortPath, servicePort);
       set(out.backend, this.ingress.serviceNamePath, serviceName);
 
-      this.$emit('update:value', out);
+      this.$emit('input', out);
     },
     updatePathTypeAndPath(values) {
       this.path = values.text;
@@ -130,9 +129,9 @@ export default {
     >
       <input
         ref="first"
-        v-model="path"
+        v-model:value="path"
         :placeholder="t('ingress.rules.path.placeholder', undefined, true)"
-        @input="queueUpdate"
+        @update:value="queueUpdate"
       >
     </div>
     <div
@@ -141,6 +140,8 @@ export default {
     >
       <Select
         v-model:value="serviceName"
+        option-label="label"
+        option-key="label"
         :options="serviceTargets"
         :status="serviceTargetStatus"
         :taggable="true"
@@ -181,27 +182,36 @@ export default {
   </div>
 </template>
 <style lang="scss" scoped>
-// TODO #11952: Correct deep statement
 $row-height: 40px;
-.rule-path {
-  :deep(.labeled-input) {
-    padding: 0 !important;
-    height: 100%;
 
-    input.no-label {
-      height: calc($row-height - 2px);
-      padding: 10px;
+.labeled-input :deep(), :deep() .labeled-input {
+  padding: 0 !important;
+  height: 100%;
+  input.no-label {
+    height: calc($row-height - 2px);
+    padding: 10px;
+  }
+}
+.rule-path :deep() {
+  .col, INPUT {
+    height: $row-height;
+  }
+
+  .unlabeled-select {
+    height: 100%;
+  }
+
+  .path-type {
+    .unlabeled-select {
+      min-width: 200px;
     }
   }
 
-  :deep(.col), INPUT {
-    height: $row-height;
-  }
-  &, :deep(.input-container) {
+  &, .input-container {
     height: $row-height;
   }
 
-  :deep(.input-container) :deep(.in-input.unlabeled-select) {
+  .input-container .in-input.unlabeled-select {
     width: initial;
   }
 
@@ -209,16 +219,11 @@ $row-height: 40px;
     line-height: $row-height;
   }
 
-  :deep(.v-select) INPUT {
+  .v-select INPUT {
     height: 50px;
   }
-  :deep(.labeled-input) {
+  .labeled-input {
     padding-top: 6px;
-  }
-
-  :deep(.unlabeled-select) {
-    height: 100%;
-    min-width: 200px;
   }
 }
 </style>

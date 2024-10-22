@@ -11,8 +11,6 @@ export const NAMESPACE_FILTERS_HELPER = {
 };
 
 export default {
-  emits: ['update:value'],
-
   components: { LabeledSelect },
 
   props: {
@@ -26,7 +24,7 @@ export default {
     },
     namespaceFilter: {
       type:    Function,
-      default: (namespace) => true
+      default: namespace => true
     },
     addLabel: {
       type:    String,
@@ -73,6 +71,6 @@ export default {
     :label="label"
     :tooltip="tooltip"
     :hover-tooltip="!!tooltip"
-    @update:value="(e) => $emit('update:value', e)"
+    @update:value="(e) => $emit('input', e)"
   />
 </template>

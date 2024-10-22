@@ -28,7 +28,7 @@ export default {
   <div class="row">
     <div class="col span-4">
       <LabeledInput
-        v-model:value.number="value.port"
+        v-model.number="value.port"
         :mode="mode"
         type="number"
         min="1"

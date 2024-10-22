@@ -1,7 +1,6 @@
 <script>
 import CreateEditView from '@shell/mixins/create-edit-view';
-import Loading from '@shell/components/Loading';
-import { LOGGING, SCHEMA } from '@shell/config/types';
+import { SECRET, LOGGING, SCHEMA } from '@shell/config/types';
 import Tabbed from '@shell/components/Tabbed';
 import Tab from '@shell/components/Tabbed/Tab';
 import CruResource from '@shell/components/CruResource';
@@ -20,58 +19,33 @@ import YamlEditor, { EDITOR_MODES } from '@shell/components/YamlEditor';
 
 export default {
   components: {
-    Banner, CruResource, Labels, LabeledSelect, NameNsDescription, Tab, Tabbed, YamlEditor, Loading
-  }, //
+    Banner, CruResource, Labels, LabeledSelect, NameNsDescription, Tab, Tabbed, YamlEditor
+  },
 
   mixins: [CreateEditView],
 
   async fetch() {
-    const schemas = this.$store.getters['cluster/all'](SCHEMA);
-    const resourceSchema = this.$store.getters['cluster/byId'](SCHEMA, LOGGING.OUTPUT);
-    const schemaDefinition = await resourceSchema.fetchResourceFields();
-
-    let bufferYaml = '';
-
-    if ( !isEmpty(this.value.spec[this.selectedProvider]?.buffer) ) {
-      bufferYaml = jsyaml.dump(this.value.spec[this.selectedProvider].buffer);
-    } else if (schemaDefinition) {
-      bufferYaml = createYaml(
-        schemas,
-        `io.banzaicloud.logging.v1beta1.Output.spec.${ this.selectedProvider }.buffer`,
-        {},
-        true,
-        1,
-        '',
-        LOGGING.OUTPUT
-      );
-
-      // createYaml doesn't support passing reference types (array, map) as the first type. As such
-      // I'm manipulating the output since I'm not sure it's something we want to actually support
-      // seeing as it's really createResourceYaml and this here is a gray area between spoofed types
-      // and just a field within a spec.
-      bufferYaml = bufferYaml.substring(bufferYaml.indexOf('\n') + 1).replace(/# {2}/g, '#');
-    }
-
-    if (bufferYaml.length) {
-      this.bufferYaml = bufferYaml;
-      this.initialBufferYaml = bufferYaml;
-    }
+    await this.$store.dispatch('cluster/findAll', { type: SECRET });
   },
 
   data() {
+    const schemas = this.$store.getters['cluster/all'](SCHEMA);
+
     if (this.isCreate) {
       this.value.metadata.namespace = 'default';
     }
 
     set(this.value, 'spec', this.value.spec || {});
 
-    const providers = PROVIDERS.map((provider) => ({
+    const providers = PROVIDERS.map(provider => ({
       ...provider,
       value: provider.name,
       label: this.t(provider.labelKey)
     }));
 
     if (this.mode !== _VIEW) {
+      this.value['spec'] = this.value.spec || {};
+
       providers.forEach((provider) => {
         this.value.spec[provider.name] = this.value.spec[provider.name] || clone(provider.default);
       });
@@ -84,15 +58,28 @@ export default {
       return !isEmpty(correctedSpecProvider) && !isEqual(correctedSpecProvider, provider.default);
     });
 
-    const hasMultipleProvidersSelected = selectedProviders?.length > 1;
-
     const selectedProvider = selectedProviders?.[0]?.value || providers[0].value;
 
+    let bufferYaml;
+
+    if ( !isEmpty(this.value.spec[selectedProvider]?.buffer) ) {
+      bufferYaml = jsyaml.dump(this.value.spec[selectedProvider].buffer);
+    } else {
+      bufferYaml = createYaml(schemas, `logging.banzaicloud.io.v1beta1.output.spec.${ selectedProvider }.buffer`, []);
+      // createYaml doesn't support passing reference types (array, map) as the first type. As such
+      // I'm manipulating the output since I'm not sure it's something we want to actually support
+      // seeing as it's really createResourceYaml and this here is a gray area between spoofed types
+      // and just a field within a spec.
+      bufferYaml = bufferYaml.substring(bufferYaml.indexOf('\n') + 1).replace(/# {2}/g, '#');
+    }
+
     return {
-      bufferYaml: '',
+      bufferYaml,
+      initialBufferYaml:            bufferYaml,
       providers,
       selectedProvider,
-      hasMultipleProvidersSelected,
+      hasMultipleProvidersSelected: selectedProviders?.length > 1,
+      selectedProviders,
       LOGGING
     };
   },
@@ -102,7 +89,7 @@ export default {
       return EDITOR_MODES;
     },
     enabledProviders() {
-      return this.providers.filter((p) => p.enabled);
+      return this.providers.filter(p => p.enabled);
     },
     isNamespaced() {
       return this.value.type !== LOGGING?.CLUSTER_OUTPUT;
@@ -127,7 +114,7 @@ export default {
       const t = this.$store.getters['i18n/t'];
 
       if (this.selectedProvider === 'loki') {
-        const urlCheck = ['https://', 'http://'].some((checkValue) => this.value.spec['loki'].url.toLowerCase().startsWith(checkValue));
+        const urlCheck = ['https://', 'http://'].some(checkValue => this.value.spec['loki'].url.toLowerCase().startsWith(checkValue));
         const isLokiHttps = this.value.spec['loki'].url ? urlCheck : undefined;
 
         if (!isLokiHttps) {
@@ -170,11 +157,7 @@ export default {
 </script>
 
 <template>
-  <Loading v-if="$fetchState.pending" />
-  <div
-    v-else
-    class="output"
-  >
+  <div class="output">
     <CruResource
       :done-route="doneRoute"
       :mode="cruMode"
@@ -275,13 +258,6 @@ export default {
   $logo: 60px;
 
 .output {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-
-  .side-tabs {
-    flex: 1;
-  }
   .provider {
     h1 {
       display: inline-block;

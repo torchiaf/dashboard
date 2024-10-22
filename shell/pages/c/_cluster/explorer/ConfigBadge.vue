@@ -1,5 +1,4 @@
 <script>
-import { _EDIT } from '@shell/config/query-params';
 export default {
   props: {
     cluster: {
@@ -11,13 +10,13 @@ export default {
   name: 'ConfigBadge',
 
   computed: {
-    tooltip() {
-      return this.t('clusterBadge.customizeAppearance');
+    hasBadge() {
+      return !!this.cluster?.badge;
     }
   },
   methods: {
     customBadgeDialog() {
-      this.$store.dispatch('cluster/promptModal', { component: 'AddCustomBadgeDialog', componentProps: { mode: _EDIT } });
+      this.$store.dispatch('cluster/promptModal', { component: 'AddCustomBadgeDialog' });
     },
   },
 };
@@ -27,14 +26,12 @@ export default {
   <div class="config-badge">
     <div>
       <a
-        class="badge-install btn btn-sm role-secondary"
-        data-testid="add-custom-cluster-badge"
+        class="badge-install"
         @click="customBadgeDialog"
       >
-        <i
-          v-clean-tooltip="tooltip"
-          class="icon icon-brush-icon"
-        />
+        <i class="icon icon-cluster" />
+        <span v-if="hasBadge">{{ t('clusterBadge.editLabel') }}</span>
+        <span v-else>{{ t('clusterBadge.addLabel') }}</span>
       </a>
     </div>
   </div>
@@ -48,12 +45,9 @@ export default {
     display: flex;
     margin-left: 10px;
 
-    &:hover {
-      border-color: var(--lightest);
-    }
-
     > I {
       line-height: inherit;
+      margin-right: 4px;
     }
 
     &:focus {

@@ -2,8 +2,6 @@
 export default {
   inject: ['addTab', 'removeTab', 'sideTabs'],
 
-  emits: ['active'],
-
   props: {
     label: {
       default: null,
@@ -83,7 +81,7 @@ export default {
     this.addTab(this);
   },
 
-  beforeUnmount() {
+  beforeDestroy() {
     this.removeTab(this);
   }
 };

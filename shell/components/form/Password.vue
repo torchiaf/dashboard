@@ -2,12 +2,10 @@
 import { mapGetters } from 'vuex';
 import { LabeledInput } from '@components/Form/LabeledInput';
 import { CHARSET, randomStr } from '@shell/utils/string';
-import { copyTextToClipboard } from '@shell/utils/clipboard';
 import { _CREATE } from '@shell/config/query-params';
+import { copyTextToClipboard } from '@shell/utils/clipboard';
 
 export default {
-  emits: ['update:value', 'blur'],
-
   components: { LabeledInput },
   props:      {
     value: {
@@ -53,7 +51,7 @@ export default {
         return this.value;
       },
       set(val) {
-        this.$emit('update:value', val);
+        this.$emit('input', val);
       }
     },
     attributes() {

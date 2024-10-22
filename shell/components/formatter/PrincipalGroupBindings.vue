@@ -11,15 +11,12 @@ export default {
   computed: {
 
     boundRoles() {
-      // need to use getter to fetch all NORMAN.PRINCIPAL, otherwise `rancher/byId` is not reactive...
-      const principals = this.$store.getters['rancher/all'](NORMAN.PRINCIPAL);
+      const principal = this.$store.getters['rancher/byId'](NORMAN.PRINCIPAL, this.value);
       const globalRoleBindings = this.$store.getters['management/all'](MANAGEMENT.GLOBAL_ROLE_BINDING);
-
-      const principal = principals.find((x) => x.id === this.value);
 
       return globalRoleBindings
         // Bindings for this group
-        .filter((globalRoleBinding) => globalRoleBinding.groupPrincipalName === principal?.id)
+        .filter(globalRoleBinding => globalRoleBinding.groupPrincipalName === principal.id)
         // Display name of role associated with binding
         .map((binding) => {
           const role = this.$store.getters['management/byId'](MANAGEMENT.GLOBAL_ROLE, binding.globalRoleName);
@@ -37,13 +34,13 @@ export default {
 
 <template>
   <div class="pgb">
-    <template
-      v-for="(role, i) in boundRoles"
-      :key="role.id"
-    >
-      <router-link :to="role.detailLocation">
+    <template v-for="(role, i) in boundRoles" :key="i">
+      <nuxt-link
+        :key="role.id"
+        :to="role.detailLocation"
+      >
         {{ role.label }}
-      </router-link>
+      </nuxt-link>
       <template v-if="i + 1 < boundRoles.length">
         ,&nbsp;
       </template>

@@ -5,8 +5,6 @@ import { Banner } from '@components/Banner';
 import { _VIEW } from '@shell/config/query-params';
 
 export default {
-  emits: ['update:value'],
-
   components: { LabeledSelect, Banner },
 
   mixins: [labeledFormElement],
@@ -82,26 +80,23 @@ export default {
         return false;
       }
 
-      return !this.options.find((o) => this.reduce(o) === this.serviceName);
+      return !this.options.find(o => this.reduce(o) === this.serviceName);
     },
 
     serviceName() {
       return this.reduce(this.selected);
-    },
+    }
 
-    canPaginate() {
-      return false;
-    },
   },
 
   methods: {
     changeSelected() {
-      this.$emit('update:value', this.serviceName);
+      this.$emit('input', this.serviceName);
     },
 
     clearSearch(event) {
       this.selected = '';
-      this.$emit('update:value', null);
+      this.$emit('input', null);
 
       event.preventDefault();
     },

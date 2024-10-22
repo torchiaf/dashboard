@@ -1,56 +1,44 @@
 <script>
 import { mapGetters } from 'vuex';
-import { SERVICE } from '@shell/config/types';
-import IconMessage from '@shell/components/IconMessage';
+
+import InstallRedirect from '@shell/utils/install-redirect';
+
+import { NAME, CHART_NAME } from '@shell/config/product/longhorn';
+
 import LazyImage from '@shell/components/LazyImage';
-import Loading from '@shell/components/Loading';
 
 export default {
-  components: {
-    IconMessage, LazyImage, Loading
-  },
+  components: { LazyImage },
 
-  async fetch() {
-    if ( this.$store.getters['cluster/schemaFor'](SERVICE) ) {
-      this.uiServices = await this.$store.dispatch('cluster/findMatching', {
-        type:     SERVICE,
-        selector: 'app=longhorn-ui'
-      });
-    }
-  },
+  middleware: InstallRedirect(NAME, CHART_NAME),
 
   data() {
     return {
+      externalLinks:  [],
       longhornImgSrc: require('~shell/assets/images/vendor/longhorn.svg'),
-      uiServices:     null
     };
   },
 
-  computed: {
-    ...mapGetters(['currentCluster']),
+  computed: { ...mapGetters(['currentCluster']) },
 
-    externalLinks() {
-      if ( this.uiServices && this.uiServices.length === 1 && this.uiServices[0].metadata?.namespace ) {
-        return [
-          {
-            enabled:     true,
-            iconSrc:     this.longhornImgSrc,
-            label:       'longhorn.overview.linkedList.longhorn.label', // i18n-uses longhorn.overview.linkedList.longhorn.label
-            description: 'longhorn.overview.linkedList.longhorn.description', // i18n-uses longhorn.overview.linkedList.longhorn.description
-            link:        `/k8s/clusters/${ this.currentCluster.id }/api/v1/namespaces/${ this.uiServices[0].metadata.namespace }/services/http:longhorn-frontend:80/proxy/`
-          },
-        ];
-      }
+  mounted() {
+    this.externalLinks = [
+      {
+        enabled:     true,
+        iconSrc:     this.longhornImgSrc,
+        label:       'longhorn.overview.linkedList.longhorn.label',
+        description: 'longhorn.overview.linkedList.longhorn.description',
+        link:        `/k8s/clusters/${ this.currentCluster.id }/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/`
+      },
+    ];
+  },
 
-      return [];
-    }
-  }
+  methods: {}
 };
 </script>
 
 <template>
-  <Loading v-if="$fetchState.pending" />
-  <section v-else>
+  <section>
     <header class="row">
       <div class="col span-12">
         <h1>
@@ -64,14 +52,9 @@ export default {
         </div>
       </div>
     </header>
-    <div
-      v-if="externalLinks && externalLinks.length"
-      class="links"
-    >
+    <div class="links">
       <div
-        v-for="(fel, i) in externalLinks"
-        :key="i"
-        class="link-container"
+         v-for="(fel, i) in externalLinks" :key="i" class="link-container"
       >
         <a
           :href="fel.link"
@@ -90,18 +73,5 @@ export default {
         </a>
       </div>
     </div>
-
-    <IconMessage
-      v-else
-      class="mt-40 mb-20"
-      icon="icon-longhorn"
-      :vertical="true"
-    >
-      <template #message>
-        <p>
-          {{ t('longhorn.overview.linkedList.longhorn.uiServiceUnavailable') }}
-        </p>
-      </template>
-    </IconMessage>
   </section>
 </template>

@@ -3,13 +3,15 @@ import { NAME as SETTINGS } from '@shell/config/product/settings';
 import { MANAGEMENT } from '@shell/config/types';
 
 export default {
-  beforeCreate() {
-    const hasSettings = !!this.$store.getters[`management/schemaFor`](MANAGEMENT.SETTING);
+  layout: 'plain',
 
-    return this.$router.replace({
+  middleware({ redirect, route, store } ) {
+    const hasSettings = !!store.getters[`management/schemaFor`](MANAGEMENT.SETTING);
+
+    return redirect({
       name:   'c-cluster-product-resource',
       params: {
-        ...this.$route.params,
+        ...route.params,
         product:  SETTINGS,
         // Will have one or t'other
         resource: hasSettings ? MANAGEMENT.SETTING : MANAGEMENT.FEATURE,

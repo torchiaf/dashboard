@@ -1,7 +1,6 @@
 <script>
 import { mapState, mapGetters } from 'vuex';
 import AsyncButton from '@shell/components/AsyncButton';
-import AppModal from '@shell/components/AppModal';
 import { Card } from '@components/Card';
 import ResourceTable from '@shell/components/ResourceTable';
 import { Banner } from '@components/Banner';
@@ -9,6 +8,7 @@ import { LabeledInput } from '@components/Form/LabeledInput';
 import { MANAGEMENT } from '@shell/config/types';
 import { SETTING } from '@shell/config/settings';
 import ResourceFetch from '@shell/mixins/resource-fetch';
+import AppModal from '@shell/components/AppModal';
 
 export default {
   components: {
@@ -17,7 +17,7 @@ export default {
     Card,
     ResourceTable,
     LabeledInput,
-    AppModal,
+    AppModal
   },
   mixins: [ResourceFetch],
   props:  {
@@ -46,7 +46,13 @@ export default {
       this.serverUrl = this.serverUrlSetting.value;
     } else {
       this.noUrlSet = true;
-      this.serverUrl = window.location.origin;
+      if ( process.server ) {
+        const { req } = this.$nuxt.context;
+
+        this.serverUrl = req.headers.host;
+      } else {
+        this.serverUrl = window.location.origin;
+      }
     }
   },
 
@@ -71,7 +77,7 @@ export default {
     ...mapGetters({ t: 'i18n/t' }),
 
     filteredRows() {
-      return this.rows.filter((x) => x.name !== 'fleet');
+      return this.rows.filter(x => x.name !== 'fleet');
     },
 
     promptForUrl() {
@@ -79,7 +85,7 @@ export default {
     },
 
     enableRowActions() {
-      const schema = this.$store.getters[`management/schemaFor`](MANAGEMENT.FEATURE);
+      const schema = this.$store.getters[`management/schemaFor`](MANAGEMENT.SETTING);
 
       return schema?.resourceMethods?.includes('PUT');
     },
@@ -163,17 +169,15 @@ export default {
           const response = await this.$axios.get(url, { timeout: 5000 });
 
           if (response?.status === 200) {
-            await this.$store.dispatch('management/findAll', { type: this.resource, opt: { force: true } });
+            this.rows = await this.$store.dispatch('management/findAll', { type: this.resource, opt: { force: true } });
             btnCB(true);
             this.close();
             this.waiting = false;
           }
         } catch (e) {}
 
-        if (this.waiting) {
-          this.waitForBackend(btnCB, id);
-        }
-      }, 5000);
+        this.waitForBackend(btnCB, id);
+      }, 2500);
     },
 
     async saveUrl(btnCB) {
@@ -200,7 +204,9 @@ export default {
       :use-query-params-for-simple-filtering="useQueryParamsForSimpleFiltering"
       :force-update-live-and-delayed="forceUpdateLiveAndDelayed"
     >
-      <template #cell:name="scope">
+      <template
+        cell:name="scope"
+      >
         <div class="feature-name">
           <div>{{ scope.row.nameDisplay }}</div>
           <i
@@ -225,12 +231,13 @@ export default {
         class="prompt-update"
         :show-highlight-border="false"
       >
-        <template #title>
-          <h4 class="text-default-text">
-            Are you sure?
-          </h4>
-        </template>
-        <template #body>
+        <h4
+          slot="title"
+          class="text-default-text"
+        >
+          Are you sure?
+        </h4>
+        <div slot="body">
           <div
             v-if="update"
             class="mb-10"
@@ -270,7 +277,7 @@ export default {
           <div class="text-error mb-10">
             {{ error }}
           </div>
-        </template>
+        </div>
         <template #actions>
           <button
             class="btn role-secondary"
@@ -291,19 +298,21 @@ export default {
         class="prompt-update"
         :show-highlight-border="false"
       >
-        <template #title>
-          <h4 class="text-default-text">
-            {{ t('featureFlags.restart.title') }}
-          </h4>
-        </template>
-        <template #body>
-          <div class="waiting">
-            <p>{{ t('featureFlags.restart.wait') }}</p>
-            <span class="restarting-icon">
-              <i class=" icon icon-spinner icon-spin" />
-            </span>
-          </div>
-        </template>
+        <h4
+          slot="title"
+          class="text-default-text"
+        >
+          {{ t('featureFlags.restart.title') }}
+        </h4>
+        <div
+          slot="body"
+          class="waiting"
+        >
+          <p>{{ t('featureFlags.restart.wait') }}</p>
+          <span class="restarting-icon">
+            <i class=" icon icon-spinner icon-spin" />
+          </span>
+        </div>
         <template #actions>
           <button
             class="btn role-secondary"

@@ -5,17 +5,13 @@ import { colorForState, stateDisplay } from '@shell/plugins/dashboard-store/reso
 import { safeSetTimeout } from '@shell/utils/time';
 
 export default {
-  components:   { BadgeState },
-  inheritAttrs: false,
-  props:        {
+  components: { BadgeState },
+
+  props: {
     row: {
       type:    Object,
       default: null,
     },
-    class: {
-      type:    String,
-      default: ''
-    }
   },
 
   data() {
@@ -25,12 +21,6 @@ export default {
   computed: {
     stateValue() {
       return this.state;
-    },
-
-    // We do this because we get a linter error vue/no-parsing-error (Parsing error: Unexpected end of expression)
-    // because class is a keyword and we can't disable the lint line in the template where it's needed
-    className() {
-      return this.class;
     }
   },
 
@@ -40,7 +30,7 @@ export default {
     }
   },
 
-  beforeUnmount() {
+  beforeDestroy() {
     clearTimeout(this.timer);
   },
 
@@ -72,8 +62,5 @@ export default {
 </script>
 
 <template>
-  <BadgeState
-    :value="stateValue"
-    :class="className"
-  />
+  <BadgeState :value="stateValue" />
 </template>

@@ -11,7 +11,7 @@ export default {
     },
 
     value: {
-      type:    [String, Date, Number],
+      type:    [String, Date],
       default: ''
     },
 

@@ -1,4 +1,8 @@
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import { createStore } from 'vuex';
+
+vueApp.use(Vuex);
 
 const VUEX_PROPERTIES = ['state', 'getters', 'actions', 'mutations'];
 
@@ -23,7 +27,6 @@ let store = {};
   resolveStoreModules(require('../store/digitalocean.js'), 'digitalocean.js');
   resolveStoreModules(require('../store/features.js'), 'features.js');
   resolveStoreModules(require('../store/github.js'), 'github.js');
-  resolveStoreModules(require('../store/gitlab.js'), 'gitlab.js');
   resolveStoreModules(require('../store/growl.js'), 'growl.js');
   resolveStoreModules(require('../store/i18n.js'), 'i18n.js');
   resolveStoreModules(require('../store/linode.js'), 'linode.js');
@@ -34,12 +37,10 @@ let store = {};
   resolveStoreModules(require('../store/type-map.js'), 'type-map.js');
   resolveStoreModules(require('../store/uiplugins.ts'), 'uiplugins.ts');
   resolveStoreModules(require('../store/wm.js'), 'wm.js');
-  resolveStoreModules(require('../store/customisation.js'), 'customisation.js');
-  resolveStoreModules(require('../store/cru-resource.ts'), 'cru-resource.ts');
 
   // If the environment supports hot reloading...
 
-  if (module.hot) {
+  if (process.client && module.hot) {
     // Whenever any Vuex module is updated...
     module.hot.accept([
       '../store/action-menu.js',
@@ -49,7 +50,6 @@ let store = {};
       '../store/digitalocean.js',
       '../store/features.js',
       '../store/github.js',
-      '../store/gitlab.js',
       '../store/growl.js',
       '../store/i18n.js',
       '../store/index.js',
@@ -61,19 +61,17 @@ let store = {};
       '../store/type-map.js',
       '../store/uiplugins.ts',
       '../store/wm.js',
-      '../store/customisation.js',
-      '../store/cru-resource.ts',
     ], () => {
       // Update `root.modules` with the latest definitions.
       updateModules();
       // Trigger a hot update in the store.
-      window.$globalApp.$store.hotUpdate(store);
+      window.$nuxt.$store.hotUpdate(store);
     });
   }
 })();
 
-// extendStore
-export const extendStore = store instanceof Function ? store : () => {
+// createStore
+export const createStore = store instanceof Function ? store : () => {
   return createStore(Object.assign({ strict: (process.env.NODE_ENV !== 'production') }, store));
 };
 

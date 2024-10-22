@@ -11,13 +11,13 @@ import { mapGetters } from 'vuex';
 import { Banner } from '@components/Banner';
 import ResourceTable from '@shell/components/ResourceTable';
 import CopyToClipboardText from '@shell/components/CopyToClipboardText';
-import TabTitle from '@shell/components/TabTitle';
 
 const API_ENDPOINT = '/v3';
 
 export default {
+  layout:     'plain',
   components: {
-    CopyToClipboardText, BackLink, Banner, PromptChangePassword, Loading, ResourceTable, Principal, TabTitle
+    CopyToClipboardText, BackLink, Banner, PromptChangePassword, Loading, ResourceTable, Principal
   },
   mixins: [BackRoute],
   async fetch() {
@@ -29,8 +29,8 @@ export default {
 
     // Get all settings - the API host setting may not be set, so this avoids a 404 request if we look for the specific setting
     const allSettings = await this.$store.dispatch('management/findAll', { type: MANAGEMENT.SETTING });
-    const apiHostSetting = allSettings.find((i) => i.id === SETTING.API_HOST);
-    const serverUrlSetting = allSettings.find((i) => i.id === SETTING.SERVER_URL);
+    const apiHostSetting = allSettings.find(i => i.id === SETTING.API_HOST);
+    const serverUrlSetting = allSettings.find(i => i.id === SETTING.SERVER_URL);
 
     this.apiHostSetting = apiHostSetting?.value;
     this.serverUrlSetting = serverUrlSetting?.value;
@@ -114,7 +114,7 @@ export default {
 
   methods: {
     addKey() {
-      this.$router.push({ name: 'account-create-key' });
+      this.$router.push({ path: 'account/create-key' });
     },
     async calcCanChangePassword() {
       if (!this.$store.getters['auth/enabled']) {
@@ -144,11 +144,7 @@ export default {
   <Loading v-if="$fetchState.pending" />
   <div v-else>
     <BackLink :link="backLink" />
-    <h1>
-      <TabTitle breadcrumb="vendor-only">
-        {{ t('accountAndKeys.title') }}
-      </TabTitle>
-    </h1>
+    <h1 v-t="'accountAndKeys.title'" />
 
     <h2 v-t="'accountAndKeys.account.title'" />
     <div class="account">

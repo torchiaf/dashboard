@@ -6,7 +6,6 @@ import { _VIEW } from '@shell/config/query-params';
 import ArrayListGrouped from '@shell/components/form/ArrayListGrouped';
 import AlertingRule from './AlertingRule';
 import RecordingRule from './RecordingRule';
-import { clone } from '@shell/utils/object';
 
 export default {
   components: {
@@ -52,18 +51,18 @@ export default {
     recordingRules() {
       const { value: rules } = this;
 
-      return rules.filter((rule) => has(rule, 'record'));
+      return rules.filter(rule => has(rule, 'record'));
     },
     alertingRules() {
       const { value: rules } = this;
 
-      return rules.filter((rule) => has(rule, 'alert'));
+      return rules.filter(rule => has(rule, 'alert'));
     },
     customRules() {
       const { value: rules } = this;
 
       return rules.filter(
-        (rule) => !has(rule, 'alert') && !has(rule, 'record')
+        rule => !has(rule, 'alert') && !has(rule, 'record')
       );
     },
     hideRecordingRulesOnView() {
@@ -78,12 +77,12 @@ export default {
     disableAddRecord() {
       const { value: rules } = this;
 
-      return rules.find((rule) => has(rule, 'alert'));
+      return rules.find(rule => has(rule, 'alert'));
     },
     disableAddAlert() {
       const { value: rules } = this;
 
-      return rules.find((rule) => has(rule, 'record'));
+      return rules.find(rule => has(rule, 'record'));
     },
   },
 
@@ -106,7 +105,7 @@ export default {
         });
         break;
       case 'alert':
-        value.push(clone(this.defaultAlert));
+        value.push(this.defaultAlert);
         break;
       default:
         break;
@@ -144,7 +143,6 @@ export default {
             :disabled="disableAddRecord"
             type="button"
             class="btn role-tertiary"
-            data-testid="v2-monitoring-add-record"
             @click="addRule('record')"
           >
             <t k="prometheusRule.recordingRules.addLabel" />
@@ -194,7 +192,6 @@ export default {
             :disabled="disableAddAlert"
             type="button"
             class="btn role-tertiary"
-            data-testid="v2-monitoring-add-alert"
             @click="addRule('alert')"
           >
             <t k="prometheusRule.alertingRules.addLabel" />

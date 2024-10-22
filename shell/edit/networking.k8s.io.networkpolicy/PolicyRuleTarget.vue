@@ -135,6 +135,15 @@ export default {
         });
       }
     },
+    updateMatches() {
+      return {
+        handler: throttle(function() {
+          this.matchingNamespaces = this.getMatchingNamespaces();
+          this.matchingPods = this.getMatchingPods();
+        }, this.throttle, { leading: true }),
+        immediate: true
+      };
+    },
     matchingNamespacesAndPods() {
       return {
         policyNamespace: this.namespace,
@@ -144,46 +153,21 @@ export default {
     }
   },
   watch: {
-    namespace: {
-      handler:   'updateMatches',
-      immediate: true
-    },
-    allNamespaces: {
-      handler:   'updateMatches',
-      immediate: true
-    },
-    'value.podSelector': {
-      handler:   'updateMatches',
-      immediate: true
-    },
-    'value.namespaceSelector': {
-      handler:   'updateMatches',
-      immediate: true
-    },
-    'value.ipBlock.cidr':   'validateCIDR',
-    'value.ipBlock.except': 'validateCIDR',
-    podSelectorExpressions: {
-      handler:   'updateMatches',
-      immediate: true
-    },
-    namespaceSelectorExpressions: {
-      handler:   'updateMatches',
-      immediate: true
-    }
+    namespace:                    'updateMatches',
+    'value.podSelector':          'updateMatches',
+    'value.namespaceSelector':    'updateMatches',
+    'value.ipBlock.cidr':         'validateCIDR',
+    'value.ipBlock.except':       'validateCIDR',
+    podSelectorExpressions:       'updateMatches',
+    namespaceSelectorExpressions: 'updateMatches',
   },
   methods: {
-    updateMatches() {
-      throttle(() => {
-        this.matchingNamespaces = this.getMatchingNamespaces();
-        this.matchingPods = this.getMatchingPods();
-      }, this.throttle, { leading: true })();
-    },
     validateCIDR() {
       const exceptCidrs = this.value[TARGET_OPTIONS.IP_BLOCK]?.except || [];
 
       this.invalidCidrs = exceptCidrs
-        .filter((cidr) => !isValidCIDR(cidr))
-        .map((invalidCidr) => invalidCidr || '<blank>');
+        .filter(cidr => !isValidCIDR(cidr))
+        .map(invalidCidr => invalidCidr || '<blank>');
 
       if (this.value[TARGET_OPTIONS.IP_BLOCK]?.cidr && !isValidCIDR(this.value[TARGET_OPTIONS.IP_BLOCK].cidr)) {
         this.invalidCidr = this.value[TARGET_OPTIONS.IP_BLOCK].cidr;
@@ -193,7 +177,7 @@ export default {
     },
     getMatchingPods() {
       const namespaces = this.targetType === TARGET_OPTIONS.NAMESPACE_AND_POD_SELECTOR ? this.matchingNamespaces.matches : [{ id: this.namespace }];
-      const allInNamespace = this.allPods.filter((pod) => namespaces.some((ns) => ns.id === pod.metadata.namespace));
+      const allInNamespace = this.allPods.filter(pod => namespaces.some(ns => ns.id === pod.metadata.namespace));
       const match = matching(allInNamespace, this.podSelectorExpressions);
       const matched = match.length || 0;
       const sample = match[0]?.nameDisplay;
@@ -230,7 +214,7 @@ export default {
       <div class="col span-6">
         <LabeledSelect
           v-model:value="targetType"
-          data-testid="policy-rule-target-type-labeled-select"
+          data-testid="labeled-select-type-selector"
           :mode="mode"
           :tooltip="targetType === TARGET_OPTIONS.NAMESPACE_AND_POD_SELECTOR ? t('networkpolicy.selectors.matchingNamespacesAndPods.tooltip') : null"
           :options="selectTargetOptions"
@@ -309,10 +293,7 @@ export default {
       <div class="row">
         <div class="col span-12">
           <Banner color="success">
-            <span
-              v-clean-html="t('networkpolicy.selectors.matchingNamespaces.matchesSome', matchingNamespaces)"
-              data-testid="matching-namespaces-message"
-            />
+            <span v-clean-html="t('networkpolicy.selectors.matchingNamespaces.matchesSome', matchingNamespaces)" />
           </Banner>
         </div>
       </div>

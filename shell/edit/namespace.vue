@@ -7,8 +7,8 @@ import { MANAGEMENT } from '@shell/config/types';
 import { CONTAINER_DEFAULT_RESOURCE_LIMIT, PROJECT } from '@shell/config/labels-annotations';
 import ContainerResourceLimit from '@shell/components/ContainerResourceLimit';
 import PodSecurityAdmission from '@shell/components/PodSecurityAdmission';
+import Tabbed from '@shell/components/Tabbed';
 import Tab from '@shell/components/Tabbed/Tab';
-import ResourceTabs from '@shell/components/form/ResourceTabs/index.vue';
 import CruResource from '@shell/components/CruResource';
 import { PROJECT_ID, _VIEW, FLAT_VIEW, _CREATE } from '@shell/config/query-params';
 import MoveModal from '@shell/components/MoveModal';
@@ -16,11 +16,9 @@ import ResourceQuota from '@shell/components/form/ResourceQuota/Namespace';
 import Loading from '@shell/components/Loading';
 import { HARVESTER_TYPES, RANCHER_TYPES } from '@shell/components/form/ResourceQuota/shared';
 import Labels from '@shell/components/form/Labels';
-import { randomStr } from '@shell/utils/string';
 import { HARVESTER_NAME as HARVESTER } from '@shell/config/features';
 
 export default {
-  emits:      ['input'],
   components: {
     ContainerResourceLimit,
     CruResource,
@@ -31,18 +29,17 @@ export default {
     PodSecurityAdmission,
     ResourceQuota,
     Tab,
-    ResourceTabs,
+    Tabbed,
     MoveModal
   },
 
-  mixins:       [CreateEditView],
-  inheritAttrs: false,
+  mixins: [CreateEditView],
 
   async fetch() {
     if (this.$store.getters['management/schemaFor'](MANAGEMENT.PROJECT)) {
       this.projects = await this.$store.dispatch('management/findAll', { type: MANAGEMENT.PROJECT });
 
-      this.project = this.projects.find((p) => p.id.includes(this.projectName));
+      this.project = this.projects.find(p => p.id.includes(this.projectName));
     }
   },
 
@@ -61,7 +58,6 @@ export default {
       projects:                null,
       viewMode:                _VIEW,
       containerResourceLimits: this.value.annotations?.[CONTAINER_DEFAULT_RESOURCE_LIMIT] || this.getDefaultContainerResourceLimits(projectName),
-      rerenderNums:            randomStr(4),
       projectName,
       HARVESTER_TYPES,
       RANCHER_TYPES,
@@ -69,7 +65,7 @@ export default {
   },
 
   computed: {
-    ...mapGetters(['isStandaloneHarvester']),
+    ...mapGetters(['isStandaloneHarvester', 'isRancherInHarvester']),
 
     isCreate() {
       return this.mode === _CREATE;
@@ -80,7 +76,7 @@ export default {
       let projects = this.$store.getters['management/all'](MANAGEMENT.PROJECT);
 
       // Filter out projects not for the current cluster
-      projects = projects.filter((c) => c.spec?.clusterName === clusterId);
+      projects = projects.filter(c => c.spec?.clusterName === clusterId);
       const out = projects.map((project) => {
         return {
           label: project.nameDisplay,
@@ -129,7 +125,7 @@ export default {
     },
 
     projectName(newProjectName) {
-      this['project'] = this.projects.find((p) => p.id.includes(newProjectName));
+      this['project'] = this.projects.find(p => p.id.includes(newProjectName));
     }
   },
 
@@ -153,14 +149,9 @@ export default {
       }
 
       const projects = this.$store.getters['management/all'](MANAGEMENT.PROJECT);
-      const project = projects.find((p) => p.id.includes(projectName));
+      const project = projects.find(p => p.id.includes(projectName));
 
       return project?.spec?.containerDefaultResourceLimit || {};
-    },
-
-    PSAChanged($event) {
-      this.value.setLabels($event);
-      this.rerenderNums = randomStr(4);
     }
   },
 };
@@ -200,12 +191,7 @@ export default {
         />
       </template>
     </NameNsDescription>
-    <ResourceTabs
-      :value="value"
-      :mode="mode"
-      :side-tabs="true"
-      @update:value="$emit('input', $event)"
-    >
+    <Tabbed :side-tabs="true">
       <Tab
         v-if="showResourceQuota"
         :weight="1"
@@ -230,11 +216,10 @@ export default {
           </div>
         </div>
         <ResourceQuota
-          :value="value"
+          v-model:value="value"
           :mode="mode"
           :project="project"
           :types="isStandaloneHarvester ? HARVESTER_TYPES : RANCHER_TYPES"
-          @update:value="$emit('input', $event)"
         />
       </Tab>
       <Tab
@@ -248,7 +233,6 @@ export default {
           :mode="mode"
           :namespace="value"
           :register-before-hook="registerBeforeHook"
-          data-testid="namespace-container-resource-limit"
         />
       </Tab>
       <Tab
@@ -273,10 +257,10 @@ export default {
           :labels="value.labels"
           :mode="mode"
           labels-prefix="pod-security.kubernetes.io/"
-          @updateLabels="PSAChanged"
+          @updateLabels="value.setLabels($event)"
         />
       </Tab>
-    </ResourceTabs>
+    </Tabbed>
     <MoveModal v-if="projects" />
   </CruResource>
 </template>

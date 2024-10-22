@@ -17,9 +17,8 @@ import {
   NAMESPACE_FILTER_P_FULL_PREFIX,
 } from '@shell/utils/namespace-filter';
 import { KEY } from '@shell/utils/platform';
-import pAndNFiltering from '@shell/plugins/steve/projectAndNamespaceFiltering.utils';
+import pAndNFiltering from '@shell/utils/projectAndNamespaceFiltering.utils';
 import { SETTING } from '@shell/config/settings';
-import paginationUtils from '@shell/utils/pagination-utils';
 
 const forcedNamespaceValidTypes = [NAMESPACE_FILTER_KINDS.DIVIDER, NAMESPACE_FILTER_KINDS.PROJECT, NAMESPACE_FILTER_KINDS.NAMESPACE];
 
@@ -54,10 +53,6 @@ export default {
       return this.filter.length > 0;
     },
 
-    paginatedListFilterMode() {
-      return this.$store.getters[`${ this.currentProduct.inStore }/paginationEnabled`](this.$route.params?.resource) ? paginationUtils.validNsProjectFilters : null;
-    },
-
     filtered() {
       let out = this.options;
 
@@ -66,11 +61,11 @@ export default {
         if (this.namespaceFilterMode?.length) {
           // We always show dividers, projects and namespaces
           if (!forcedNamespaceValidTypes.includes(item.kind)) {
-            const validCustomType = this.namespaceFilterMode.find((prefix) => item.kind.startsWith(prefix));
+            const validCustomType = this.namespaceFilterMode.find(prefix => item.kind.startsWith(prefix));
 
             if (!validCustomType) {
               // Hide any invalid option that's not selected
-              return this.value.findIndex((v) => v.id === item.id) >= 0;
+              return this.value.findIndex(v => v.id === item.id) >= 0;
             }
           }
         }
@@ -101,12 +96,10 @@ export default {
         // Are we in restricted resource type mode, if so is this an allowed type?
         if (this.namespaceFilterMode?.length) {
           const isLastSelected = i.selected && (i.id === ALL || this.value.length === 1);
-          const kindAllowed = this.namespaceFilterMode.find((f) => f === i.kind);
+          const kindAllowed = this.namespaceFilterMode.find(f => f === i.kind);
           const isNotInProjectGroup = i.id === ALL_ORPHANS;
 
           i.enabled = (!isLastSelected && kindAllowed) && !isNotInProjectGroup;
-        } else if (this.paginatedListFilterMode?.length) {
-          i.enabled = !!i.id && paginationUtils.validateNsProjectFilter(i.id);
         }
       });
 
@@ -334,7 +327,7 @@ export default {
           .map((value) => {
             return findBy(options, 'id', value);
           })
-          .filter((x) => !!x);
+          .filter(x => !!x);
 
         return filters;
       },
@@ -342,22 +335,22 @@ export default {
       set(neu) {
         const old = (this.value || []).slice();
 
-        neu = neu.filter((x) => !!x.id);
+        neu = neu.filter(x => !!x.id);
 
         const last = neu[neu.length - 1];
         const lastIsSpecial = last?.kind === NAMESPACE_FILTER_KINDS.SPECIAL;
-        const hadUser = !!old.find((x) => x.id === ALL_USER);
-        const hadAll = !!old.find((x) => x.id === ALL);
+        const hadUser = !!old.find(x => x.id === ALL_USER);
+        const hadAll = !!old.find(x => x.id === ALL);
 
         if (lastIsSpecial) {
           neu = [last];
         }
 
         if (neu.length > 1) {
-          neu = neu.filter((x) => x.kind !== NAMESPACE_FILTER_KINDS.SPECIAL);
+          neu = neu.filter(x => x.kind !== NAMESPACE_FILTER_KINDS.SPECIAL);
         }
 
-        if (neu.find((x) => x.id === 'all')) {
+        if (neu.find(x => x.id === 'all')) {
           neu = [];
         }
 
@@ -368,7 +361,7 @@ export default {
         if (neu.length === 0 && !hadUser && !hadAll) {
           ids = this.defaultOption();
         } else {
-          ids = neu.map((x) => x.id);
+          ids = neu.map(x => x.id);
         }
 
         this.$nextTick(() => {
@@ -381,7 +374,7 @@ export default {
     }
   },
 
-  beforeUnmount() {
+  beforeDestroy() {
     this.removeCloseKeyHandler();
   },
 
@@ -529,7 +522,7 @@ export default {
       }
     },
     mouseOver(event) {
-      const el = event?.path?.find((e) => e.classList.contains('ns-option'));
+      const el = event?.path?.find(e => e.classList.contains('ns-option'));
 
       this.activeElement = el;
     },
@@ -597,13 +590,10 @@ export default {
     open() {
       this.isOpen = true;
       this.$nextTick(() => {
-        this.focusFilter();
+        this.$refs.filter.focus();
       });
       this.addCloseKeyHandler();
       this.layout();
-    },
-    focusFilter() {
-      this.$refs.filter.focus();
     },
     close() {
       this.isOpen = false;
@@ -625,15 +615,15 @@ export default {
       // Remove invalid
       if (!!this.namespaceFilterMode?.length) {
         this.value.forEach((v) => {
-          if (!this.namespaceFilterMode.find((f) => f === v.kind)) {
-            const index = current.findIndex((c) => c.id === v.id);
+          if (!this.namespaceFilterMode.find(f => f === v.kind)) {
+            const index = current.findIndex(c => c.id === v.id);
 
             current.splice(index, 1);
           }
         });
       }
 
-      const exists = current.findIndex((v) => v.id === option.id);
+      const exists = current.findIndex(v => v.id === option.id);
 
       // Remove if it exists (or always add if in singleton mode - we've reset the list above)
       if (exists !== -1) {
@@ -692,7 +682,6 @@ export default {
     class="ns-filter"
     data-testid="namespaces-filter"
     tabindex="0"
-    @mousedown.prevent
     @focus="open()"
   >
     <div
@@ -746,7 +735,7 @@ export default {
           {{ t('namespaceFilter.selected.label', { total }) }}
         </div>
         <div
-          v-for="(ns, j) in value"
+          v-for="(ns, j) in value" :key="j"
           ref="value"
           :key="ns.id"
           :data-testid="`namespaces-value-${j}`"
@@ -798,10 +787,9 @@ export default {
         <div class="ns-input">
           <input
             ref="filter"
-            v-model="filter"
+            v-model:value="filter"
             tabindex="0"
             class="ns-filter-input"
-            @click="focusFilter"
             @keydown="inputKeyHandler($event)"
           >
           <i
@@ -836,12 +824,12 @@ export default {
         role="list"
       >
         <div
-          v-for="(opt, i) in cachedFiltered"
+          v-for="(opt, i) in cachedFiltered" :key="i"
           :id="opt.elementId"
           :key="opt.id"
           tabindex="0"
           class="ns-option"
-          :disabled="opt.enabled ? null : true"
+          :disabled="!opt.enabled"
           :class="{
             'ns-selected': opt.selected,
             'ns-single-match': cachedFiltered.length === 1 && !opt.selected,
@@ -1130,7 +1118,7 @@ export default {
   }
 </style>
 <style lang="scss">
-  .v-popper__popper {
+  .tooltip {
     .ns-filter-tooltip {
       background-color: var(--body-bg);
       margin: -6px;

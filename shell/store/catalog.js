@@ -1,4 +1,4 @@
-import { CATALOG, EXPERIMENTAL, DEPRECATED } from '@shell/config/types';
+import { CATALOG } from '@shell/config/types';
 import { CATALOG as CATALOG_ANNOTATIONS } from '@shell/config/labels-annotations';
 import { addParams } from '@shell/utils/url';
 import { allHash, allHashSettled } from '@shell/utils/promise';
@@ -7,6 +7,7 @@ import { findBy, addObject, filterBy, isArray } from '@shell/utils/array';
 import { stringify } from '@shell/utils/error';
 import { classify } from '@shell/plugins/dashboard-store/classify';
 import { sortBy } from '@shell/utils/sort';
+import { importChart } from '@shell/utils/dynamic-importer';
 import { ensureRegex } from '@shell/utils/string';
 import { isPrerelease } from '@shell/utils/version';
 import difference from 'lodash/difference';
@@ -74,7 +75,7 @@ export const getters = {
   },
 
   charts(state, getters, rootState, rootGetters) {
-    const repoKeys = getters.repos.map((x) => x._key);
+    const repoKeys = getters.repos.map(x => x._key);
     let cluster = rootGetters['currentCluster'];
 
     if ( rootGetters['currentProduct']?.inStore === 'management' ) {
@@ -101,7 +102,7 @@ export const getters = {
 
   chart(state, getters) {
     return ({
-      key, repoType, repoName, chartName, preferRepoType, preferRepoName, includeHidden, showDeprecated
+      key, repoType, repoName, chartName, preferRepoType, preferRepoName, includeHidden
     }) => {
       if ( key && !repoType && !repoName && !chartName) {
         const parsed = parseKey(key);
@@ -115,11 +116,11 @@ export const getters = {
         repoType,
         repoName,
         chartName,
-        deprecated: !!showDeprecated,
+        deprecated: false,
       });
 
       if ( includeHidden === false ) {
-        matching = matching.filter((x) => !x.hidden);
+        matching = matching.filter(x => !x.hidden);
       }
 
       if ( !matching.length ) {
@@ -175,7 +176,7 @@ export const getters = {
       name = name.toLowerCase().trim();
       chartVersion = normalizeVersion(chartVersion);
 
-      const matching = getters.charts.filter((chart) => chart.chartName.toLowerCase().trim() === name);
+      const matching = getters.charts.filter(chart => chart.chartName.toLowerCase().trim() === name);
 
       if ( !matching.length ) {
         return;
@@ -191,9 +192,9 @@ export const getters = {
       if ( wantVersion === 'latest' ) {
         version = chart.versions[0];
       } else if ( wantVersion === 'match' || wantVersion === 'matching' ) {
-        version = chart.versions.find((v) => normalizeVersion(v.version) === chartVersion);
+        version = chart.versions.find(v => normalizeVersion(v.version) === chartVersion);
       } else {
-        version = chart.versions.find((v) => normalizeVersion(v.version) === wantVersion);
+        version = chart.versions.find(v => normalizeVersion(v.version) === wantVersion);
       }
 
       if ( version ) {
@@ -204,7 +205,7 @@ export const getters = {
 
   versionProviding(state, getters) {
     return ({ repoType, repoName, gvr }) => {
-      const matching = getters.charts.filter((chart) => chart.provides.includes(gvr) );
+      const matching = getters.charts.filter(chart => chart.provides.includes(gvr) );
 
       if ( !matching.length ) {
         return;
@@ -214,7 +215,7 @@ export const getters = {
         preferSameRepo(matching, repoType, repoName);
       }
 
-      const version = matching[0].versions.find((version) => version.annotations?.[CATALOG_ANNOTATIONS.PROVIDES] === gvr);
+      const version = matching[0].versions.find(version => version.annotations?.[CATALOG_ANNOTATIONS.PROVIDES] === gvr);
 
       if ( version ) {
         return clone(version);
@@ -264,6 +265,31 @@ export const getters = {
     };
   },
 
+  chartSteps(state, getters) {
+    return (name) => {
+      const steps = [];
+
+      const stepsPath = `./${ name }/steps/`;
+      // require.context only takes literals, so find all candidate step files and filter out
+      const allPaths = require.context('@shell/chart', true, /\.vue$/).keys();
+
+      allPaths
+        .filter(path => path.startsWith(stepsPath))
+        .forEach((path) => {
+          try {
+            steps.push({
+              name:      path.replace(stepsPath, ''),
+              component: importChart(path.substr(2, path.length)),
+            });
+          } catch (e) {
+            console.warn(`Failed to load step component ${ path } for chart ${ name }`, e); // eslint-disable-line no-console
+          }
+        });
+
+      return steps;
+    };
+  },
+
   inStore(state) {
     return state.inStore;
   },
@@ -298,21 +324,12 @@ export const mutations = {
     }
   },
 
-  setVersions(state, versions) {
-    state.versionInfos = versions;
-  },
-
   cacheVersion(state, { key, info }) {
     state.versionInfos[key] = info;
   }
 };
 
 export const actions = {
-  /**
-   * force: Always refresh catalog's helm repo by re-fetching index.yaml
-   *
-   * reset: clear existing charts and version cache
-   */
   async load(ctx, { force, reset } = {}) {
     const {
       state, getters, rootGetters, commit, dispatch
@@ -337,7 +354,7 @@ export const actions = {
 
     // As per comment above, when there are no clusters this will be management. Store it such that it can be used for those cases
     commit('setInStore', inStore);
-    hash.cluster = hash.cluster?.filter((repo) => !(repo?.metadata?.annotations?.[CATALOG_ANNOTATIONS.HIDDEN_REPO] === 'true'));
+    hash.cluster = hash.cluster.filter(repo => !(repo?.metadata?.annotations?.[CATALOG_ANNOTATIONS.HIDDEN_REPO] === 'true'));
 
     commit('setRepos', hash);
 
@@ -380,14 +397,10 @@ export const actions = {
       errors,
       loaded,
     });
-
-    if (reset) {
-      commit('setVersions', {});
-    }
   },
 
   async refresh({ getters, commit, dispatch }) {
-    const promises = getters.repos.map((x) => x.refresh());
+    const promises = getters.repos.map(x => x.refresh());
 
     // @TODO wait for repo state to indicate they're done once the API has that
 
@@ -475,10 +488,8 @@ function addChart(ctx, map, chart, repo) {
     certified = CATALOG_ANNOTATIONS._OTHER;
   }
 
-  if ( chart.deprecated ) {
-    sideLabel = DEPRECATED;
-  } else if ( chart.annotations?.[CATALOG_ANNOTATIONS.EXPERIMENTAL] ) {
-    sideLabel = EXPERIMENTAL;
+  if ( chart.annotations?.[CATALOG_ANNOTATIONS.EXPERIMENTAL] ) {
+    sideLabel = 'Experimental';
   } else if (
     !repo.isRancherSource &&
     certifiedAnnotation &&
@@ -512,7 +523,6 @@ function addChart(ctx, map, chart, repo) {
       versions:            [],
       categories:          filterCategories(chart.keywords),
       deprecated:          !!chart.deprecated,
-      experimental:        !!chart.annotations?.[CATALOG_ANNOTATIONS.EXPERIMENTAL],
       hidden:              !!chart.annotations?.[CATALOG_ANNOTATIONS.HIDDEN],
       targetNamespace:     chart.annotations?.[CATALOG_ANNOTATIONS.NAMESPACE],
       targetName:          chart.annotations?.[CATALOG_ANNOTATIONS.RELEASE_NAME],
@@ -558,7 +568,7 @@ function normalizeVersion(v) {
 }
 
 function filterCategories(categories) {
-  categories = (categories || []).map((x) => normalizeCategory(x));
+  categories = (categories || []).map(x => normalizeCategory(x));
 
   const out = [];
 
@@ -641,7 +651,7 @@ export function filterAndArrangeCharts(charts, {
 
     if ( searchQuery ) {
       // The search filter doesn't match
-      const searchTokens = searchQuery.split(/\s*[, ]\s*/).map((x) => ensureRegex(x, false));
+      const searchTokens = searchQuery.split(/\s*[, ]\s*/).map(x => ensureRegex(x, false));
 
       for ( const token of searchTokens ) {
         const chartDescription = c.chartDescription || '';

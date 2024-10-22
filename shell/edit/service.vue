@@ -26,7 +26,7 @@ import { HARVESTER_NAME as HARVESTER } from '@shell/config/features';
 import { allHash } from '@shell/utils/promise';
 import { isHarvesterSatisfiesVersion } from '@shell/utils/cluster';
 import { Port } from '@shell/utils/validators/formRules';
-import { _CLONE } from '@shell/config/query-params';
+import { HCI as HCI_LABELS_ANNOTATIONS } from '@shell/config/labels-annotations';
 
 const SESSION_AFFINITY_ACTION_VALUES = {
   NONE:     'None',
@@ -41,11 +41,10 @@ const SESSION_AFFINITY_ACTION_LABELS = {
 const SESSION_STICKY_TIME_DEFAULT = 10800;
 
 export default {
-  emits:        ['set-subtype'],
   // Props are found in CreateEditView
   // props: {},
-  inheritAttrs: false,
-  components:   {
+
+  components: {
     ArrayList,
     Banner,
     CruResource,
@@ -70,21 +69,8 @@ export default {
   data() {
     if (!this?.value?.spec?.type) {
       if (!this.value?.spec) {
-        this.value['spec'] = {
-          ports:           [],
-          sessionAffinity: 'None'
-        };
-      }
-    }
-
-    // Set clusterIP to an empty string, if it exists and the value is not None when clone a service
-    // Remove clusterIPs if it exists when clone a service
-    if (this.realMode === _CLONE) {
-      if (this.value?.spec?.clusterIP && this.value?.spec?.clusterIP !== 'None') {
-        this.value.spec.clusterIP = '';
-      }
-      if (this.value?.spec?.clusterIPs) {
-        delete this.value.spec['clusterIPs'];
+        this.value['spec'] = {ports:           [],
+          sessionAffinity: 'None',};
       }
     }
 
@@ -102,14 +88,13 @@ export default {
       defaultServiceTypes:         DEFAULT_SERVICE_TYPES,
       saving:                      false,
       sessionAffinityActionLabels: Object.values(SESSION_AFFINITY_ACTION_LABELS)
-        .map((v) => this.$store.getters['i18n/t'](v))
+        .map(v => this.$store.getters['i18n/t'](v))
         .map(ucFirst),
       sessionAffinityActionOptions: Object.values(
         SESSION_AFFINITY_ACTION_VALUES
       ),
       fvFormRuleSets:            [],
-      fvReportedValidationPaths: ['spec'],
-      closedErrorMessages:       []
+      fvReportedValidationPaths: ['spec']
     };
   },
 
@@ -205,17 +190,10 @@ export default {
     },
 
     provisioningCluster() {
-      const out = this.$store.getters['management/all'](CAPI.RANCHER_CLUSTER).find((c) => c?.status?.clusterName === this.currentCluster.metadata.name);
+      const out = this.$store.getters['management/all'](CAPI.RANCHER_CLUSTER).find(c => c?.status?.clusterName === this.currentCluster.metadata.name);
 
       return out;
     },
-    errorMessages() {
-      if (!this.serviceType) {
-        return [];
-      }
-
-      return this.fvUnreportedValidationErrors.filter((e) => !this.closedErrorMessages.includes(e));
-    }
   },
 
   watch: {
@@ -226,7 +204,11 @@ export default {
         this.value.spec.sessionAffinityConfig = { clientIP: { timeoutSeconds: null } };
 
         // set it null and then set it with vue to make reactive.
-        this.value.spec.sessionAffinityConfig.clientIP.timeoutSeconds = SESSION_STICKY_TIME_DEFAULT;
+        this.$set(
+          this.value.spec.sessionAffinityConfig.clientIP,
+          'timeoutSeconds',
+          SESSION_STICKY_TIME_DEFAULT
+        );
       } else if (
         this.value?.spec?.sessionAffinityConfig?.clientIP?.timeoutSeconds
       ) {
@@ -259,8 +241,7 @@ export default {
   methods: {
     updateMatchingPods: throttle(function() {
       const { value: { spec: { selector = { } } } } = this;
-      // See https://github.com/rancher/dashboard/issues/10417, all pods bad, need to replace local selector somehow
-      const allInNamespace = this.allPods.filter((pod) => pod.metadata.namespace === this.value?.metadata?.namespace);
+      const allInNamespace = this.allPods.filter(pod => pod.metadata.namespace === this.value?.metadata?.namespace);
 
       if (isEmpty(selector)) {
         this.matchingPods = {
@@ -332,6 +313,23 @@ export default {
       if (ports && ports.length > 0) {
         this.value.spec.ports = this.targetPortsStrOrInt(this.value.spec.ports);
       }
+
+      if (this.showHarvesterAddOnConfig) {
+        const clusters = this.$store.getters['management/all'](CAPI.RANCHER_CLUSTER);
+        const configs = this.$store.getters['management/all'](HCI.HARVESTER_CONFIG);
+        const cluster = clusters.find(c => c.status.clusterName === this.currentCluster.id);
+
+        const machinePools = cluster?.spec?.rkeConfig?.machinePools || [];
+        const machineConfigName = machinePools[0]?.machineConfigRef?.name;
+        const config = configs.find(c => c.id === `fleet-default/${ machineConfigName }`);
+
+        if (config) {
+          const { vmNamespace, networkName } = config;
+
+          this.value.metadata.annotations[HCI_LABELS_ANNOTATIONS.CLOUD_PROVIDER_NAMESPACE] = vmNamespace;
+          this.value.metadata.annotations[HCI_LABELS_ANNOTATIONS.CLOUD_PROVIDER_NETWORK] = networkName;
+        }
+      }
     },
   },
 };
@@ -345,7 +343,7 @@ export default {
     :selected-subtype="serviceType"
     :subtypes="defaultServiceTypes"
     :validation-passed="fvFormIsValid"
-    :errors="errorMessages"
+    :errors="fvUnreportedValidationErrors"
     :apply-hooks="applyHooks"
     :description="t('servicesPage.serviceListDescription')"
     @error="(e) => (errors = e)"
@@ -374,7 +372,7 @@ export default {
             <LabeledInput
               v-else
               ref="external-name"
-              v-model:value.number="value.spec.externalName"
+              v-model.number="value.spec.externalName"
               :mode="mode"
               :label="t('servicesPage.externalName.input.label')"
               :placeholder="t('servicesPage.externalName.placeholder')"
@@ -421,7 +419,7 @@ export default {
               :mode="mode"
               :initial-empty-row="true"
               :protip="false"
-              @update:value="(e) => value.spec.selector = e"
+              @update:value="(e) => $set(value.spec, 'selector', e)"
             />
           </div>
         </div>
@@ -444,7 +442,7 @@ export default {
               :tooltip-key="
                 hasClusterIp ? 'servicesPage.ips.clusterIpHelpText' : null
               "
-              @update:value="(e) => value.spec.clusterIP = e"
+              @update:value="(e) => $set(value.spec, 'clusterIP', e)"
             />
           </div>
         </div>
@@ -461,7 +459,7 @@ export default {
               :tooltip-key="
                 hasClusterIp ? 'servicesPage.ips.loadBalancerIp.helpText' : null
               "
-              @update:value="(e) => value.spec.loadBalancerIP = e"
+              @update:value="(e) => $set(value.spec, 'loadBalancerIP', e)"
             />
           </div>
         </div>
@@ -474,7 +472,7 @@ export default {
               :value-placeholder="t('servicesPage.ips.external.placeholder')"
               :mode="mode"
               :protip="false"
-              @update:value="(e) => value.spec.externalIPs = e"
+              @update:value="(e) => $set(value.spec, 'externalIPs', e)"
             />
           </div>
         </div>
@@ -523,7 +521,12 @@ export default {
               :label="t('servicesPage.affinity.timeout.label')"
               :placeholder="t('servicesPage.affinity.timeout.placeholder')"
               @input="
-                (e) => value.spec.sessionAffinityConfig.clientIP.timeoutSeconds = e
+                (e) =>
+                  $set(
+                    value.spec.sessionAffinityConfig.clientIP,
+                    'timeoutSeconds',
+                    e
+                  )
               "
             />
           </div>

@@ -7,16 +7,9 @@ import { SECRET_TYPES } from '@shell/config/secret';
 import { base64Encode } from '@shell/utils/crypto';
 import { addObjects, insertAt } from '@shell/utils/array';
 import { sortBy } from '@shell/utils/sort';
-import {
-  FilterArgs,
-  PaginationFilterField,
-  PaginationParamFilter,
-} from '@shell/types/store/pagination.types';
 
 export default {
   name: 'SelectOrCreateAuthSecret',
-
-  emits: ['inputauthval', 'update:value'],
 
   components: {
     LabeledInput,
@@ -54,9 +47,6 @@ export default {
       required: true,
     },
 
-    /**
-     * Limit the selection of an existing secret to the namespace provided
-     */
     limitToNamespace: {
       type:    Boolean,
       default: true,
@@ -127,38 +117,23 @@ export default {
      */
     delegateCreateToParent: {
       type:    Boolean,
-      default: false,
-    },
-
-    /**
-     * Set to false to make a fresh http request to secrets every time. This can be used when secrets have already been used for
-     * another purpose on the same page
-     *
-     * Set to true to cache the response
-     */
-    cacheSecrets: {
-      type:    Boolean,
-      default: false,
-    },
+      default: false
+    }
   },
 
   async fetch() {
     if ( (this.allowSsh || this.allowBasic || this.allowRke) && this.$store.getters[`${ this.inStore }/schemaFor`](SECRET) ) {
-      if (this.$store.getters[`${ this.inStore }/paginationEnabled`](SECRET)) {
-        // Filter results via api (because we shouldn't be fetching them all...)
-        this.filteredSecrets = await this.filterSecretsByApi();
+      // Avoid an async call and loading screen if already loaded by someone else
+      if ( this.$store.getters[`${ this.inStore }/haveAll`](SECRET) ) {
+        this.allSecrets = this.$store.getters[`${ this.inStore }/all`](SECRET);
       } else {
-        // Cannot yet filter via api, so fetch all and filter later on
-        this.allSecrets = await this.$store.dispatch(
-          `${ this.inStore }/findAll`,
-          { type: SECRET }
-        );
+        this.allSecrets = await this.$store.dispatch(`${ this.inStore }/findAll`, { type: SECRET });
       }
     }
 
     if ( this.allowS3 && this.$store.getters['rancher/canList'](NORMAN.CLOUD_CREDENTIAL) ) {
       // Avoid an async call and loading screen if already loaded by someone else
-      if (this.$store.getters['rancher/haveAll'](NORMAN.CLOUD_CREDENTIAL)) {
+      if ( this.$store.getters['rancher/haveAll'](NORMAN.CLOUD_CREDENTIAL) ) {
         this.allCloudCreds = this.$store.getters['rancher/all'](NORMAN.CLOUD_CREDENTIAL);
       } else {
         this.allCloudCreds = await this.$store.dispatch('rancher/findAll', { type: NORMAN.CLOUD_CREDENTIAL });
@@ -167,39 +142,58 @@ export default {
       this.allCloudCreds = [];
     }
 
+    let selected = this.preSelect?.selected || AUTH_TYPE._NONE;
+
     if ( !this.value ) {
       this.publicKey = this.preSelect?.publicKey || '';
       this.privateKey = this.preSelect?.privateKey || '';
     }
 
-    this.updateSelectedFromValue();
+    if ( this.value ) {
+      if ( typeof this.value === 'object' ) {
+        selected = `${ this.value.namespace }/${ this.value.name }`;
+      } else if ( this.value.includes('/') || this.value.includes(':') ) {
+        selected = this.value;
+      } else if ( this.namespace ) {
+        selected = `${ this.namespace }/${ this.value }`;
+      } else {
+        selected = this.value;
+      }
+    }
+
+    this.selected = selected;
+
     this.update();
   },
 
-  data() {
+  data(props) {
     return {
       allCloudCreds: [],
-
-      allSecrets:      null,
-      filteredSecrets: null,
-
-      selected: null,
-
-      filterByNamespace: this.namespace && this.limitToNamespace,
+      allSecrets:    [],
+      selected:      null,
 
       publicKey:  '',
       privateKey: '',
-      uniqueId:   new Date().getTime(), // Allows form state to be individually tracked if the form is in a list
-
-      SSH:   AUTH_TYPE._SSH,
-      BASIC: AUTH_TYPE._BASIC,
-      S3:    AUTH_TYPE._S3,
+      uniqueId:   new Date().getTime() // Allows form state to be individually tracked if the form is in a list
     };
   },
 
   computed: {
-    secretTypes() {
+    _SSH() {
+      return AUTH_TYPE._SSH;
+    },
+
+    _BASIC() {
+      return AUTH_TYPE._BASIC;
+    },
+
+    _S3() {
+      return AUTH_TYPE._S3;
+    },
+
+    options() {
       const types = [];
+      const keys = [];
 
       if ( this.allowSsh ) {
         types.push(SECRET_TYPES.SSH);
@@ -213,55 +207,35 @@ export default {
         types.push(SECRET_TYPES.RKE_AUTH_CONFIG);
       }
 
-      return types;
-    },
+      const out = this.allSecrets
+        .filter(x => this.namespace && this.limitToNamespace ? x.metadata.namespace === this.namespace : true)
+        .filter((x) => {
+          // Must match one of the types if given
+          if ( types.length && !types.includes(x._type) ) {
+            return false;
+          }
 
-    /**
-     * Fitler secrets given their namespace and required secret type
-     *
-     * Convert secrets to list of options and suplement with custom entries
-     */
-    options() {
-      let filteredSecrets = [];
+          // Must match ALL of the keys if given
+          if ( keys.length ) {
+            const dataKeys = Object.keys(x.data || {});
 
-      if (this.allSecrets) {
-        // Fitler secrets given their namespace and required secret type
-        filteredSecrets = this.allSecrets
-          .filter((x) => this.filterByNamespace ? x.metadata.namespace === this.namespace : true
-          )
-          .filter((x) => {
-            // Must match one of the required types
-            if (
-              this.secretTypes.length &&
-              !this.secretTypes.includes(x._type)
-            ) {
+            if ( !keys.every(key => dataKeys.includes(key)) ) {
               return false;
             }
+          }
 
-            return true;
-          });
-      } else if (this.filteredSecrets) {
-        filteredSecrets = this.filteredSecrets;
-      }
+          return true;
+        }).map((x) => {
+          return {
+            label: `${ x.metadata.name } (${ x.subTypeDisplay }: ${ x.dataPreview })`,
+            group: x.metadata.namespace,
+            value: x.id,
+          };
+        });
 
-      let out = filteredSecrets.map((x) => {
-        const {
-          dataPreview, subTypeDisplay, metadata, id
-        } = x;
-
-        const label =
-          subTypeDisplay && dataPreview ? `${ metadata.name } (${ subTypeDisplay }: ${ dataPreview })` : `${ metadata.name } (${ subTypeDisplay })`;
-
-        return {
-          label,
-          group: metadata.namespace,
-          value: id,
-        };
-      });
-
-      if (this.allowS3) {
+      if ( this.allowS3 ) {
         const more = this.allCloudCreds
-          .filter((x) => ['aws', 's3'].includes(x.provider))
+          .filter(x => ['aws', 's3'].includes(x.provider) )
           .map((x) => {
             return {
               label: `${ x.nameDisplay } (${ x.providerDisplay })`,
@@ -274,7 +248,7 @@ export default {
       }
 
       if ( !this.limitToNamespace ) {
-        out = sortBy(out, 'group');
+        sortBy(out, 'group');
         if ( out.length ) {
           let lastGroup = '';
 
@@ -368,18 +342,12 @@ export default {
     selected:   'update',
     publicKey:  'updateKeyVal',
     privateKey: 'updateKeyVal',
-    value:      'updateSelectedFromValue',
 
-    async namespace(ns) {
-      if (ns && !this.selected.startsWith(`${ ns }/`)) {
+    namespace(ns) {
+      if ( ns && !this.selected.startsWith(`${ ns }/`) ) {
         this.selected = AUTH_TYPE._NONE;
       }
-
-      // if ns has changed and we're filtering by api... we need to re-fetch entries
-      if (this.filteredSecrets && this.filterByNamespace) {
-        this.filteredSecrets = await this.filterSecretsByApi();
-      }
-    },
+    }
   },
 
   created() {
@@ -395,60 +363,8 @@ export default {
   },
 
   methods: {
-    updateSelectedFromValue() {
-      let selected = this.preSelect?.selected || AUTH_TYPE._NONE;
-
-      if ( this.value ) {
-        if ( typeof this.value === 'object' ) {
-          selected = `${ this.value.namespace }/${ this.value.name }`;
-        } else if ( this.value.includes('/') || this.value.includes(':') ) {
-          selected = this.value;
-        } else if ( this.namespace ) {
-          selected = `${ this.namespace }/${ this.value }`;
-        } else {
-          selected = this.value;
-        }
-      }
-
-      this.selected = selected;
-    },
-    async filterSecretsByApi() {
-      const findPageArgs = {
-        // Of type ActionFindPageArgs
-        namespaced: this.filterByNamespace ? this.namespace : '',
-        pagination: new FilterArgs({
-          filters: [
-            PaginationParamFilter.createMultipleFields(
-              this.secretTypes.map(
-                (t) => new PaginationFilterField({
-                  field: 'metadata.fields.1',
-                  value: t,
-                })
-              )
-            ),
-          ],
-        }),
-      };
-
-      if (this.cacheSecrets) {
-        return await this.$store.dispatch(`${ this.inStore }/findPage`, {
-          type: SECRET,
-          opt:  findPageArgs,
-        });
-      }
-
-      const url = this.$store.getters[`${ this.inStore }/urlFor`](
-        SECRET,
-        null,
-        findPageArgs
-      );
-      const res = await this.$store.dispatch(`cluster/request`, { url });
-
-      return res?.data || [];
-    },
-
     updateKeyVal() {
-      if ( ![AUTH_TYPE._SSH, AUTH_TYPE._BASIC, AUTH_TYPE._S3].includes(this.selected) ) {
+      if ( ![AUTH_TYPE._SSH, AUTH_TYPE._BASIC, AUTH_TYPE._S3].includes(this.selected)) {
         this.privateKey = '';
         this.publicKey = '';
       }
@@ -462,22 +378,22 @@ export default {
 
     update() {
       if ( (!this.selected || [AUTH_TYPE._SSH, AUTH_TYPE._BASIC, AUTH_TYPE._S3, AUTH_TYPE._NONE].includes(this.selected))) {
-        this.$emit('update:value', null);
+        this.$emit('input', null);
       } else if ( this.selected.includes(':') ) {
         // Cloud creds
-        this.$emit('update:value', this.selected);
+        this.$emit('input', this.selected);
       } else {
         const split = this.selected.split('/');
 
         if ( this.limitToNamespace ) {
-          this.$emit('update:value', split[1]);
+          this.$emit('input', split[1]);
         } else {
           const out = {
             namespace: split[0],
             name:      split[1]
           };
 
-          this.$emit('update:value', out);
+          this.$emit('input', out);
         }
       }
 
@@ -555,7 +471,6 @@ export default {
       <div :class="firstCol">
         <LabeledSelect
           v-model:value="selected"
-          data-testid="auth-secret-select"
           :mode="mode"
           :label-key="labelKey"
           :loading="$fetchState.pending"
@@ -563,11 +478,10 @@ export default {
           :selectable="option => !option.disabled"
         />
       </div>
-      <template v-if="selected === SSH">
+      <template v-if="selected === _SSH">
         <div :class="moreCols">
           <LabeledInput
             v-model:value="publicKey"
-            data-testid="auth-secret-ssh-public-key"
             :mode="mode"
             type="multiline"
             label-key="selectOrCreateAuthSecret.ssh.publicKey"
@@ -576,18 +490,16 @@ export default {
         <div :class="moreCols">
           <LabeledInput
             v-model:value="privateKey"
-            data-testid="auth-secret-ssh-private-key"
             :mode="mode"
             type="multiline"
             label-key="selectOrCreateAuthSecret.ssh.privateKey"
           />
         </div>
       </template>
-      <template v-else-if="selected === BASIC">
+      <template v-else-if="selected === _BASIC">
         <div :class="moreCols">
           <LabeledInput
             v-model:value="publicKey"
-            data-testid="auth-secret-basic-username"
             :mode="mode"
             label-key="selectOrCreateAuthSecret.basic.username"
           />
@@ -595,18 +507,16 @@ export default {
         <div :class="moreCols">
           <LabeledInput
             v-model:value="privateKey"
-            data-testid="auth-secret-basic-password"
             :mode="mode"
             type="password"
             label-key="selectOrCreateAuthSecret.basic.password"
           />
         </div>
       </template>
-      <template v-else-if="selected === S3">
+      <template v-else-if="selected === _S3">
         <div :class="moreCols">
           <LabeledInput
             v-model:value="publicKey"
-            data-testid="auth-secret-s3-public-key"
             :mode="mode"
             label-key="selectOrCreateAuthSecret.s3.accessKey"
           />
@@ -614,7 +524,6 @@ export default {
         <div :class="moreCols">
           <LabeledInput
             v-model:value="privateKey"
-            data-testid="auth-secret-s3-private-key"
             :mode="mode"
             type="password"
             label-key="selectOrCreateAuthSecret.s3.secretKey"

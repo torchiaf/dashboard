@@ -6,8 +6,6 @@ import LabeledSelect from '@shell/components/form/LabeledSelect';
 import { LabeledInput } from '@components/Form/LabeledInput';
 
 export default {
-  emits: ['update:value', 'remove'],
-
   components: {
     LabeledSelect,
     LabeledInput
@@ -131,7 +129,7 @@ export default {
       if (this.namespaced) {
         const map = this.$store.getters.namespaces();
 
-        return Object.keys(map).filter((key) => map[key]);
+        return Object.keys(map).filter(key => map[key]);
       } else {
         const inStore = this.$store.getters['currentStore'](NAMESPACE);
 
@@ -141,9 +139,9 @@ export default {
 
     sourceOptions() {
       if (this.type === 'configMapKeyRef' || this.type === 'configMapRef') {
-        return this.allConfigMaps.filter((map) => this.namespaces.includes(map?.metadata?.namespace));
+        return this.allConfigMaps.filter(map => this.namespaces.includes(map?.metadata?.namespace));
       } else if (this.type === 'secretRef' || this.type === 'secretKeyRef') {
-        return this.allSecrets.filter((secret) => this.namespaces.includes(secret?.metadata?.namespace));
+        return this.allSecrets.filter(secret => this.namespaces.includes(secret?.metadata?.namespace));
       } else {
         return [];
       }
@@ -216,7 +214,7 @@ export default {
     updateRow() {
       if (!this.name?.length && !this.refName?.length) {
         if (this.type !== 'fieldRef') {
-          this.$emit('update:value', null);
+          this.$emit('input', null);
 
           return;
         }
@@ -253,7 +251,7 @@ export default {
         out.prefix = this.name;
         out[this.type] = { name: this.refName, optional: false };
       }
-      this.$emit('update:value', out);
+      this.$emit('input', out);
     },
     get
   }

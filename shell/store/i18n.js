@@ -114,7 +114,7 @@ export const getters = {
     }
   },
 
-  exists: (state) => (key, language) => {
+  exists: state => (key, language) => {
     const locale = language || state.selected;
     const cacheKey = `${ locale }/${ key }`;
 
@@ -135,11 +135,11 @@ export const getters = {
     return false;
   },
 
-  current: (state) => () => {
+  current: state => () => {
     return state.selected;
   },
 
-  default: (state) => () => {
+  default: state => () => {
     return state.default;
   },
 
@@ -195,7 +195,7 @@ export const mutations = {
 
   // Add a locale to the list of available locales
   addLocale(state, { locale, label }) {
-    const hasLocale = state.available.find((l) => l === locale);
+    const hasLocale = state.available.find(l => l === locale);
 
     if (!hasLocale) {
       state.available.push(locale);
@@ -207,7 +207,7 @@ export const mutations = {
 
   // Remove locale
   removeLocale(state, locale) {
-    const index = state.available.findIndex((l) => l === locale);
+    const index = state.available.findIndex(l => l === locale);
 
     if (index !== -1) {
       state.available.splice(index, 1);
@@ -226,7 +226,7 @@ export const actions = {
     let selected = rootGetters['prefs/get']('locale');
 
     // We might be using a locale that is loaded by a plugin that is no longer loaded
-    const exists = !!state.available.find((loc) => loc === selected);
+    const exists = !!state.available.find(loc => loc === selected);
 
     if ( !selected || !exists) {
       selected = state.default;
@@ -311,17 +311,6 @@ export const actions = {
         i18nExt.forEach((fn) => {
           p.push(dispatch('mergeLoad', { locale, module: fn }));
         });
-
-        // load all of the default locales from the plugins for fallback
-        if (locale !== DEFAULT_LOCALE) {
-          const defaultI18nExt = rootState.$plugin?.getDynamic('l10n', DEFAULT_LOCALE);
-
-          if (defaultI18nExt && defaultI18nExt.length) {
-            defaultI18nExt.forEach((fn) => {
-              p.push(dispatch('mergeLoad', { locale: DEFAULT_LOCALE, module: fn }));
-            });
-          }
-        }
 
         try {
           await Promise.all(p);

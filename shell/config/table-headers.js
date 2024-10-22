@@ -1,6 +1,6 @@
 import { CATTLE_PUBLIC_ENDPOINTS } from '@shell/config/labels-annotations';
 import { NODE as NODE_TYPE } from '@shell/config/types';
-import { COLUMN_BREAKPOINTS } from '@shell/types/store/type-map';
+import { COLUMN_BREAKPOINTS } from '@shell/components/SortableTable/index.vue';
 
 // Note: 'id' is always the last sort, so you don't have to specify it here.
 
@@ -9,19 +9,8 @@ export const STATE = {
   labelKey:  'tableHeaders.state',
   sort:      ['stateSort', 'nameSort'],
   value:     'stateDisplay',
-  getValue:  (row) => row.stateDisplay,
+  getValue:  row => row.stateDisplay,
   width:     100,
-  default:   'unknown',
-  formatter: 'BadgeStateFormatter',
-};
-
-export const USER_STATE = {
-  name:      'user-state',
-  labelKey:  'tableHeaders.userState',
-  sort:      ['stateSort', 'nameSort'],
-  value:     'stateDisplay',
-  getValue:  (row) => row.stateDisplay,
-  width:     72,
   default:   'unknown',
   formatter: 'BadgeStateFormatter',
 };
@@ -49,7 +38,7 @@ export const NAME = {
   name:          'name',
   labelKey:      'tableHeaders.name',
   value:         'nameDisplay',
-  getValue:      (row) => row.nameDisplay,
+  getValue:      row => row.nameDisplay,
   sort:          ['nameSort'],
   formatter:     'LinkDetail',
   canBeVariable: true,
@@ -155,7 +144,7 @@ export const NAMESPACE = {
   name:        'namespace',
   labelKey:    'tableHeaders.namespace',
   value:       'namespace',
-  getValue:    (row) => row.namespace,
+  getValue:    row => row.namespace,
   sort:        'namespace',
   dashIfEmpty: true,
 };
@@ -164,7 +153,7 @@ export const NODE = {
   name:          'node',
   labelKey:      'tableHeaders.node',
   value:         'spec.nodeName',
-  getValue:      (row) => row.spec?.nodeName,
+  getValue:      row => row.spec?.nodeName,
   sort:          'spec.nodeName',
   formatter:     'LinkName',
   formatterOpts: { type: NODE_TYPE },
@@ -175,7 +164,7 @@ export const NODE_NAME = {
   labelKey:  'tableHeaders.nodeName',
   sort:      'name',
   value:     'name',
-  getValue:  (row) => row.name,
+  getValue:  row => row.name,
   formatter: 'LinkDetail',
 };
 
@@ -191,7 +180,7 @@ export const VERSION = {
   labelKey: 'tableHeaders.version',
   sort:     'version',
   value:    'version',
-  getValue: (row) => row.version
+  getValue: row => row.version
 };
 
 export const CPU = {
@@ -227,7 +216,7 @@ export const PODS = {
   labelKey:  'tableHeaders.pods',
   sort:      'podConsumed',
   search:    false,
-  value:     (row) => row.podConsumedUsage,
+  value:     row => row.podConsumedUsage,
   formatter: 'PercentageBar',
   width:     120,
 };
@@ -236,7 +225,7 @@ export const AGE = {
   name:      'age',
   labelKey:  'tableHeaders.age',
   value:     'creationTimestamp',
-  getValue:  (row) => row.creationTimestamp,
+  getValue:  row => row.creationTimestamp,
   sort:      'creationTimestamp:desc',
   search:    false,
   formatter: 'LiveDate',
@@ -246,7 +235,7 @@ export const AGE = {
 
 export const AGE_NORMAN = {
   ...AGE,
-  getValue: (row) => row.created,
+  getValue: row => row.created,
   value:    'created',
   sort:     'created:desc',
 };
@@ -290,19 +279,18 @@ export const DURATION = {
   formatter: 'LiveDuration',
 };
 
-export const IMAGE_NAME = {
-  name:      'image',
-  labelKey:  'tableHeaders.image',
-  value:     'image',
-  sort:      ['image', 'nameSort'],
-  formatter: 'ImageName',
+export const IMAGE = {
+  name:     'image',
+  labelKey: 'tableHeaders.image',
+  value:    'image',
+  sort:     ['image', 'nameSort'],
 };
 
 export const POD_IMAGES = {
   name:      'pod_images',
   labelKey:  'tableHeaders.podImages',
   value:     'imageNames',
-  getValue:  (row) => row.imageNames,
+  getValue:  row => row.imageNames,
   sort:      'imageNames',
   // search:    'imageNames',
   formatter: 'PodImages'
@@ -314,7 +302,7 @@ export const POD_RESTARTS = {
   formatter:    'LivePodRestarts',
   delayLoading: true,
   value:        'restartCount',
-  getValue:     (row) => row.restartCount,
+  getValue:     row => row.restartCount,
   // This column is expensive to compute, so don't make it searchable
   search:       false,
   liveUpdates:  true
@@ -346,6 +334,16 @@ export const SIMPLE_SCALE = {
   sort:     ['scale']
 };
 
+export const WEIGHT = {
+  name:      'weight',
+  labelKey:  'tableHeaders.weight',
+  value:     'status.computedWeight',
+  sort:      'status.computedWeight',
+  formatter: 'Weight',
+  width:     60,
+  align:     'center',
+};
+
 export const SUCCESS = {
   name:     'success',
   labelKey: 'tableHeaders.success',
@@ -375,13 +373,6 @@ export const KEYS = {
   labelKey: 'tableHeaders.keys',
   sort:     false,
   value:    'keysDisplay',
-};
-
-export const SECRET_DATA = {
-  name:      'data',
-  labelKey:  'tableHeaders.data',
-  value:     'dataPreview',
-  formatter: 'SecretData'
 };
 
 export const TARGET_KIND = {
@@ -421,33 +412,6 @@ export const USER_PROVIDER = {
   sort:        'providerDisplay',
 };
 
-export const USER_LAST_LOGIN = {
-  name:          'user-last-login',
-  labelKey:      'tableHeaders.userLastLogin',
-  value:         'userLastLogin',
-  formatter:     'LiveDate',
-  formatterOpts: { addSuffix: true },
-  sort:          'userLastLogin',
-};
-
-export const USER_DISABLED_IN = {
-  name:          'user-disabled-in',
-  labelKey:      'tableHeaders.userDisabledIn',
-  value:         'userDisabledInDisplay',
-  formatter:     'LiveDate',
-  formatterOpts: { isCountdown: true },
-  sort:          'userDisabledIn',
-};
-
-export const USER_DELETED_IN = {
-  name:          'user-deleted-in',
-  labelKey:      'tableHeaders.userDeletedIn',
-  value:         'userDeletedIn',
-  formatter:     'LiveDate',
-  formatterOpts: { isCountdown: true },
-  sort:          'userDeletedIn',
-};
-
 export const USER_ID = {
   name:          'user-id',
   labelKey:      'tableHeaders.userId',
@@ -484,7 +448,7 @@ export const TYPE = {
   name:     'type',
   labelKey: 'tableHeaders.type',
   value:    'typeDisplay',
-  getValue: (row) => row.typeDisplay,
+  getValue: row => row.typeDisplay,
   sort:     ['typeDisplay'],
   width:    100,
 };
@@ -725,7 +689,7 @@ export const WORKLOAD_ENDPOINTS = {
   name:        'workloadEndpoints',
   labelKey:    'tableHeaders.endpoints',
   value:       `$['metadata']['annotations']['${ CATTLE_PUBLIC_ENDPOINTS }']`,
-  getValue:    (row) => row.metadata?.annotations?.[CATTLE_PUBLIC_ENDPOINTS],
+  getValue:    row => row.metadata?.annotations?.[CATTLE_PUBLIC_ENDPOINTS],
   formatter:   'Endpoints',
   dashIfEmpty: true,
   breakpoint:  COLUMN_BREAKPOINTS.DESKTOP,
@@ -754,29 +718,6 @@ export const FLEET_SUMMARY = {
   formatter: 'FleetSummaryGraph',
   align:     'center',
   width:     100,
-};
-
-export const FLEET_REPO_CLUSTER_SUMMARY = {
-  name:      'clusterSummary',
-  labelKey:  'tableHeaders.clusterResources',
-  value:     'status.resourceCounts',
-  sort:      false,
-  search:    false,
-  formatter: 'FleetClusterSummaryGraph',
-  align:     'center',
-  width:     100,
-};
-
-export const FLEET_REPO_PER_CLUSTER_STATE = {
-  name:          'perClusterState',
-  labelKey:      'tableHeaders.repoPerClusterState',
-  tooltip:       'tableHeaders.repoPerClusterStateTooltip',
-  sort:          ['stateSort', 'nameSort'],
-  width:         100,
-  default:       'unknown',
-  formatter:     'BadgeStateFormatter',
-  formatterOpts: { arbitrary: true }
-
 };
 
 export const APP_SUMMARY = {
@@ -1044,30 +985,6 @@ export const FLEET_BUNDLE_TYPE = {
   width:    100,
 };
 
-export const FLEET_REPO_CLUSTERS_READY = {
-  name:     'clustersReady',
-  labelKey: 'tableHeaders.clustersReady',
-  value:    'status.readyClusters',
-  sort:     'status.readyClusters',
-  search:   false,
-};
-
-export const FLEET_REPO_TARGET = {
-  name:     'target',
-  labelKey: 'tableHeaders.target',
-  value:    'targetInfo.modeDisplay',
-  sort:     ['targetInfo.modeDisplay', 'targetInfo.cluster', 'targetInfo.clusterGroup'],
-
-};
-
-export const FLEET_REPO = {
-  name:     'repo',
-  labelKey: 'tableHeaders.repo',
-  value:    'repoDisplay',
-  sort:     'repoDisplay',
-  search:   ['spec.repo', 'status.commit'],
-};
-
 export const UI_PLUGIN_CATALOG = [
   {
     name:          'state',
@@ -1090,12 +1007,13 @@ export const UI_PLUGIN_CATALOG = [
     name:     'image',
     sort:     ['image'],
     labelKey: 'plugins.manageCatalog.headers.image.label',
-    value:    'image'
+    value:    'deploymentImage'
   },
   {
-    name:     'repository',
-    sort:     ['repository'],
-    labelKey: 'plugins.manageCatalog.headers.repository.label',
-    value:    'repo.metadata.name'
+    name:      'cacheState',
+    sort:      ['cacheState'],
+    labelKey:  'plugins.manageCatalog.headers.cacheState.label',
+    value:     'cacheState',
+    formatter: 'ExtensionCache'
   }
 ];

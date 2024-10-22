@@ -2,6 +2,8 @@ import cloneDeep from 'lodash/cloneDeep';
 import flattenDeep from 'lodash/flattenDeep';
 import compact from 'lodash/compact';
 import { JSONPath } from 'jsonpath-plus';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import transform from 'lodash/transform';
 import isObject from 'lodash/isObject';
 import isArray from 'lodash/isArray';
@@ -42,7 +44,7 @@ export function getAllValues(obj, path) {
   keysInOrder.forEach((currentKey) => {
     currentValue = currentValue.map((indexValue) => {
       if (Array.isArray(indexValue)) {
-        return indexValue.map((arr) => arr[currentKey]).flat();
+        return indexValue.map(arr => arr[currentKey]).flat();
       } else if (indexValue) {
         return indexValue[currentKey];
       } else {
@@ -51,7 +53,7 @@ export function getAllValues(obj, path) {
     }).flat();
   });
 
-  return currentValue.filter((val) => val !== null);
+  return currentValue.filter(val => val !== null);
 }
 
 export function get(obj, path) {
@@ -71,6 +73,7 @@ export function get(obj, path) {
       return '(JSON Path err)';
     }
   }
+
   if ( !path.includes('.') ) {
     return obj?.[path];
   }
@@ -90,37 +93,16 @@ export function get(obj, path) {
 
 export function remove(obj, path) {
   const parentAry = splitObjectPath(path);
+  const leafKey = parentAry.pop();
 
-  // Remove the very last part of the path
+  const parent = get(obj, joinObjectPath(parentAry));
 
-  if (parentAry.length === 1) {
-    obj[path] = undefined;
-    delete obj[path];
-  } else {
-    const leafKey = parentAry.pop();
-    const parent = get(obj, joinObjectPath(parentAry));
-
-    if ( parent ) {
-      parent[leafKey] = undefined;
-      delete parent[leafKey];
-    }
+  if ( parent ) {
+    parent[leafKey] = undefined;
+    delete parent[leafKey];
   }
 
   return obj;
-}
-
-/**
- * `delete` a property at the given path.
- *
- * This is similar to `remove` but doesn't need any fancy kube obj path splitting
- * and doesn't use `Vue.set` (avoids reactivity)
- */
-export function deleteProperty(obj, path) {
-  const pathAr = path.split('.');
-  const propToDelete = pathAr.pop();
-
-  // Walk down path until final prop, then delete final prop
-  delete pathAr.reduce((o, k) => o[k] || {}, obj)[propToDelete];
 }
 
 export function getter(path) {
@@ -150,7 +132,7 @@ export function isSimpleKeyValue(obj) {
   return obj !== null &&
     !Array.isArray(obj) &&
     typeof obj === 'object' &&
-    Object.values(obj || {}).every((v) => typeof v !== 'object');
+    Object.values(obj || {}).every(v => typeof v !== 'object');
 }
 
 /*
@@ -191,12 +173,11 @@ export function definedKeys(obj) {
     const val = obj[key];
 
     if ( Array.isArray(val) ) {
-      return `"${ key }"`;
+      return key;
     } else if ( isObject(val) ) {
-      // no need for quotes around the subkey since the recursive call will fill that in via one of the other two statements in the if block
-      return ( definedKeys(val) || [] ).map((subkey) => `"${ key }".${ subkey }`);
+      return ( definedKeys(val) || [] ).map(subkey => `${ key }.${ subkey }`);
     } else {
-      return `"${ key }"`;
+      return key;
     }
   });
 
@@ -237,33 +218,6 @@ export function diff(from, to) {
 
   return out;
 }
-
-/**
- * Super simple lodash isEqual equivalent.
- *
- * Only checks root properties for strict equality
- */
-function isEqualBasic(from, to) {
-  const fromKeys = Object.keys(from || {});
-  const toKeys = Object.keys(to || {});
-
-  if (fromKeys.length !== toKeys.length) {
-    return false;
-  }
-
-  for (let i = 0; i < fromKeys.length; i++) {
-    const fromValue = from[fromKeys[i]];
-    const toValue = to[fromKeys[i]];
-
-    if (fromValue !== toValue) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-export { isEqualBasic as isEqual };
 
 export function changeset(from, to, parentPath = []) {
   let out = {};
@@ -422,15 +376,5 @@ export function pickBy(obj = {}, predicate = (value, key) => false) {
  * @returns
  */
 export const toDictionary = (array, callback) => Object.assign(
-  {}, ...array.map((item) => ({ [item]: callback(item) }))
+  {}, ...array.map(item => ({ [item]: callback(item) }))
 );
-
-export function dropKeys(obj, keys) {
-  if ( !obj ) {
-    return;
-  }
-
-  for ( const k of keys ) {
-    delete obj[k];
-  }
-}

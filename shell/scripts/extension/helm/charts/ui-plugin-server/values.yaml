@@ -4,5 +4,3 @@ plugin:
   enabled: true
   versionOverride: ""
   noCache: false
-  noAuth: false
-  metadata: {}

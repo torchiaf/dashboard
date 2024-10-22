@@ -12,8 +12,6 @@ import { Checkbox } from '@components/Form/Checkbox';
 import ArrayList from '@shell/components/form/ArrayList';
 import { randomStr } from '@shell/utils/string';
 import { addParam, addParams } from '@shell/utils/url';
-import { NORMAN } from '@shell/config/types';
-import { findBy } from '@shell/utils/array';
 import KeyValue from '@shell/components/form/KeyValue';
 import { RadioGroup } from '@components/Form/Radio';
 import { _CREATE, _EDIT } from '@shell/config/query-params';
@@ -94,10 +92,9 @@ const storageTypes = [
     value: 'StandardSSD_LRS'
   }
 ];
+const DEFAULT_REGION = 'westus';
 
 export default {
-  emits: ['expandAdvanced', 'error'],
-
   components: {
     ArrayList,
     Banner,
@@ -151,12 +148,6 @@ export default {
       }
       if (!isEmpty(environment)) {
         this.value.environment = environment;
-      } else if (this.loadedCredentialIdFor !== this.credentialId) {
-        this.allCredentials = await this.$store.dispatch('rancher/findAll', { type: NORMAN.CLOUD_CREDENTIAL });
-
-        const currentCredential = this.allCredentials.find((obj) => obj.id === this.credentialId);
-
-        this.value.environment = currentCredential.azurecredentialConfig.environment;
       }
       if (!isEmpty(subscriptionId)) {
         this.value.subscriptionId = subscriptionId;
@@ -165,29 +156,24 @@ export default {
         this.value.tenantId = tenantId;
       }
 
-      if (this.loadedCredentialIdFor !== this.credentialId) {
-        this.locationOptions = await this.$store.dispatch('management/request', {
-          url:    addParam('/meta/aksLocations', 'cloudCredentialId', this.credentialId),
-          method: 'GET',
-        });
+      this.locationOptions = await this.$store.dispatch('management/request', {
+        url:    addParam('/meta/aksLocations', 'cloudCredentialId', this.credentialId),
+        method: 'GET',
+      });
 
-        this.loadedCredentialIdFor = this.credentialId;
-      }
+      if (this.mode === _CREATE) {
+        this.value.location = DEFAULT_REGION;
 
       // when you edit an Azure cluster and add a new machine pool (edit)
       // the location field doesn't come populated which causes the vmSizes request
       // to return 200 but with a null response (also a bunch of other fields are undefined...)
       // so let's prefill them with the defaults
-      if (this.mode === _EDIT && !this.value?.location) {
+      } else if (this.mode === _EDIT && !this.value?.location) {
         for (const key in this.defaultConfig) {
           if (this.value[key] === undefined) {
             this.value[key] = this.defaultConfig[key];
           }
         }
-      }
-
-      if (!this.value.location || !findBy(this.locationOptions, 'name', this.value.location)) {
-        this.locationOptions?.length && this.setLocation(this.locationOptions[this.locationOptions.length - 1]);
       }
 
       this.vmSizes = await this.$store.dispatch('management/request', {
@@ -220,17 +206,11 @@ export default {
       useAvailabilitySet: false,
       vmSizes:            [],
       valueCopy:          this.value,
-
-      loadedCredentialIdFor: null
     };
   },
 
   watch: {
     credentialId() {
-      this.$fetch();
-    },
-
-    'value.location'() {
       this.$fetch();
     },
 
@@ -508,9 +488,7 @@ export default {
   />
   <div v-else-if="errors.length">
     <div
-      v-for="(err, idx) in errors"
-      :key="idx"
-    >
+      v-for="(err, idx) in errors" :key="idx">
       <Banner
         color="error"
         :label="stringify(err)"
@@ -519,6 +497,19 @@ export default {
   </div>
   <div v-else>
     <div class="row mt-20">
+      <div class="col span-6">
+        <LabeledSelect
+          v-model:value="value.environment"
+          :mode="mode"
+          :options="azureEnvironments"
+          option-key="value"
+          option-label="value"
+          :searchable="false"
+          :required="true"
+          :label="t('cluster.machineConfig.azure.environment.label')"
+          :disabled="disabled"
+        />
+      </div>
       <div class="col span-6">
         <LabeledSelect
           :value="value.location"
@@ -530,20 +521,8 @@ export default {
           :required="true"
           :label="t('cluster.machineConfig.azure.location.label')"
           :disabled="disabled"
-          data-testid="machineConfig-azure-location"
           @update:value="setLocation"
         />
-      </div>
-      <div data-testid="machineConfig-azure-environment-value">
-        <label
-          v-clean-tooltip="t('cluster.machineConfig.azure.environment.tooltip')"
-          :style="{'display':'block'}"
-          class="text-label"
-        >
-          {{ t('cluster.machineConfig.azure.environment.label') }}
-          <i class="icon icon-sm icon-info" />
-        </label>
-        <span>{{ value.environment }}</span>
       </div>
     </div>
     <div class="row mt-20">

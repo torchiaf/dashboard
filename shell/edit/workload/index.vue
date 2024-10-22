@@ -2,11 +2,9 @@
 import CreateEditView from '@shell/mixins/create-edit-view';
 import FormValidation from '@shell/mixins/form-validation';
 import WorkLoadMixin from '@shell/edit/workload/mixins/workload';
-import { mapGetters } from 'vuex';
 
 export default {
   name:   'Workload',
-  emits:  ['input'],
   mixins: [CreateEditView, FormValidation, WorkLoadMixin], // The order here is important since WorkLoadMixin contains some FormValidation configuration
   props:  {
     value: {
@@ -20,24 +18,14 @@ export default {
     },
   },
   data() {
-    return { selectedName: null, closedErrorMessages: [] };
-  },
-  computed: {
-    ...mapGetters({ t: 'i18n/t' }),
-    errorMessages() {
-      if (!this.type) {
-        return [];
-      }
-
-      return this.fvUnreportedValidationErrors.filter((e) => !this.closedErrorMessages.includes(e));
-    }
+    return { selectedName: null };
   },
   methods: {
     changed(tab) {
       const key = this.idKey;
 
       this.selectedName = tab.selectedName;
-      const container = this.containerOptions.find( (c) => c[key] === tab.selectedName);
+      const container = this.containerOptions.find( c => c[key] === tab.selectedName);
 
       if ( container ) {
         this.selectContainer(container);
@@ -60,7 +48,10 @@ export default {
         const name = match[0];
         const policy = match[1];
 
-        return { message: this.t('workload.error', { name, policy }) };
+        return {
+          message: `Pod ${ name } Security Policy Violation ${ policy }`,
+          icon:    'icon-pod_security'
+        };
       }
       default:
         break;
@@ -94,7 +85,7 @@ export default {
       :selected-subtype="type"
       :resource="value"
       :mode="mode"
-      :errors="errorMessages"
+      :errors="fvUnreportedValidationErrors"
       :done-route="doneRoute"
       :subtypes="workloadSubTypes"
       :apply-hooks="applyHooks"
@@ -102,8 +93,9 @@ export default {
       :errors-map="getErrorsMap(fvUnreportedValidationErrors)"
       @finish="save"
       @select-type="selectType"
-      @error="(_, closedError) => closedErrorMessages.push(closedError)"
+      @error="e=>errors = e"
     >
+      <!-- <pre>{{ JSON.stringify(allContainers, null, 2) }}</pre> -->
       <NameNsDescription
         :value="value"
         :mode="mode"
@@ -134,7 +126,7 @@ export default {
           class="col span-3"
         >
           <LabeledInput
-            v-model:value.number="spec.replicas"
+            v-model.number="spec.replicas"
             type="number"
             min="0"
             required
@@ -163,13 +155,10 @@ export default {
         :show-tabs-add-remove="true"
         :default-tab="defaultTab"
         :flat="true"
-        data-testid="workload-horizontal-tabs"
         @changed="changed"
       >
         <Tab
-          v-for="(tab, i) in allContainers"
-          :key="i"
-          :label="tab.name"
+          v-for="(tab, i) in allContainers" :key="i":label="tab.name"
           :name="tab[idKey]"
           :weight="tab.weight"
           :error="!!tab.error"
@@ -177,7 +166,6 @@ export default {
           <Tabbed
             :side-tabs="true"
             :weight="99"
-            :data-testid="`workload-container-tabs-${i}`"
           >
             <Tab
               :label="t('workload.container.titles.general')"
@@ -187,6 +175,7 @@ export default {
             >
               <template
                 #tab-header-right
+                class="tab-content-controls"
               >
                 <button
                   v-if="allContainers.length > 1 && !isView"
@@ -224,7 +213,7 @@ export default {
                 <div class="row mb-20">
                   <div class="col span-6">
                     <LabeledInput
-                      v-model:value.trim="allContainers[i].image"
+                      v-model.trim="allContainers[i].image"
                       :mode="mode"
                       :label="t('workload.container.image')"
                       :placeholder="t('generic.placeholder', {text: 'nginx:latest'}, true)"
@@ -244,7 +233,7 @@ export default {
                   <div class="col span-6">
                     <LabeledSelect
                       v-model:value="imagePullSecrets"
-                      :label="t('workload.container.imagePullSecrets.label')"
+                      :label="t('workload.container.imagePullSecrets')"
                       :multiple="true"
                       :taggable="true"
                       :options="imagePullNamespacedSecrets"
@@ -252,7 +241,6 @@ export default {
                       option-label="metadata.name"
                       :reduce="service=>service.metadata.name"
                       :create-option="createOption"
-                      :tooltip="t('workload.container.imagePullSecrets.tooltip')"
                     />
                   </div>
                 </div>
@@ -349,13 +337,13 @@ export default {
               :weight="tabWeightMap['storage']"
             >
               <ContainerMountPaths
-                v-model:container="allContainers[i]"
-                :value="podTemplateSpec"
+                v-model:value="podTemplateSpec"
                 :namespace="value.metadata.namespace"
                 :register-before-hook="registerBeforeHook"
                 :mode="mode"
                 :secrets="namespacedSecrets"
                 :config-maps="namespacedConfigMaps"
+                :container="allContainers[i]"
                 :save-pvc-hook-name="savePvcHookName"
                 @removePvcForm="clearPvcFormState"
               />
@@ -368,19 +356,15 @@ export default {
           :name="nameDisplayFor(type)"
           :weight="99"
         >
-          <Tabbed
-            data-testid="workload-general-tabs"
-            :side-tabs="true"
-          >
+          <Tabbed :side-tabs="true">
             <Tab
               name="labels"
               label-key="generic.labelsAndAnnotations"
               :weight="tabWeightMap['labels']"
             >
               <Labels
-                :value="value"
+                v-model:value="value"
                 :mode="mode"
-                @update:value="$emit('input', $event)"
               />
             </Tab>
             <Tab
@@ -409,18 +393,13 @@ export default {
           :name="'pod'"
           :weight="98"
         >
-          <Tabbed
-            data-testid="workload-pod-tabs"
-            :side-tabs="true"
-          >
+          <Tabbed :side-tabs="true">
             <Tab
               :label="t('workload.storage.title')"
               name="storage"
               :weight="tabWeightMap['storage']"
-              @active="$refs.storage.refresh()"
             >
               <Storage
-                ref="storage"
                 v-model:value="podTemplateSpec"
                 :namespace="value.metadata.namespace"
                 :register-before-hook="registerBeforeHook"
@@ -438,7 +417,7 @@ export default {
               name="resources"
               :weight="tabWeightMap['resources']"
             >
-              <div>
+              <template>
                 <div>
                   <h3 class="mb-10">
                     <t k="workload.scheduling.titles.tolerations" />
@@ -459,7 +438,7 @@ export default {
                   <div class="row">
                     <div class="col span-6">
                       <LabeledInput
-                        v-model:value.number="podTemplateSpec.priority"
+                        v-model.number="podTemplateSpec.priority"
                         :mode="mode"
                         :label="t('workload.scheduling.priority.priority')"
                       />
@@ -473,7 +452,7 @@ export default {
                     </div>
                   </div>
                 </div>
-              </div>
+              </template>
             </Tab>
             <Tab
               :label="t('workload.container.titles.podScheduling')"
@@ -528,7 +507,7 @@ export default {
                 <div class="row">
                   <div class="col span-6">
                     <LabeledInput
-                      v-model:value.number="podFsGroup"
+                      v-model.number="podFsGroup"
                       type="number"
                       :mode="mode"
                       :label="t('workload.container.security.fsGroup')"

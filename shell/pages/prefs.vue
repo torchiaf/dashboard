@@ -8,19 +8,17 @@ import ButtonGroup from '@shell/components/ButtonGroup';
 import { Checkbox } from '@components/Form/Checkbox';
 import LandingPagePreference from '@shell/components/LandingPagePreference';
 import {
-  mapPref, THEME, KEYMAP, DATE_FORMAT, TIME_FORMAT, ROWS_PER_PAGE, HIDE_DESC, SHOW_PRE_RELEASE,
+  mapPref, THEME, KEYMAP, DATE_FORMAT, TIME_FORMAT, ROWS_PER_PAGE, HIDE_DESC, SHOW_PRE_RELEASE, MENU_MAX_CLUSTERS,
   VIEW_IN_API, ALL_NAMESPACES, THEME_SHORTCUT, PLUGIN_DEVELOPER, SCALE_POOL_PROMPT
-  , MENU_MAX_CLUSTERS
 } from '@shell/store/prefs';
-
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import { addObject } from '@shell/utils/array';
 import LocaleSelector from '@shell/components/LocaleSelector';
-import TabTitle from '@shell/components/TabTitle';
 
 export default {
+  layout:     'plain',
   components: {
-    BackLink, ButtonGroup, LabeledSelect, Checkbox, LandingPagePreference, LocaleSelector, TabTitle
+    BackLink, ButtonGroup, LabeledSelect, Checkbox, LandingPagePreference, LocaleSelector
   },
   mixins: [BackRoute],
   data() {
@@ -36,6 +34,7 @@ export default {
     perPage:           mapPref(ROWS_PER_PAGE),
     hideDesc:          mapPref(HIDE_DESC),
     showPreRelease:    mapPref(SHOW_PRE_RELEASE),
+    menuMaxClusters:   mapPref(MENU_MAX_CLUSTERS),
     pluginDeveloper:   mapPref(PLUGIN_DEVELOPER),
     scalingDownPrompt: mapPref(SCALE_POOL_PROMPT),
 
@@ -133,7 +132,7 @@ export default {
     perPageOptions() {
       const t = this.$store.getters['i18n/t'];
 
-      return this.$store.getters['prefs/options'](ROWS_PER_PAGE).map((count) => ({
+      return this.$store.getters['prefs/options'](ROWS_PER_PAGE).map(count => ({
         label: t('prefs.perPage.value', { count }),
         value: count
       }));
@@ -142,7 +141,7 @@ export default {
     menuClusterOptions() {
       const t = this.$store.getters['i18n/t'];
 
-      return this.$store.getters['prefs/options'](MENU_MAX_CLUSTERS).map((count) => ({
+      return this.$store.getters['prefs/options'](MENU_MAX_CLUSTERS).map(count => ({
         label: t('prefs.clusterToShow.value', { count }),
         value: count
       }));
@@ -175,13 +174,9 @@ export default {
   <div>
     <BackLink :link="backLink" />
     <h1
+      v-t="'prefs.title'"
       class="mb-20"
-    >
-      <TabTitle breadcrumb="vendor-only">
-        {{ t('prefs.title') }}
-      </TabTitle>
-    </h1>
-
+    />
     <!-- Language -->
     <div
       v-if="hasMultipleLocales"
@@ -253,7 +248,7 @@ export default {
       <div class="row mt-20">
         <div class="col span-4">
           <LabeledSelect
-            v-model:value="perPage"
+            v-model.number="perPage"
             data-testid="prefs__displaySetting__perPage"
             :label="t('prefs.perPage.label')"
             :options="perPageOptions"
@@ -262,6 +257,17 @@ export default {
             placeholder="Select a row count"
           />
         </div>
+        <!-- <div class="col span-4">
+          <LabeledSelect
+            v-model.number="menuMaxClusters"
+            data-testid="prefs__displaySetting__menuMaxClusters"
+            :label="t('prefs.clusterToShow.label')"
+            :options="menuClusterOptions"
+            option-key="value"
+            option-label="label"
+            placeholder="Select a row count"
+          />
+        </div> -->
       </div>
     </div>
     <!-- Confirmation setting -->
@@ -302,14 +308,18 @@ export default {
         :label="t('prefs.advFeatures.themeShortcut', {}, true)"
         class="mt-20"
       />
-      <br>
-      <Checkbox
-        v-if="!isSingleProduct"
-        v-model:value="hideDescriptions"
-        data-testid="prefs__hideDescriptions"
-        :label="t('prefs.hideDesc.label')"
-        class="mt-20"
-      />
+
+      <template v-if="!isSingleProduct">
+        <br>
+        <Checkbox
+
+          v-model:value="hideDescriptions"
+          data-testid="prefs__hideDescriptions"
+          :label="t('prefs.hideDesc.label')"
+          class="mt-20"
+        />
+      </template>
+
       <template v-if="admin">
         <br>
         <Checkbox

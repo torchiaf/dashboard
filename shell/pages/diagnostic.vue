@@ -1,18 +1,20 @@
 <script>
 import { CAPI, MANAGEMENT } from '@shell/config/types';
 import AsyncButton from '@shell/components/AsyncButton';
+import PromptModal from '@shell/components/PromptModal';
 import { downloadFile } from '@shell/utils/download';
 import { filterOnlyKubernetesClusters, filterHiddenLocalCluster } from '@shell/utils/cluster';
 import { sortBy } from '@shell/utils/sort';
 
 export default {
-  name: 'Diagnostic',
+  name:   'Diagnostic',
+  layout: 'plain',
 
-  components: { AsyncButton },
+  components: { AsyncButton, PromptModal },
 
   async fetch() {
     const provClusters = await this.$store.dispatch('management/findAll', { type: CAPI.RANCHER_CLUSTER });
-    const readyClusters = provClusters.filter((c) => c.mgmt?.isReady);
+    const readyClusters = provClusters.filter(c => c.mgmt?.isReady);
     const clusterForCounts = filterHiddenLocalCluster(filterOnlyKubernetesClusters(readyClusters, this.$store), this.$store);
     const finalCounts = [];
     const promises = [];
@@ -118,6 +120,9 @@ export default {
       systemInformation.jsMemory.value += `, ${ this.t('about.diagnostic.systemInformation.memUsedJsHeapSize', { usedJSHeapSize: window?.performance?.memory?.usedJSHeapSize }) }`;
     }
 
+    // scroll logs container to the bottom
+    this.scrollLogsToBottom();
+
     return {
       systemInformation,
       topFifteenForResponseTime: null,
@@ -125,7 +130,14 @@ export default {
       finalCounts:               null,
       includeResponseTimes:      true,
       storeMapping:              this.$store?._modules?.root?.state,
+      latestLogs:                console.logs // eslint-disable-line no-console
     };
+  },
+
+  watch: {
+    latestLogs() {
+      this.scrollLogsToBottom();
+    }
   },
 
   computed: {
@@ -135,6 +147,14 @@ export default {
   },
 
   methods: {
+    scrollLogsToBottom() {
+      this.$nextTick(() => {
+        const logsContainer = document.querySelector('.logs-container');
+
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+      });
+    },
+
     generateKey(data) {
       const randomize = Math.random() * 10000;
 
@@ -142,10 +162,12 @@ export default {
     },
 
     downloadData(btnCb) {
-      // simplify filename due to e2e tests
-      const fileName = 'rancher-diagnostic-data.json';
+      const date = new Date().toLocaleDateString();
+      const time = new Date().toLocaleTimeString();
+      const fileName = `rancher-diagnostic-data-${ date }-${ time.replaceAll(':', '_') }.json`;
       const data = {
         systemInformation: this.systemInformation,
+        logs:              this.latestLogs,
         storeMapping:      this.parseStoreData(this.storeMapping),
         resourceCounts:    this.finalCounts,
         responseTimes:     this.responseTimes
@@ -159,11 +181,11 @@ export default {
     setResourceResponseTiming(responseTimes) {
       responseTimes?.forEach((res) => {
         if ( res.outcome === 'success' ) {
-          const cluster = this.finalCounts.find((c) => c.capiId === res.item.capiId);
-          const countIndex = cluster?.counts?.findIndex((c) => c.resource === res.item.resource);
+          const cluster = this.finalCounts.find(c => c.capiId === res.item.capiId);
+          const countIndex = cluster?.counts?.findIndex(c => c.resource === res.item.resource);
 
           if ( (countIndex && countIndex !== -1) || countIndex === 0 ) {
-            cluster.counts[countIndex]['durationMs'] = res.durationMs;
+            cluster?.counts[countIndex]['durationMs'] = res.durationMs;
           }
         }
       });
@@ -174,13 +196,13 @@ export default {
     },
 
     nodeCount(counts) {
-      const resource = counts.findIndex((c) => c.resource === 'node');
+      const resource = counts.findIndex(c => c.resource === 'node');
 
       return counts[resource]?.count;
     },
 
     toggleTable(area) {
-      const itemIndex = this.finalCounts.findIndex((item) => item.id === area);
+      const itemIndex = this.finalCounts.findIndex(item => item.id === area);
 
       this.finalCounts[itemIndex].isTableVisible = !this.finalCounts[itemIndex].isTableVisible;
     },
@@ -213,8 +235,6 @@ export default {
         'aws',
         'digitalocean',
         'linode',
-        'targetRoute', // contains circular references, isn't useful (added later to store)
-        '$router', // also contains a circular reference to $store, not useful for diagnostics
       ];
 
       const clearListsKeys = [
@@ -296,12 +316,10 @@ export default {
         <AsyncButton
           mode="timing"
           class="mr-20"
-          data-testid="diagnostics-generate-response-times"
           @click="gatherResponseTimes"
         />
         <AsyncButton
           mode="diagnostic"
-          data-testid="diagnostics-download-diagnostic-package"
           @click="promptDownload"
         />
       </div>
@@ -321,9 +339,7 @@ export default {
         </thead>
         <tbody>
           <tr
-            v-for="(item, objKey) in systemInformation"
-            :key="objKey"
-          >
+            v-for="(item, objKey) in systemInformation" :key="objKey">
             <template v-if="item.value.length">
               <td>{{ item.label }}</td>
               <td>{{ item.value }}</td>
@@ -340,9 +356,7 @@ export default {
       </h2>
       <div class="resources-count-container">
         <table
-          v-for="(cluster, i) in finalCounts"
-          :key="i"
-          class="full-width"
+           v-for="(cluster, i) in finalCounts" :key="i" class="full-width"
         >
           <thead @click="toggleTable(cluster.id)">
             <th colspan="4">
@@ -375,9 +389,7 @@ export default {
             </tr>
 
             <tr
-              v-for="(item, j) in cluster.counts"
-              :key="j"
-            >
+               v-for="(item, i) in cluster.counts" :key="i" >
               <template v-if="item.count > 0">
                 <td scope="row">
                   {{ item.resource }}
@@ -390,6 +402,24 @@ export default {
         </table>
       </div>
     </div>
+
+    <!-- Logs -->
+    <div class="mb-40">
+      <h2 class="mb-20">
+        {{ t('about.diagnostic.logs.subtitle') }}
+      </h2>
+      <ul class="logs-container">
+        <li
+           v-for="(logEntry, i) in latestLogs" :key="i" :class="logEntry.type"
+        >
+          <span class="log-entry-type">{{ logEntry.type }} :: </span>
+          <span
+            v-for="(arg, i) in logEntry.data" :key="i">{{ arg }}</span>
+        </li>
+      </ul>
+    </div>
+
+    <PromptModal />
   </div>
 </template>
 

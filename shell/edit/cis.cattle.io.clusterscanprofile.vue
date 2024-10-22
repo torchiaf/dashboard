@@ -113,38 +113,40 @@ export default {
       @finish="save"
       @error="e=>errors = e"
     >
-      <div class="spacer" />
-      <div class="row">
-        <div class="col span-12">
-          <NameNsDescription
-            :mode="mode"
-            :value="value"
-            :namespaced="false"
-            @change="name=value.metadata.name"
-          />
+      <template>
+        <div class="spacer" />
+        <div class="row">
+          <div class="col span-12">
+            <NameNsDescription
+              :mode="mode"
+              :value="value"
+              :namespaced="false"
+              @change="name=value.metadata.name"
+            />
+          </div>
         </div>
-      </div>
-      <div class="row">
-        <div class="col span-6">
-          <LabeledSelect
-            v-model:value="value.spec.benchmarkVersion"
-            :mode="mode"
-            :label="t('cis.benchmarkVersion')"
-            :options="compatibleBenchmarkNames"
-          />
+        <div class="row">
+          <div class="col span-6">
+            <LabeledSelect
+              v-model:value="value.spec.benchmarkVersion"
+              :mode="mode"
+              :label="t('cis.benchmarkVersion')"
+              :options="compatibleBenchmarkNames"
+            />
+          </div>
         </div>
-      </div>
-      <div class="spacer" />
-      <div class="row">
-        <div class="col span-6">
-          <ArrayList
-            v-model:value="value.spec.skipTests"
-            :title="t('cis.testsToSkip')"
-            :value-placeholder="t('cis.testID')"
-            :mode="mode"
-          />
+        <div class="spacer" />
+        <div class="row">
+          <div class="col span-6">
+            <ArrayList
+              v-model:value="value.spec.skipTests"
+              :title="t('cis.testsToSkip')"
+              :value-placeholder="t('cis.testID')"
+              :mode="mode"
+            />
+          </div>
         </div>
-      </div>
+      </template>
     </CruResource>
   </div>
 </template>

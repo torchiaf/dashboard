@@ -45,10 +45,7 @@ export default {
   },
 
   async fetch() {
-    if (!this.$store.getters[`cluster/paginationEnabled`]()) {
-      // This is only used by shell/models/networking.k8s.io.ingress.js `targetTo`, where we do some dodgy matching of workloads with name 'ingress-'
-      await Promise.all(Object.values(WORKLOAD_TYPES).map((type) => this.$store.dispatch('cluster/findAll', { type })));
-    }
+    await Promise.all(Object.values(WORKLOAD_TYPES).map(type => this.$store.dispatch('cluster/findAll', { type })));
   },
 
   beforeUpdate() {
@@ -61,7 +58,7 @@ export default {
 
   computed: {
     workloads() {
-      return Object.values(WORKLOAD_TYPES).flatMap((type) => this.$store.getters['cluster/all'](type));
+      return Object.values(WORKLOAD_TYPES).flatMap(type => this.$store.getters['cluster/all'](type));
     },
     isView() {
       return this.mode === _VIEW;
@@ -78,10 +75,8 @@ export default {
           name:          'target',
           label:         this.t('ingress.rules.headers.target'),
           formatter:     'Link',
-          formatterOpts: {
-            options: { internal: true }, urlKey: 'targetLink.to', labelKey: 'serviceName'
-          },
-          value: 'targetLink',
+          formatterOpts: { options: { internal: true }, urlKey: 'targetLink.to' },
+          value:         'targetLink',
         },
         {
           name:  'port',

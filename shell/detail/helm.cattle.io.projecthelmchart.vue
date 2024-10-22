@@ -5,6 +5,7 @@ import Tab from '@shell/components/Tabbed/Tab';
 import DashboardMetrics from '@shell/components/DashboardMetrics';
 import AlertTable from '@shell/components/AlertTable';
 import { Banner } from '@components/Banner';
+import { parse as parseUrl } from '@shell/utils/url';
 import { ENDPOINTS } from '@shell/config/types';
 import { allHash } from '@shell/utils/promise';
 
@@ -32,34 +33,33 @@ export default {
     };
   },
   computed: {
-    // there is a since-fixed bug in some versions of prom federator where this url is missing the trailing slash, which causes a redirect to an invalid grafana url
-    grafanaURL() {
-      const { grafanaURL } = this.value.status.dashboardValues;
+    relativeDashboardValues() {
+      const { alertmanagerURL, grafanaURL, prometheusURL } = this?.value?.status?.dashboardValues;
 
-      if (!grafanaURL.endsWith('/')) {
-        return `${ grafanaURL }/`;
-      }
-
-      return grafanaURL;
+      return {
+        alertmanagerURL: this.makeRelativeURL(alertmanagerURL),
+        grafanaURL:      this.makeRelativeURL(grafanaURL),
+        prometheusURL:   this.makeRelativeURL(prometheusURL)
+      };
     },
     monitoringNamespace() {
       // picking the prometheusURL here, they're all going to be the same, but alertmanager and grafana can be deactivated
-      return this.pullKeyFromUrl(this.value.status.dashboardValues.prometheusURL, 'namespaces');
+      return this.pullKeyFromUrl(this.relativeDashboardValues.prometheusURL, 'namespaces');
     },
     alertServiceEndpoint() {
-      return this.pullServiceEndpointFromUrl(this.value.status.dashboardValues.alertmanagerURL);
+      return this.pullServiceEndpointFromUrl(this.relativeDashboardValues.alertmanagerURL);
     },
     alertServiceEndpointEnabled() {
       return this.checkEndpointEnabled(this.alertServiceEndpoint);
     },
     grafanaServiceEndpoint() {
-      return this.pullServiceEndpointFromUrl(this.value.status.dashboardValues.grafanaURL);
+      return this.pullServiceEndpointFromUrl(this.relativeDashboardValues.grafanaURL);
     },
     grafanaServiceEndpointEnabled() {
       return this.checkEndpointEnabled(this.grafanaServiceEndpoint);
     },
     prometheusServiceEndpoint() {
-      return this.pullServiceEndpointFromUrl(this.value.status.dashboardValues.prometheusURL);
+      return this.pullServiceEndpointFromUrl(this.relativeDashboardValues.prometheusURL);
     },
     prometheusServiceEndpointEnabled() {
       return this.checkEndpointEnabled(this.prometheusServiceEndpoint);
@@ -83,7 +83,21 @@ export default {
 
       return !isEmpty(endpoint) && !isEmpty(endpoint?.subsets);
     },
+    makeRelativeURL(url) {
+      if (!url) {
+        return '';
+      }
 
+      // most of the downstream components that use these URL expect the everything before and including the clusterid stripped out of the URL
+      const parsedUrl = parseUrl(url);
+      // we really just need the remaining bit of the url but the destructure makes it clear what we're leaving behind
+      // eslint-disable-next-line no-unused-vars
+      const [_empty, _k8s, _clusters, _clusterId, ...restUrl] = parsedUrl.relative.split('/');
+      // the above processing strips out the leading '/' which we need
+      const relativeUrl = `/${ restUrl.join('/') }`;
+
+      return relativeUrl;
+    },
     pullKeyFromUrl(url = '', key) {
       const splitUrl = url.split('/');
       const keyIndex = splitUrl.indexOf(key);
@@ -124,11 +138,10 @@ export default {
         <template #default="props">
           <DashboardMetrics
             v-if="props.active && grafanaServiceEndpointEnabled"
-            :detail-url="`${value.status.dashboardValues.grafanaURL}/d/rancher-pod-1/rancher-pod?orgId=1&kiosk`"
-            :summary-url="`${value.status.dashboardValues.grafanaURL}/d/rancher-workload-1/rancher-workload?orgId=1&kiosk`"
+            :detail-url="`${relativeDashboardValues.grafanaURL}/d/rancher-pod-1/rancher-pod?orgId=1&kiosk`"
+            :summary-url="`${relativeDashboardValues.grafanaURL}/d/rancher-workload-1/rancher-workload?orgId=1&kiosk`"
             graph-height="825px"
             project
-            :modify-prefix="false"
           />
         </template>
       </Tab>
@@ -137,10 +150,12 @@ export default {
         :label="t('monitoring.overview.alertsList.label')"
         :weight="2"
       >
-        <AlertTable
-          :monitoring-namespace="monitoringNamespace"
-          :alert-service-endpoint="alertServiceEndpoint"
-        />
+        <template>
+          <AlertTable
+            :monitoring-namespace="monitoringNamespace"
+            :alert-service-endpoint="alertServiceEndpoint"
+          />
+        </template>
       </Tab>
       <template #tab-row-extras>
         <div class="tab-row-footer">
@@ -152,50 +167,51 @@ export default {
             @click="showMenu(true)"
             @focus.capture="showMenu(true)"
           >
-            <v-dropdown
+            <v-popover
               ref="popover"
               placement="bottom-end"
               offset="-10"
-              :triggers="[]"
+              trigger="manual"
               :delay="{show: 0, hide: 0}"
-              :flip="false"
+              :popper-options="{modifiers: { flip: { enabled: false } } }"
               :container="false"
             >
               <div class="meta-title">
                 {{ t('monitoring.tabs.prometheus') }} <i class="icon icon-chevron-down" />
               </div>
-              <template #popper>
-                <div class="resources-status-list">
-                  <ul
-                    class="list-unstyled dropdown"
-                    @click.stop="showMenu(false)"
-                  >
-                    <li>
-                      <a
-                        :href="`${value.status.dashboardValues.prometheusURL}/graph`"
-                        target="_blank"
-                      >{{ t('monitoring.overview.linkedList.prometheusPromQl.label') }} <i class="icon icon-external-link" /></a>
-                    </li>
-                    <li>
-                      <a
-                        :href="`${value.status.dashboardValues.prometheusURL}/rules`"
-                        target="_blank"
-                      >{{ t('monitoring.overview.linkedList.prometheusRules.label') }} <i class="icon icon-external-link" /></a>
-                    </li>
-                    <li>
-                      <a
-                        :href="`${value.status.dashboardValues.prometheusURL}/targets`"
-                        target="_blank"
-                      >{{ t('monitoring.overview.linkedList.prometheusTargets.label') }} <i class="icon icon-external-link" /></a>
-                    </li>
-                  </ul>
-                </div>
+              <template
+                slot="popover"
+                class="resources-status-list"
+              >
+                <ul
+                  class="list-unstyled dropdown"
+                  @click.stop="showMenu(false)"
+                >
+                  <li>
+                    <a
+                      :href="`${value.status.dashboardValues.prometheusURL}/graph`"
+                      target="_blank"
+                    >{{ t('monitoring.overview.linkedList.prometheusPromQl.label') }} <i class="icon icon-external-link" /></a>
+                  </li>
+                  <li>
+                    <a
+                      :href="`${value.status.dashboardValues.prometheusURL}/rules`"
+                      target="_blank"
+                    >{{ t('monitoring.overview.linkedList.prometheusRules.label') }} <i class="icon icon-external-link" /></a>
+                  </li>
+                  <li>
+                    <a
+                      :href="`${value.status.dashboardValues.prometheusURL}/targets`"
+                      target="_blank"
+                    >{{ t('monitoring.overview.linkedList.prometheusTargets.label') }} <i class="icon icon-external-link" /></a>
+                  </li>
+                </ul>
               </template>
-            </v-dropdown>
+            </v-popover>
           </div>
           <a
             :class="{disabled: !grafanaServiceEndpointEnabled}"
-            :href="grafanaURL"
+            :href="value.status.dashboardValues.grafanaURL"
             target="_blank"
           > {{ t('monitoring.overview.linkedList.grafana.label') }} <i class="icon icon-external-link" /></a>
           <a

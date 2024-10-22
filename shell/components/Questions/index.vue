@@ -13,18 +13,12 @@ import ArrayType from './Array';
 import MapType from './QuestionMap';
 import ReferenceType from './Reference';
 import CloudCredentialType from './CloudCredential';
-import RadioType from './Radio';
-import YamlType from './Yaml';
-import Loading from '@shell/components/Loading';
 
 export const knownTypes = {
   string:          StringType,
-  hostname:        StringType,
+  hostname:        StringType, // @TODO
   multiline:       StringType,
   password:        StringType,
-  ipaddr:          StringType,
-  cidr:            StringType,
-  cron:            StringType,
   boolean:         BooleanType,
   enum:            EnumType,
   int:             IntType,
@@ -36,8 +30,6 @@ export const knownTypes = {
   storageclass:    ReferenceType,
   pvc:             ReferenceType,
   cloudcredential: CloudCredentialType,
-  radio:           RadioType,
-  yaml:            YamlType,
 };
 
 export function componentForQuestion(q) {
@@ -75,9 +67,9 @@ function migrate(expr) {
   let out;
 
   if ( expr.includes('||') ) {
-    out = expr.split('||').map((x) => migrate(x)).join(' || ');
+    out = expr.split('||').map(x => migrate(x)).join(' || ');
   } else if ( expr.includes('&&') ) {
-    out = expr.split('&&').map((x) => migrate(x)).join(' && ');
+    out = expr.split('&&').map(x => migrate(x)).join(' && ');
   } else {
     const parts = expr.match(/^(.*)(!?=)(.*)$/);
 
@@ -116,13 +108,7 @@ function migrate(expr) {
 }
 
 export default {
-  emits: ['updated'],
-
-  components: {
-    ...knownTypes,
-    Tab,
-    Loading,
-  },
+  components: { Tab, ...knownTypes },
 
   props: {
     mode: {
@@ -169,13 +155,6 @@ export default {
     emit: {
       type:    Boolean,
       default: false,
-    }
-  },
-
-  async fetch() {
-    // If this source is a schema, ensure the schema's `resourceFields` is populated
-    if (this.source.type === 'schema' && this.source.requiresResourceFields) {
-      await this.source.fetchResourceFields();
     }
   },
 
@@ -272,7 +251,7 @@ export default {
       }
 
       if ( this.tabbed === 'multiple' ) {
-        return !!this.groups.length;
+        return this.groups.length > 1;
       }
 
       return true;
@@ -332,9 +311,9 @@ export default {
       let result;
 
       if ( get(or, 'length') > 1 ) {
-        result = or.some((showIf) => this.calExpression(showIf, allQuestions));
+        result = or.some(showIf => this.calExpression(showIf, allQuestions));
       } else {
-        result = and.every((showIf) => this.calExpression(showIf, allQuestions));
+        result = and.every(showIf => this.calExpression(showIf, allQuestions));
       }
 
       return result;
@@ -389,7 +368,7 @@ export default {
       return null;
     },
     getAnswer(variable, questions) {
-      const found = questions.find((q) => q.variable === variable);
+      const found = questions.find(q => q.variable === variable);
 
       if ( found ) {
         // Equivalent to finding question.answer in Ember
@@ -448,22 +427,14 @@ export default {
 </script>
 
 <template>
-  <Loading
-    v-if="$fetchState.pending"
-    mode="relative"
-  />
-  <form v-else-if="asTabs">
+  <form v-if="asTabs">
     <Tab
-      v-for="(g, i) in groups"
-      :key="i"
-      :name="g.name"
+       v-for="(g, i) in groups" :key="i" :name="g.name"
       :label="g.name"
       :weight="g.weight"
     >
       <div
-        v-for="(q, j) in g.questions"
-        :key="`${i}-${j}`"
-        class="row question"
+         v-for="(q, i) in g.questions" :key="i" class="row question"
       >
         <div class="col span-12">
           <component
@@ -482,16 +453,12 @@ export default {
   </form>
   <form v-else>
     <div
-      v-for="(g, i) in groups"
-      :key="i"
-    >
+       v-for="(g, i) in groups" :key="i" >
       <h3 v-if="groups.length > 1">
         {{ g.label }}
       </h3>
       <div
-        v-for="(q, j) in g.questions"
-        :key="`${i}-${j}`"
-        class="row question"
+         v-for="(q, i) in g.questions" :key="i" class="row question"
       >
         <div class="col span-12">
           <component

@@ -5,8 +5,6 @@ import { AUTO, CENTER, fitOnScreen } from '@shell/utils/position';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 
 export default {
-  emits: ['update-cols-options', 'on-toggle-all', 'group-value-change', 'on-sort-change', 'col-visibility-change'],
-
   components: { Checkbox, LabeledSelect },
   props:      {
     columns: {
@@ -138,9 +136,6 @@ export default {
     isIndeterminate() {
       return this.howMuchSelected === SOME;
     },
-    hasColumnWithSubLabel() {
-      return this.columns.some((col) => col.subLabel);
-    }
   },
 
   methods: {
@@ -167,13 +162,15 @@ export default {
       const menu = document.querySelector('.table-options-container');
       const elem = document.querySelector('.table-options-btn');
 
-      this.tableColsMenuPosition = fitOnScreen(menu, ev || elem, {
-        overlapX:  true,
-        fudgeX:    326,
-        fudgeY:    -22,
-        positionX: CENTER,
-        positionY: AUTO,
-      });
+      if (!this.tableColsMenuPosition) {
+        this.tableColsMenuPosition = fitOnScreen(menu, ev || elem, {
+          overlapX:  true,
+          fudgeX:    26,
+          fudgeY:    -22,
+          positionX: CENTER,
+          positionY: AUTO,
+        });
+      }
 
       // toggle visibility
       this.tableColsOptionsVisibility = !this.tableColsOptionsVisibility;
@@ -211,10 +208,11 @@ export default {
 
 <template>
   <thead>
-    <tr :class="{'loading': loading, 'top-aligned': hasColumnWithSubLabel}">
+    <tr :class="{'loading': loading}">
       <th
         v-if="tableActions"
         :width="checkWidth"
+        align="middle"
       >
         <Checkbox
           v-model:value="isAll"
@@ -229,7 +227,7 @@ export default {
         :width="expandWidth"
       />
       <th
-        v-for="(col) in columns"
+         v-for="(col, i) in columns" :key="i" 
         v-show="!hasAdvancedFiltering || (hasAdvancedFiltering && col.isColVisible)"
         :key="col.name"
         :align="col.align || 'left'"
@@ -241,22 +239,11 @@ export default {
           class="table-header-container"
           :class="{ 'not-filterable': hasAdvancedFiltering && !col.isFilter }"
         >
-          <div
+          <span
+            v-if="col.sort"
             v-clean-tooltip="tooltip(col)"
-            class="content"
           >
             <span v-clean-html="labelFor(col)" />
-            <span
-              v-if="col.subLabel"
-              class="text-muted"
-            >
-              {{ col.subLabel }}
-            </span>
-          </div>
-          <div
-            v-if="col.sort"
-            class="sort"
-          >
             <i
               v-show="hasAdvancedFiltering && !col.isFilter"
               v-clean-tooltip="t('sortableTable.tableHeader.noFilter')"
@@ -273,7 +260,11 @@ export default {
                 class="icon icon-sort-up icon-stack-1x"
               />
             </span>
-          </div>
+          </span>
+          <span
+            v-else
+            v-clean-tooltip="tooltip(col)"
+          >{{ labelFor(col) }}</span>
         </div>
       </th>
       <th
@@ -320,7 +311,7 @@ export default {
             </p>
             <ul>
               <li
-                v-for="(col, index) in tableColsOptions"
+                v-for="(col, index) in tableColsOptions" :key="index"
                 v-show="col.isTableOption"
                 :key="index"
                 :class="{ 'visible': !col.preventColToggle }"
@@ -405,11 +396,6 @@ export default {
       }
     }
 
-    .top-aligned th {
-      vertical-align: top;
-      padding-top: 10px;
-    }
-
     thead {
       tr {
         background-color: var(--sortable-table-header-bg);
@@ -429,11 +415,11 @@ export default {
       color: var(--body-text);
 
       .table-header-container {
-        display: flex;
+        display: inherit;
 
-        .content {
+        > span {
           display: flex;
-          flex-direction: column;
+          align-items: center;
         }
 
         &.not-filterable {

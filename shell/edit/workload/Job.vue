@@ -6,7 +6,6 @@ import { RadioGroup } from '@components/Form/Radio';
 import { mapGetters } from 'vuex';
 
 export default {
-  emits:      ['update:value'],
   components: {
     UnitInput, LabeledInput, RadioGroup
   },
@@ -118,7 +117,7 @@ export default {
 
         spec.template.spec.terminationGracePeriodSeconds = this.terminationGracePeriodSeconds;
 
-        this.$emit('update:value', spec);
+        this.$emit('input', spec);
       } else {
         const spec = {
           ...this.value,
@@ -140,7 +139,7 @@ export default {
 
         spec.jobTemplate.spec.template.spec.terminationGracePeriodSeconds = this.terminationGracePeriodSeconds;
 
-        this.$emit('update:value', spec);
+        this.$emit('input', spec);
       }
     },
 
@@ -214,7 +213,7 @@ export default {
           class="col span-6"
         >
           <LabeledInput
-            v-model:value.number="successfulJobsHistoryLimit"
+            v-model.number="successfulJobsHistoryLimit"
             :mode="mode"
             label-key="workload.job.successfulJobsHistoryLimit.label"
             tooltip-key="workload.job.successfulJobsHistoryLimit.tip"
@@ -226,7 +225,7 @@ export default {
           class="col span-6"
         >
           <LabeledInput
-            v-model:value.number="failedJobsHistoryLimit"
+            v-model.number="failedJobsHistoryLimit"
             :mode="mode"
             label-key="workload.job.failedJobsHistoryLimit.label"
             tooltip-key="workload.job.failedJobsHistoryLimit.tip"
@@ -261,7 +260,7 @@ export default {
           >
             <template #label>
               <label
-                class="v-popper--has-tooltip"
+                class="has-tooltip"
                 :style="{'color':'var(--input-label)'}"
               >
                 {{ t('workload.upgrading.terminationGracePeriodSeconds.label') }}
@@ -287,7 +286,7 @@ export default {
             name="concurrency"
             :options="['Allow', 'Forbid', 'Replace']"
             :labels="[t('workload.upgrading.concurrencyPolicy.options.allow'), t('workload.upgrading.concurrencyPolicy.options.forbid'), t('workload.upgrading.concurrencyPolicy.options.replace')]"
-            @update:value="update"
+            @input="update"
           />
         </div>
         <div
@@ -301,7 +300,7 @@ export default {
             name="suspend"
             :options="[true, false]"
             :labels="['Yes', 'No']"
-            @update:value="update"
+            @input="update"
           />
         </div>
       </div>
@@ -322,7 +321,7 @@ export default {
         >
           <template #label>
             <label
-              class="v-popper--has-tooltip"
+              class="has-tooltip"
               :style="{'color':'var(--input-label)'}"
             >
               {{ t('workload.upgrading.terminationGracePeriodSeconds.label') }}

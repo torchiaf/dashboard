@@ -8,14 +8,11 @@ import NameNsDescription from '@shell/components/form/NameNsDescription';
 import { Banner } from '@components/Banner';
 import { CAPI } from '@shell/config/labels-annotations';
 import { clear } from '@shell/utils/array';
-import cloneDeep from 'lodash/cloneDeep';
 
 const _NEW = '_NEW';
 const _NONE = '_NONE';
 
 export default {
-  emits: ['update:value', 'credential-created'],
-
   components: {
     Loading, LabeledSelect, CruResource, NameNsDescription, Banner
   },
@@ -34,10 +31,9 @@ export default {
     },
 
     cancel: {
-      type:    Function,
-      default: null
+      type:     Function,
+      required: true,
     },
-
     showingForm: {
       type:     Boolean,
       required: true,
@@ -70,13 +66,12 @@ export default {
 
   data() {
     return {
-      allCredentials:                [],
-      nodeComponent:                 null,
-      credentialId:                  this.value || _NONE,
-      newCredential:                 null,
-      credCustomComponentValidation: false,
-      nameRequiredValidation:        false,
-      originalId:                    this.value
+      allCredentials:         [],
+      nodeComponent:          null,
+      credentialId:           this.value || _NONE,
+      newCredential:          null,
+      createValidationPassed: false,
+      originalId:             this.value
     };
   },
 
@@ -103,23 +98,18 @@ export default {
     },
 
     filteredCredentials() {
-      return this.allCredentials.filter((x) => x.provider === this.driverName);
+      return this.allCredentials.filter(x => x.provider === this.driverName);
     },
 
     options() {
-      const duplicates = {};
-
-      this.filteredCredentials.forEach((cred) => {
-        duplicates[cred.nameDisplay] = duplicates[cred.nameDisplay] === null ? true : null;
+      const out = this.filteredCredentials.map((obj) => {
+        return {
+          label: obj.nameDisplay,
+          value: obj.id,
+        };
       });
 
-      const out = this.filteredCredentials.map((obj) => ({
-        // if credential name is duplicated we add the id to the label
-        label: duplicates[obj.nameDisplay] ? `${ obj.nameDisplay } (${ obj.id })` : obj.nameDisplay,
-        value: obj.id,
-      }));
-
-      if ( this.originalId && !out.find((x) => x.value === this.originalId) ) {
+      if ( this.originalId && !out.find(x => x.value === this.originalId) ) {
         out.unshift({
           label: `${ this.originalId.replace(/^cattle-global-data:/, '') } (current)`,
           value: this.originalId
@@ -154,7 +144,7 @@ export default {
       }
 
       if ( this.credentialId === _NEW ) {
-        return this.credCustomComponentValidation && this.nameRequiredValidation;
+        return this.createValidationPassed;
       }
 
       return !!this.credentialId;
@@ -164,14 +154,11 @@ export default {
   watch: {
     credentialId(val) {
       if ( val === _NEW || val === _NONE ) {
-        this.$emit('update:value', null);
+        this.$emit('input', null);
       } else {
-        this.$emit('update:value', val);
+        this.$emit('input', val);
       }
     },
-    'newCredential.name'(newValue) {
-      this.nameRequiredValidation = newValue?.length > 0;
-    }
   },
 
   methods: {
@@ -179,7 +166,6 @@ export default {
       if ( this.errors ) {
         clear(this.errors);
       }
-      const fullCredential = cloneDeep(this.newCredential);
 
       if ( typeof this.$refs.create?.test === 'function' ) {
         try {
@@ -207,8 +193,6 @@ export default {
         const res = await this.newCredential.save();
 
         this.credentialId = res.id;
-        // full cloud credential data is not stored in the cloud credentail CRD, but consuming components may want to use it
-        this.$emit('credential-created', fullCredential);
         btnCb(true);
       } catch (e) {
         this.errors = [e];
@@ -217,14 +201,11 @@ export default {
     },
 
     createValidationChanged(passed) {
-      this.credCustomComponentValidation = passed;
+      this.createValidationPassed = passed;
     },
 
     backToExisting() {
       this.credentialId = _NONE;
-    },
-    updateCredentialValue(key, value) {
-      this.newCredential.setData(key, value);
     }
   },
 };
@@ -260,6 +241,7 @@ export default {
         name-key="name"
         name-label="cluster.credential.name.label"
         name-placeholder="cluster.credential.name.placeholder"
+        :name-required="false"
         mode="create"
       />
 
@@ -270,7 +252,6 @@ export default {
         mode="create"
         :driver-name="driverName"
         @validationChanged="createValidationChanged"
-        @valueChanged="updateCredentialValue"
       />
     </div>
     <div v-else>
@@ -284,10 +265,8 @@ export default {
         v-model:value="credentialId"
         :label="t('cluster.credential.label')"
         :options="options"
-        option-key="value"
         :mode="mode"
         :selectable="option => !option.disabled"
-        data-testid="cluster-prov-select-credential"
       />
     </div>
 

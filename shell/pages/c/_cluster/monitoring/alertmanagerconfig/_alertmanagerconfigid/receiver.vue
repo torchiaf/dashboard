@@ -14,7 +14,6 @@ import { clone } from '@shell/utils/object';
 
 export default {
   name:       'AlertmanagerConfigReceiverCreateEdit',
-  emits:      ['error'],
   components: {
     ActionMenu,
     ButtonGroup,
@@ -24,16 +23,12 @@ export default {
 
   async fetch() {
     const inStore = this.$store.getters['currentProduct'].inStore;
-    const alertmanagerConfigSchema = this.$store.getters[`${ inStore }/schemaFor`](MONITORING.ALERTMANAGERCONFIG);
 
     this.receiverName = this.$route.query.receiverName;
 
     const alertmanagerConfigId = this.$route.params.alertmanagerconfigid;
     const originalAlertmanagerConfigResource = await this.$store.dispatch(`${ inStore }/find`, { type: MONITORING.ALERTMANAGERCONFIG, id: alertmanagerConfigId });
     const alertmanagerConfigResource = await this.$store.dispatch(`${ inStore }/clone`, { resource: originalAlertmanagerConfigResource });
-
-    await alertmanagerConfigSchema.fetchResourceFields();
-
     const mode = this.$route.query.mode;
 
     if (mode !== _CREATE) {

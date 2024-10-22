@@ -1,109 +1,252 @@
-const GITHUB_BASE_API = 'https://api.github.com';
-const MAX_RESULTS = 100; // max number of results is 100
+import dayjs from 'dayjs';
+import { addParam, parseLinkHeader } from '@shell/utils/url';
+import { addObjects, isArray } from '@shell/utils/array';
+import { GITHUB_REPOS, GITHUB_SCOPES, _DATE } from '@shell/config/local-storage';
 
-const fetchGithubAPI = async(endpoint) => {
-  const response = await fetch(`${ GITHUB_BASE_API }/${ endpoint }`);
+const API_BASE = 'https://api.github.com/';
 
-  // If rate-limit is exceeded, we should wait until the rate limit is reset
-  if (response.status === 403) {
-    const resetTime = new Date(response.headers.get('X-RateLimit-Reset') * 1000);
+export const EXTENDED_SCOPES = ['repo'];
 
-    throw new Error(`Rate limit exceeded. Try again at ${ resetTime }`);
+export const DOCKERFILE = /^Dockerfile(\..*)?$/i;
+export const YAML_FILE = /^.*\.ya?ml$/i;
+
+function getFromStorage(key) {
+  if ( process.server ) {
+    return null;
   }
 
-  if (!response.ok) {
-    throw response;
+  const cached = window.localStorage.getItem(key);
+
+  if ( cached ) {
+    try {
+      const parsed = JSON.parse(cached);
+
+      return parsed;
+    } catch (e) {}
+  }
+}
+
+function getCachedRepos() {
+  const cached = getFromStorage(GITHUB_REPOS);
+
+  return cached || [];
+}
+
+function getCachedScopes() {
+  const cached = getFromStorage(GITHUB_SCOPES);
+
+  return cached;
+}
+
+function hasCached() {
+  if ( process.server ) {
+    return false;
   }
 
-  return await response.json();
+  const cached = window.localStorage.getItem(GITHUB_REPOS);
+
+  return !!cached;
+}
+
+function cacheExpired() {
+  if ( process.server ) {
+    return false;
+  }
+
+  const updated = window.localStorage.getItem(GITHUB_REPOS + _DATE);
+
+  if ( updated && dayjs().diff(updated) <= 60 * 60 * 1000 ) {
+    return false;
+  }
+
+  return true;
+}
+
+function setCache(repos, scopes) {
+  if ( repos ) {
+    window.localStorage.setItem(GITHUB_REPOS, JSON.stringify(repos));
+    window.localStorage.setItem(GITHUB_REPOS + _DATE, (new Date()).toISOString());
+  }
+
+  if ( scopes ) {
+    window.localStorage.setItem(GITHUB_SCOPES, JSON.stringify(scopes));
+  }
+}
+
+function forgetCache() {
+  window.localStorage.removeItem(GITHUB_REPOS);
+  window.localStorage.removeItem(GITHUB_REPOS + _DATE);
+  window.localStorage.removeItem(GITHUB_SCOPES);
+}
+
+function proxifyUrl(url) {
+  // Strip off absolute links to github API
+  if ( url.startsWith(API_BASE) ) {
+    url = url.substr(API_BASE.length);
+  }
+
+  // Add our proxy prefix
+  url = `/v1/github/${ url.replace(/^\/+/, '') }`;
+
+  // Less pages please
+  addParam(url, 'per_page', 100);
+
+  return url;
+}
+
+export const state = function() {
+  return {
+    repos:  [],
+    scopes: []
+  };
 };
 
-export const getters = {};
-
 export const actions = {
-  async apiList(ctx, {
-    username, endpoint, repo, branch
-  }) {
-    try {
-      switch (endpoint) {
-      case 'branches': {
-        return await fetchGithubAPI(`repos/${ username }/${ repo }/branches?per_page=${ MAX_RESULTS }`);
-      }
-      case 'repo': {
-        return await fetchGithubAPI(`repos/${ username }/${ repo }`);
-      }
-      case 'commits': {
-        return await fetchGithubAPI(`repos/${ username }/${ repo }/commits?sha=${ branch }&sort=updated&per_page=${ MAX_RESULTS }`);
-      }
-      case 'recentRepos': {
-        return await fetchGithubAPI(`users/${ username }/repos?per_page=${ MAX_RESULTS }`);
-      }
-      case 'search': {
-        // Fetch for a specific branches
-        if (username && repo && branch) {
-          const response = await fetchGithubAPI(`repos/${ username }/${ repo }/branches/${ branch }`);
+  async apiList({ commit, dispatch }, {
+    url = null,
+    single = false,
+    depaginate = true,
+    onPageFn = null,
+    objectKey = 'items',
+  } = {}) {
+    const out = [];
 
-          return [response];
-        }
+    url = proxifyUrl(url);
 
-        // Fetch for repos
-        const response = await fetchGithubAPI(`search/repositories?q=repo:${ username }/${ repo }`);
+    while ( true ) {
+      console.log('Github Request:', url); // eslint-disable-line no-console
+      const res = await dispatch('rancher/request', { url }, { root: true });
+      const links = parseLinkHeader(res._headers['link']);
 
-        if (response) {
-          return response.items;
-        }
+      const scopes = res._headers['x-oauth-scopes'];
+
+      if ( scopes ) {
+        commit('setScopes', scopes.split(/\s*,\s*/));
       }
+
+      if ( single ) {
+        return res;
       }
-    } catch (error) {
-      throw await error.json() ?? Error(`Error fetching ${ endpoint }`);
+
+      addObjects(out, isArray(res) ? res : res[objectKey]);
+
+      if ( onPageFn ) {
+        onPageFn(out);
+      }
+
+      if ( depaginate && links.next ) {
+        url = proxifyUrl(links.next);
+      } else {
+        break;
+      }
     }
+
+    return out;
   },
 
-  async fetchRecentRepos({ commit, dispatch }, { username } = {}) {
-    const res = await dispatch('apiList', { username, endpoint: 'recentRepos' });
-
-    return res;
+  forgetCache() {
+    forgetCache();
   },
 
-  async fetchRepoDetails({ commit, dispatch }, { username, repo } = {}) {
-    const res = await dispatch('apiList', {
-      username, endpoint: 'repo', repo: repo.name
-    });
+  async fetchRecentRepos({ commit, dispatch }, { allowCache = true } = {}) {
+    const cachedScopes = getCachedScopes();
 
-    return res;
-  },
-
-  async fetchBranches({ commit, dispatch }, { repo, username }) {
-    const res = await dispatch('apiList', {
-      username, endpoint: 'branches', repo: repo.name
-    });
-
-    return res;
-  },
-
-  async fetchCommits(ctx, { repo, username, branch }) {
-    const { dispatch } = ctx;
-    const res = await dispatch('apiList', {
-      username, endpoint: 'commits', repo: repo.name, branch: branch.name
-    });
-
-    return res;
-  },
-  async search({ dispatch }, { repo, username, branch }) {
-    try {
-      const res = await dispatch('apiList', {
-        username, endpoint: 'search', repo: repo?.name, branch: branch?.name
-      });
-
-      return {
-        ...res,
-        hasError: false,
-      };
-    } catch (error) {
-      return {
-        message:  error.message,
-        hasError: true
-      };
+    if ( cachedScopes ) {
+      commit('setScopes', cachedScopes);
     }
+
+    if ( allowCache && hasCached() ) {
+      const cached = getCachedRepos();
+
+      if ( cacheExpired() ) {
+        dispatch('fetchRecentRepos', { allowCache: false });
+      }
+
+      return cached;
+    }
+
+    const res = await dispatch('apiList', { url: '/user/repos?sort=updated', depaginate: false });
+    const more = await dispatch('apiList', { url: '/user/repos?affiliation=owner,collaborator' });
+    const out = [...res, ...more];
+
+    commit('setRepos', out);
+
+    return out;
+  },
+
+  async searchRepos({ state, dispatch }, { search }) {
+    if ( !search ) {
+      return state.repos.slice();
+    }
+
+    const res = await dispatch('apiList', {
+      url:        `/search/repositories?q=${ escape(search) }`,
+      depaginate: false
+    });
+
+    return res;
+  },
+
+  async fetchRepoByUrl({ dispatch }, url) {
+    url = url.replace(/.git$/i, '');
+    url = url.replace(/https:\/\/github.com\//, '');
+    url = `/repos/${ url }`;
+    const res = await dispatch('apiList', { url, single: true });
+
+    return res;
+  },
+
+  async fetchBranches({ dispatch }, { repo }) {
+    const url = repo.branches_url.replace('{/branch}', '');
+    const res = await dispatch('apiList', { url });
+
+    return res;
+  },
+
+  async fetchBranch({ dispatch }, { repo, name }) {
+    name = name || 'master';
+
+    const url = repo.branches_url.replace('{/branch}', `/${ name }`);
+    const res = await dispatch('apiList', { url, single: true });
+
+    return res;
+  },
+
+  async fetchFiles({ dispatch }, { repo, branch, pattern = null }) {
+    let url = repo.trees_url.replace('{/sha}', `/${ branch.commit.sha }`);
+
+    url = addParam(url, 'recursive', 1);
+
+    const res = await dispatch('apiList', { url, objectKey: 'tree' });
+
+    if ( !pattern ) {
+      return res;
+    }
+
+    const out = res.filter(file => file.type === 'blob' && file.path.match(pattern));
+
+    return out;
+  },
+
+  async fetchFile({ dispatch }, { repo, branch, file }) {
+    let url = repo.contents_url.replace('{+path}', file);
+
+    url = addParam(url, 'ref', branch.commit.sha);
+
+    const res = await dispatch('apiList', { url, single: true });
+
+    return res;
+  },
+};
+
+export const mutations = {
+  setScopes(state, scopes) {
+    state.scopes = scopes;
+    setCache(null, scopes);
+  },
+
+  setRepos(state, repos) {
+    state.repos = repos;
+    setCache(repos);
   },
 };

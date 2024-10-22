@@ -4,8 +4,6 @@ import ArrayList from '@shell/components/form/ArrayList';
 import ArrayListGrouped from '@shell/components/form/ArrayListGrouped';
 
 export default {
-  emits: ['update:value'],
-
   components: { ArrayList, ArrayListGrouped },
 
   props: {
@@ -39,7 +37,7 @@ export default {
       add-label="Add Rule"
       :mode="mode"
       :default-add-value="defaultAddValue"
-      @update:value="(e) => $emit('update:value', e)"
+      @input="(e) => $emit('input', e)"
     >
       <template #default="props">
         <div class="row">

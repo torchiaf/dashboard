@@ -1,17 +1,14 @@
 <script>
 import LabeledSelect from '@shell/components/form/LabeledSelect';
-import ResourceLabeledSelect from '@shell/components/form/ResourceLabeledSelect';
 import { SECRET } from '@shell/config/types';
 import { _EDIT, _VIEW } from '@shell/config/query-params';
 import { SECRET_TYPES as TYPES } from '@shell/config/secret';
-import { PaginationParamFilter } from '@shell/types/store/pagination.types';
-import { LABEL_SELECT_KINDS } from '@shell/types/components/labeledSelect';
+import sortBy from 'lodash/sortBy';
 
 const NONE = '__[[NONE]]__';
 
 export default {
-  emits:      ['update:value'],
-  components: { LabeledSelect, ResourceLabeledSelect },
+  components: { LabeledSelect },
 
   props: {
     value: {
@@ -65,33 +62,6 @@ export default {
     }
   },
 
-  data() {
-    return {
-      secrets:            null,
-      SECRET,
-      allSecretsSettings: {
-        mapResult: (secrets) => {
-          const allSecretsInNamespace = secrets.filter((secret) => this.types.includes(secret._type) && secret.namespace === this.namespace);
-          const mappedSecrets = this.mapSecrets(allSecretsInNamespace.sort((a, b) => a.name.localeCompare(b.name)));
-
-          this.secrets = allSecretsInNamespace; // We need the key from the selected secret
-
-          return mappedSecrets;
-        }
-      },
-      paginateSecretsSetting: {
-        requestSettings: this.paginatePageOptions,
-        mapResult:       (secrets) => {
-          const mappedSecrets = this.mapSecrets(secrets);
-
-          this.secrets = secrets; // We need the key from the selected secret. When paginating we won't touch the store, so just pass back here
-
-          return mappedSecrets;
-        }
-      }
-    };
-  },
-
   computed: {
     name: {
       get() {
@@ -104,9 +74,9 @@ export default {
         const correctedName = isNone ? undefined : name;
 
         if (this.showKeySelector) {
-          this.$emit('update:value', { [this.mountKey]: { secretKeyRef: { [this.nameKey]: correctedName, [this.keyKey]: '' } } });
+          this.$emit('input', { [this.mountKey]: { secretKeyRef: { [this.nameKey]: correctedName, [this.keyKey]: '' } } });
         } else {
-          this.$emit('update:value', correctedName);
+          this.$emit('input', correctedName);
         }
       }
     },
@@ -116,79 +86,39 @@ export default {
         return this.value?.[this.mountKey]?.secretKeyRef?.[this.keyKey] || '';
       },
       set(key) {
-        this.$emit('update:value', { [this.mountKey]: { secretKeyRef: { [this.nameKey]: this.name, [this.keyKey]: key } } });
+        this.$emit('input', { [this.mountKey]: { secretKeyRef: { [this.nameKey]: this.name, [this.keyKey]: key } } });
       }
     },
+    secrets() {
+      const inStore = this.$store.getters['currentProduct'].inStore;
+      const allSecrets = this.$store.getters[`${ inStore }/all`](SECRET);
 
+      return allSecrets
+        .filter(secret => this.types.includes(secret._type) && secret.namespace === this.namespace);
+    },
+    secretNames() {
+      const mappedSecrets = this.secrets.map(secret => ({
+        label: secret.name,
+        value: secret.name
+      })).sort();
+
+      return [{ label: 'None', value: NONE }, ...sortBy(mappedSecrets, 'label')];
+    },
     keys() {
-      const secret = (this.secrets || []).find((secret) => secret.name === this.name) || {};
+      const secret = this.secrets.find(secret => secret.name === this.name) || {};
 
-      return Object.keys(secret.data || {}).map((key) => ({
+      return Object.keys(secret.data || {}).map(key => ({
         label: key,
         value: key
       }));
     },
-
     isView() {
       return this.mode === _VIEW;
     },
-
     isKeyDisabled() {
       return !this.isView && (!this.name || this.name === NONE || this.disabled);
     }
   },
-
-  methods: {
-    /**
-     * Provide a set of options for the LabelSelect ([none, ...{label, value}])
-     */
-    mapSecrets(secrets) {
-      const mappedSecrets = secrets
-        .reduce((res, s) => {
-          if (s.kind === LABEL_SELECT_KINDS.NONE) {
-            return res;
-          }
-
-          if (s.id) {
-            res.push({ label: s.name, value: s.name });
-          } else {
-            res.push(s);
-          }
-
-          return res;
-        }, []);
-
-      return [
-        {
-          label: 'None', value: NONE, kind: LABEL_SELECT_KINDS.NONE
-        },
-        ...mappedSecrets
-      ];
-    },
-
-    /**
-     * @param [LabelSelectPaginationFunctionOptions] opts
-     * @returns LabelSelectPaginationFunctionOptions
-     */
-    paginatePageOptions(opts) {
-      const { opts: { filter } } = opts;
-
-      const filters = !!filter ? [PaginationParamFilter.createSingleField({ field: 'metadata.name', value: filter })] : [];
-
-      filters.push(
-        PaginationParamFilter.createSingleField({ field: 'metadata.namespace', value: this.namespace }),
-        PaginationParamFilter.createSingleField({ field: 'metadata.fields.1', value: this.types.join(',') })
-      );
-
-      return {
-        ...opts,
-        filters,
-        groupByNamespace: false,
-        classify:         true,
-        sort:             [{ asc: true, field: 'metadata.name' }],
-      };
-    },
-  }
 
 };
 </script>
@@ -199,16 +129,12 @@ export default {
     :class="{'show-key-selector': showKeySelector}"
   >
     <div class="input-container">
-      <!-- key by namespace to ensure label select current page is recreated on ns change -->
-      <ResourceLabeledSelect
+      <LabeledSelect
         v-model:value="name"
         :disabled="!isView && disabled"
+        :options="secretNames"
         :label="secretNameLabel"
         :mode="mode"
-        :resource-type="SECRET"
-        :in-store="inStore"
-        :paginated-resource-settings="paginateSecretsSetting"
-        :all-resources-settings="allSecretsSettings"
       />
       <LabeledSelect
         v-if="showKeySelector"

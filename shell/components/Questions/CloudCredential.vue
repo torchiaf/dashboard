@@ -4,8 +4,6 @@ import { NORMAN } from '@shell/config/types';
 import Question from './Question';
 
 export default {
-  emits: ['update:value'],
-
   components: { LabeledSelect },
   mixins:     [Question],
 
@@ -41,8 +39,7 @@ export default {
         :placeholder="question.description"
         :required="question.required"
         :value="value"
-        :tooltip="displayTooltip"
-        @update:value="!$fetchState.pending && $emit('update:value', $event)"
+        @update:value="!$fetchState.pending && $emit('input', $event)"
       />
     </div>
     <div class="col span-6 mt-10">

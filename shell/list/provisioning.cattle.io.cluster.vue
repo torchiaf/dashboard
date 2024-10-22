@@ -10,11 +10,10 @@ import { mapFeature, HARVESTER as HARVESTER_FEATURE } from '@shell/store/feature
 import { NAME as EXPLORER } from '@shell/config/product/explorer';
 import ResourceFetch from '@shell/mixins/resource-fetch';
 import { BadgeState } from '@components/BadgeState';
-import CloudCredExpired from '@shell/components/formatter/CloudCredExpired';
 
 export default {
   components: {
-    Banner, ResourceTable, Masthead, BadgeState, CloudCredExpired
+    Banner, ResourceTable, Masthead, BadgeState
   },
   mixins: [ResourceFetch],
   props:  {
@@ -41,8 +40,6 @@ export default {
       normanClusters:  this.$fetchType(NORMAN.CLUSTER, [], 'rancher'),
       mgmtClusters:    this.$fetchType(MANAGEMENT.CLUSTER),
     };
-
-    this.$store.dispatch('rancher/findAll', { type: NORMAN.CLOUD_CREDENTIAL });
 
     if ( this.$store.getters['management/canList'](SNAPSHOT) ) {
       hash.etcdSnapshots = this.$fetchType(SNAPSHOT);
@@ -134,46 +131,20 @@ export default {
     canImport() {
       const schema = this.$store.getters['management/schemaFor'](CAPI.RANCHER_CLUSTER);
 
-      return !!schema?.collectionMethods.find((x) => x.toLowerCase() === 'post');
+      return !!schema?.collectionMethods.find(x => x.toLowerCase() === 'post');
     },
 
     harvesterEnabled: mapFeature(HARVESTER_FEATURE),
-
-    nonStandardNamespaces() {
-      // Show the namespace grouping option if there's clusters with namespaces other than 'fleet-default' or 'fleet-local'
-      // This will be used when there's clusters from extension based provisioners
-      // We should re-visit this for scaling reasons
-      return this.filteredRows.some((c) => c.metadata.namespace !== 'fleet-local' && c.metadata.namespace !== 'fleet-default');
-    },
-
-    tokenExpiredData() {
-      const counts = this.rows.reduce((res, provCluster) => {
-        const expireData = provCluster.cloudCredential?.expireData;
-
-        if (expireData?.expiring) {
-          res.expiring++;
-        }
-        if (expireData?.expired) {
-          res.expired++;
-        }
-
-        return res;
-      }, {
-        expiring: 0,
-        expired:  0
-      });
-
-      return {
-        expiring: counts.expiring ? this.t('cluster.cloudCredentials.banners.expiring', { count: counts.expiring }) : '',
-        expired:  counts.expired ? this.t('cluster.cloudCredentials.banners.expired', { count: counts.expired }) : '',
-      };
-    }
   },
 
   $loadingResources() {
     // results are filtered so we wouldn't get the correct count on indicator...
     return { loadIndeterminate: true };
-  }
+  },
+
+  mounted() {
+    window.c = this;
+  },
 };
 </script>
 
@@ -196,38 +167,26 @@ export default {
     >
       <template
         v-if="canImport"
-        #extraActions
+        slot="extraActions"
       >
-        <router-link
+        <n-link
           :to="importLocation"
           class="btn role-primary mr-10"
           data-testid="cluster-manager-list-import"
         >
           {{ t('cluster.importAction') }}
-        </router-link>
+        </n-link>
       </template>
     </Masthead>
-
-    <Banner
-      v-if="tokenExpiredData.expiring"
-      color="warning"
-      :label="tokenExpiredData.expiring"
-    />
-    <Banner
-      v-if="tokenExpiredData.expired"
-      color="error"
-      :label="tokenExpiredData.expired"
-    />
 
     <ResourceTable
       :schema="schema"
       :rows="filteredRows"
-      :namespaced="nonStandardNamespaces"
+      :namespaced="false"
       :loading="loading"
       :use-query-params-for-simple-filtering="useQueryParamsForSimpleFiltering"
       :data-testid="'cluster-list'"
       :force-update-live-and-delayed="forceUpdateLiveAndDelayed"
-      :sub-rows="true"
     >
       <!-- Why are state column and subrow overwritten here? -->
       <!-- for rke1 clusters, where they try to use the mgmt cluster stateObj instead of prov cluster stateObj,  -->
@@ -241,60 +200,34 @@ export default {
       </template>
       <template #sub-row="{fullColspan, row, keyField, componentTestid, i, onRowMouseEnter, onRowMouseLeave}">
         <tr
+          v-if="row.stateDescription"
           :key="row[keyField] + '-description'"
           :data-testid="componentTestid + '-' + i + '-row-description'"
           class="state-description sub-row"
           @mouseenter="onRowMouseEnter"
           @mouseleave="onRowMouseLeave"
         >
-          <td v-if="row.cloudCredentialWarning || row.stateDescription">
-&nbsp;
-          </td>
+          <td>&nbsp;</td>
           <td
-            v-if="row.cloudCredentialWarning || row.stateDescription"
             :colspan="fullColspan - 1"
+            :class="{ 'text-error' : row.stateObj.error }"
           >
-            <CloudCredExpired
-              v-if="row.cloudCredentialWarning"
-              :value="row.cloudCredential.expires"
-              :row="row.cloudCredential"
-              :verbose="true"
-              :class="{'mb-10': row.stateDescription}"
-            />
-            <div
-              v-if="row.stateDescription"
-              :class="{ 'text-error' : row.stateObj.error }"
-            >
-              {{ row.stateDescription }}
-            </div>
+            {{ row.stateDescription }}
           </td>
         </tr>
       </template>
       <template #cell:summary="{row}">
         <span v-if="!row.stateParts.length">{{ row.nodes.length }}</span>
       </template>
-      <template #col:kubernetesVersion="{row}">
-        <td class="col-name">
-          <span>
-            {{ row.kubernetesVersion }}
-          </span>
-          <div
-            v-clean-tooltip="{content: row.architecture.tooltip, placement: 'left'}"
-            class="text-muted"
-          >
-            {{ row.architecture.label }}
-          </div>
-        </td>
-      </template>
       <template #cell:explorer="{row}">
-        <router-link
+        <n-link
           v-if="row.mgmt && row.mgmt.isReady && !row.hasError"
           data-testid="cluster-manager-list-explore-management"
           class="btn btn-sm role-secondary"
           :to="{name: 'c-cluster', params: {cluster: row.mgmt.id}}"
         >
           {{ t('cluster.explore') }}
-        </router-link>
+        </n-link>
         <button
           v-else
           data-testid="cluster-manager-list-explore"

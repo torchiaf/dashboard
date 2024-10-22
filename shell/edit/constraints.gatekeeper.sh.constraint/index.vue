@@ -1,4 +1,6 @@
 <script>
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import merge from 'lodash/merge';
 import { ucFirst } from '@shell/utils/string';
 import { isSimpleKeyValue } from '@shell/utils/object';
@@ -20,19 +22,17 @@ import Scope, { SCOPE_OPTIONS } from './Scope';
 
 function findConstraintTypes(schemas) {
   return schemas
-    .filter((schema) => schema?.attributes?.group === 'constraints.gatekeeper.sh');
+    .filter(schema => schema?.attributes?.group === 'constraints.gatekeeper.sh');
 }
 
 function findConstraintTypesIds(schemas) {
   return findConstraintTypes(schemas)
-    .map((schema) => schema.id);
+    .map(schema => schema.id);
 }
 
 const CONSTRAINT_PREFIX = 'constraints.gatekeeper.sh.';
 
 export default {
-  emits: ['update:value', 'set-subtype'],
-
   components: {
     CruResource,
     MatchKinds,
@@ -146,8 +146,8 @@ export default {
     },
     systemNamespaceIds() {
       return this.$store.getters['cluster/all'](NAMESPACE)
-        .filter((namespace) => namespace.isSystem)
-        .map((namespace) => namespace.id);
+        .filter(namespace => namespace.isSystem)
+        .map(namespace => namespace.id);
     },
     emptyDefaults() {
       return {
@@ -177,7 +177,7 @@ export default {
   created() {
     this.registerBeforeHook(this.willSave, 'willSave');
     if (!this.value.save) {
-      this.$emit('update:value', merge(this.value, this.emptyDefaults));
+      this.$emit('input', merge(this.value, this.emptyDefaults));
     }
   },
 

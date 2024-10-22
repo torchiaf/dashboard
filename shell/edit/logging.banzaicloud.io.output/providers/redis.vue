@@ -41,7 +41,7 @@ export default {
         return this.value.port;
       },
       set(port) {
-        updatePort((value) => (this.value.port = value), port);
+        updatePort(value => (this.value.port = value), port);
       }
     }
   }
@@ -67,7 +67,7 @@ export default {
       </div>
       <div class="col span-2">
         <LabeledInput
-          v-model:value.number="port"
+          v-model.number="port"
           :mode="mode"
           :disabled="disabled"
           class="port"
@@ -81,7 +81,7 @@ export default {
     <div class="row">
       <div class="col span-6">
         <LabeledInput
-          v-model:value.number="value.db_number"
+          v-model.number="value.db_number"
           :mode="mode"
           :disabled="disabled"
           type="number"
@@ -90,7 +90,7 @@ export default {
       </div>
       <div class="col span-6">
         <LabeledInput
-          v-model:value.number="value.ttl"
+          v-model.number="value.ttl"
           :mode="mode"
           :disabled="disabled"
           type="number"

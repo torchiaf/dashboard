@@ -60,7 +60,7 @@ export default {
         return this.value.port;
       },
       set(port) {
-        updatePort((value) => (this.value['port'] = value), port);
+        updatePort(value => (this.value['port'] = value), port);
       }
     }
   }
@@ -96,7 +96,7 @@ export default {
       </div>
       <div class="col span-2">
         <LabeledInput
-          v-model:value.number="port"
+          v-model.number="port"
           :mode="mode"
           :disabled="disabled"
           class="port"

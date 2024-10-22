@@ -1,9 +1,13 @@
-import isUrl from 'is-url';
+const httpsKeys = [
+  'server-url'
+];
 
-export const isServerUrl = (value) => value === 'server-url';
+export function isHttps(value, getters, errors, validatorArgs, displayKey) {
+  const key = validatorArgs[0];
 
-export const isHttps = (value) => value.toLowerCase().startsWith('https://');
+  if (httpsKeys.includes(key) && !value.toLowerCase().startsWith('https://')) {
+    errors.push(getters['i18n/t']('validation.setting.serverUrl.https'));
+  }
 
-export const isLocalhost = (value) => (/^(?:https?:\/\/)?(?:localhost|127\.0\.0\.1)/i).test(value);
-
-export const hasTrailingForwardSlash = (value) => isUrl(value) && value?.toLowerCase().endsWith('/');
+  return errors;
+}

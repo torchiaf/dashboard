@@ -70,9 +70,7 @@ export default {
   },
   methods: {
     selectDriver(e) {
-      const name = e.value || e.label || e;
-
-      set(this.value, 'spec.csi.driver', name);
+      set(this.value, 'spec.csi.driver', e.value ? e.value : e.label);
     }
   }
 };

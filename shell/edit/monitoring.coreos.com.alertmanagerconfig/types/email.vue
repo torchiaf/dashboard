@@ -6,8 +6,6 @@ import SimpleSecretSelector from '@shell/components/form/SimpleSecretSelector';
 import { _VIEW } from '@shell/config/query-params';
 
 export default {
-  emits: ['input'],
-
   components: {
     Checkbox, LabeledInput, SimpleSecretSelector, TLS
   },
@@ -165,11 +163,10 @@ export default {
       </Banner>
     </div>
     <TLS
-      :value="value"
+      v-model:value="value"
       class="mb-20"
       :mode="mode"
       :namespace="namespace"
-      @update:value="$emit('input', $event)"
     />
   </div>
 </template>

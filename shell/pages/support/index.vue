@@ -5,18 +5,17 @@ import CommunityLinks from '@shell/components/CommunityLinks';
 import { CATALOG, MANAGEMENT } from '@shell/config/types';
 import { getVendor } from '@shell/config/private-label';
 import { SETTING } from '@shell/config/settings';
+import { findBy } from '@shell/utils/array';
 import { addParam } from '@shell/utils/url';
 import { isRancherPrime } from '@shell/config/version';
-import { hasCspAdapter } from 'mixins/brand';
-import TabTitle from '@shell/components/TabTitle';
 
 export default {
+  layout: 'home',
 
   components: {
     BannerGraphic,
     IndentedPanel,
-    CommunityLinks,
-    TabTitle
+    CommunityLinks
   },
 
   async fetch() {
@@ -48,7 +47,6 @@ export default {
     this.brandSetting = await fetchOrCreateSetting(SETTING.BRAND, '');
     this.serverUrlSetting = await fetchOrCreateSetting(SETTING.SERVER_URL, '');
     this.uiIssuesSetting = await this.$store.dispatch('management/find', { type: MANAGEMENT.SETTING, id: SETTING.ISSUES });
-    this.settings = await this.$store.dispatch('management/findAll', { type: MANAGEMENT.SETTING });
   },
 
   data() {
@@ -59,11 +57,6 @@ export default {
       brandSetting:    null,
       uiIssuesSetting: null,
       serverSetting:   null,
-      settings:        null,
-      // i18n-uses support.promos.one.*
-      // i18n-uses support.promos.two.*
-      // i18n-uses support.promos.three.*
-      // i18n-uses support.promos.four.*
       promos:          [
         'support.promos.one',
         'support.promos.two',
@@ -75,7 +68,7 @@ export default {
 
   computed: {
     cspAdapter() {
-      return hasCspAdapter(this.apps);
+      return findBy(this.apps, 'metadata.name', 'rancher-csp-adapter' );
     },
 
     hasSupport() {
@@ -87,22 +80,21 @@ export default {
     },
 
     serverUrl() {
-      // Client-side rendered: use the current window location
-      return window.location.origin;
+      if (process.client) {
+        // Client-side rendered: use the current window location
+        return window.location.origin;
+      }
+
+      // Server-side rendered
+      return this.serverSetting?.value || '';
     },
 
     supportConfigLink() {
-      const adapter = this.cspAdapter;
-
-      if (!adapter) {
+      if (!this.cspAdapter) {
         return false;
       }
 
-      if (adapter.metadata.name === 'rancher-csp-billing-adapter') {
-        return `${ this.serverUrl }/v1/generateSUSERancherSupportConfig?usePAYG=true`;
-      } else {
-        return `${ this.serverUrl }/v1/generateSUSERancherSupportConfig`;
-      }
+      return `${ this.serverUrl }/v1/generateSUSERancherSupportConfig`;
     },
 
     title() {
@@ -124,11 +116,7 @@ export default {
       <div class="content mt-20">
         <div class="promo col main-panel">
           <div class="box mb-20 box-primary">
-            <h2>
-              <TabTitle breadcrumb="vendor-only">
-                {{ t('support.suse.access.title') }}
-              </TabTitle>
-            </h2>
+            <h2>{{ t('support.suse.access.title') }}</h2>
             <div
               v-if="!hasSupport"
               class="external support-links mt-20"
@@ -136,7 +124,7 @@ export default {
               <div class="support-link">
                 <a
                   class="support-link"
-                  href="https://www.rancher.com/support"
+                  href="https://rancher.com/support-maintenance-terms"
                   target="_blank"
                   rel="noopener noreferrer nofollow"
                 >{{ t('support.community.learnMore') }}</a>
@@ -172,9 +160,7 @@ export default {
           </div>
           <div class="boxes">
             <div
-              v-for="(key, i) in promos"
-              :key="i"
-              class="box"
+               v-for="(key, i) in promos" :key="i" class="box"
             >
               <h2>{{ t(`${key}.title`) }}</h2>
               <div>{{ t(`${key}.text`) }}</div>

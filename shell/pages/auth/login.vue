@@ -8,77 +8,129 @@ import BrandImage from '@shell/components/BrandImage';
 import InfoBox from '@shell/components/InfoBox';
 import CopyCode from '@shell/components/CopyCode';
 import { Banner } from '@components/Banner';
-import {
-  LOCAL, LOGGED_OUT, TIMED_OUT, IS_SSO, _FLAGGED,
-  IS_SLO
-} from '@shell/config/query-params';
+import { LOCAL, LOGGED_OUT, TIMED_OUT, _FLAGGED } from '@shell/config/query-params';
 import { Checkbox } from '@components/Form/Checkbox';
 import Password from '@shell/components/form/Password';
 import { sortBy } from '@shell/utils/sort';
 import { configType } from '@shell/models/management.cattle.io.authconfig';
 import { mapGetters } from 'vuex';
-import { markRaw } from 'vue';
-import { _MULTI } from '@shell/plugins/dashboard-store/actions';
+import { importLogin } from '@shell/utils/dynamic-importer';
+import { _ALL_IF_AUTHED, _MULTI } from '@shell/plugins/dashboard-store/actions';
 import { MANAGEMENT, NORMAN } from '@shell/config/types';
 import { SETTING } from '@shell/config/settings';
 import { LOGIN_ERRORS } from '@shell/store/auth';
 import {
   getBrand,
   getVendor,
+  getProduct,
   setBrand,
   setVendor
 } from '@shell/config/private-label';
 import loadPlugins from '@shell/plugins/plugin';
-import Loading from '@shell/components/Loading';
-import { getGlobalBannerFontSizes } from '@shell/utils/banners';
 
 export default {
   name:       'Login',
+  layout:     'unauthenticated',
   components: {
-    LabeledInput, AsyncButton, Checkbox, BrandImage, Banner, InfoBox, CopyCode, Password, LocaleSelector, Loading
+    LabeledInput, AsyncButton, Checkbox, BrandImage, Banner, InfoBox, CopyCode, Password, LocaleSelector
   },
 
-  data() {
-    const username = this.$cookies.get(USERNAME, { parseJSON: false }) || '';
+  async asyncData({ route, redirect, store }) {
+    const drivers = await store.dispatch('auth/getAuthProviders');
+    const providers = sortBy(drivers.map(x => x.id), ['id']);
+
+    const hasLocal = providers.includes('local');
+    const hasOthers = hasLocal && !!providers.find(x => x !== 'local');
+
+    if ( hasLocal ) {
+      // Local is special and handled here so that it can be toggled
+      removeObject(providers, 'local');
+    }
+
+    let firstLoginSetting, plSetting, brand;
+
+    // Load settings.
+    // For newer versions this will return all settings if you are somehow logged in,
+    // and just the public ones if you aren't.
+    try {
+      await store.dispatch('management/findAll', {
+        type: MANAGEMENT.SETTING,
+        opt:  {
+          load: _ALL_IF_AUTHED, url: `/v1/${ MANAGEMENT.SETTING }`, redirectUnauthorized: false
+        },
+      });
+
+      firstLoginSetting = store.getters['management/byId'](MANAGEMENT.SETTING, SETTING.FIRST_LOGIN);
+      plSetting = store.getters['management/byId'](MANAGEMENT.SETTING, SETTING.PL);
+      brand = store.getters['management/byId'](MANAGEMENT.SETTING, SETTING.BRAND);
+    } catch (e) {
+      // Older versions used Norman API to get these
+      firstLoginSetting = await store.dispatch('rancher/find', {
+        type: 'setting',
+        id:   SETTING.FIRST_LOGIN,
+        opt:  { url: `/v3/settings/${ SETTING.FIRST_LOGIN }` }
+      });
+
+      plSetting = await store.dispatch('rancher/find', {
+        type: 'setting',
+        id:   SETTING.PL,
+        opt:  { url: `/v3/settings/${ SETTING.PL }` }
+      });
+
+      brand = await store.dispatch('rancher/find', {
+        type: 'setting',
+        id:   SETTING.BRAND,
+        opt:  { url: `/v3/settings/${ SETTING.BRAND }` }
+      });
+    }
+
+    if (plSetting.value?.length && plSetting.value !== getVendor()) {
+      setVendor(plSetting.value);
+    }
+
+    if (brand?.value?.length && brand.value !== getBrand()) {
+      setBrand(brand.value);
+    }
+
+    let singleProvider;
+
+    if (providers.length === 1) {
+      singleProvider = providers[0];
+    }
 
     return {
+      vendor:     getVendor(),
+      providers,
+      hasOthers,
+      hasLocal,
+      showLocal:  !hasOthers || (route.query[LOCAL] === _FLAGGED),
+      firstLogin: firstLoginSetting?.value === 'true',
+      singleProvider
+    };
+  },
+
+  data({ $cookies }) {
+    const username = $cookies.get(USERNAME, { parseJSON: false }) || '';
+
+    return {
+      product: getProduct(),
+
       username,
       remember: !!username,
       password: '',
 
-      timedOut:           this.$route.query[TIMED_OUT] === _FLAGGED,
-      loggedOut:          this.$route.query[LOGGED_OUT] === _FLAGGED,
-      isSsoLogout:        this.$route.query[IS_SSO] === _FLAGGED,
-      isSlo:              this.$route.query[IS_SLO] === _FLAGGED,
-      err:                this.$route.query.err,
-      showLocaleSelector: !process.env.loginLocaleSelector || process.env.loginLocaleSelector === 'true',
+      timedOut:  this.$route.query[TIMED_OUT] === _FLAGGED,
+      loggedOut: this.$route.query[LOGGED_OUT] === _FLAGGED,
+      err:       this.$route.query.err,
 
-      hasLocal:           false,
-      showLocal:          false,
       providers:          [],
       providerComponents: [],
-      customLoginError:   {},
-      firstLogin:         false,
-      vendor:             getVendor()
+      customLoginError:   {}
     };
   },
 
   computed: {
     ...mapGetters({ t: 'i18n/t', hasMultipleLocales: 'i18n/hasMultipleLocales' }),
-
-    loggedOutSuccessMsg() {
-      if (this.isSlo) {
-        return this.t('login.loggedOutFromSlo');
-      } else if (this.isSsoLogout) {
-        return this.t('login.loggedOutFromSso');
-      }
-
-      return this.t('login.loggedOut');
-    },
-
-    singleProvider() {
-      return this.providers.length === 1 ? this.providers[0] : undefined;
-    },
 
     nonLocalPrompt() {
       if (this.singleProvider) {
@@ -91,17 +143,13 @@ export default {
     },
 
     errorMessage() {
-      if (this.isSlo) {
-        return this.err?.length ? this.t('logout.error', { msg: this.err }) : '';
-      }
-
       if (this.err === LOGIN_ERRORS.CLIENT_UNAUTHORIZED) {
         return this.t('login.clientError');
       } else if (this.err === LOGIN_ERRORS.CLIENT || this.err === LOGIN_ERRORS.SERVER) {
         return this.t('login.error');
       }
 
-      return this.err?.length ? this.t('login.specificError', { msg: this.err }) : '';
+      return this.err;
     },
 
     errorToDisplay() {
@@ -122,91 +170,30 @@ export default {
 
     hasLoginMessage() {
       return this.errorToDisplay || this.loggedOut || this.timedOut;
-    },
-
-    // Apply bottom margin so that the locale secletor control lifts up to avoid the footer fixed banner, if it is shown
-    localeSelectorStyle() {
-      const globalBannerSettings = getGlobalBannerFontSizes(this.$store);
-
-      return { marginBottom: globalBannerSettings?.footerFont };
     }
+
+  },
+
+  created() {
+    this.providerComponents = this.providers.map((name) => {
+      return importLogin(configType[name]);
+    });
   },
 
   async fetch() {
-    const { firstLoginSetting } = await this.loadInitialSettings();
     const { value } = await this.$store.dispatch('management/find', { type: MANAGEMENT.SETTING, id: SETTING.BANNERS });
-    const drivers = await this.$store.dispatch('auth/getAuthProviders');
-    const providers = sortBy(drivers.map((x) => x.id), ['id']);
-    const hasLocal = providers.includes('local');
-    const hasOthers = hasLocal && !!providers.find((x) => x !== 'local');
 
-    if ( hasLocal ) {
-      // Local is special and handled here so that it can be toggled
-      removeObject(providers, 'local');
-    }
-
-    this.vendor = getVendor();
-    this.providers = providers;
-    this.hasLocal = hasLocal;
-    this.showLocal = !hasOthers || (this.$route.query[LOCAL] === _FLAGGED);
     this.customLoginError = JSON.parse(value).loginError;
-    this.firstLogin = firstLoginSetting?.value === 'true';
+  },
+
+  mounted() {
     this.username = this.firstLogin ? 'admin' : this.username;
-
-    this.providerComponents = this.providers.map((name) => {
-      return markRaw(this.$store.getters['type-map/importLogin'](configType[name] || name));
-    });
-
     this.$nextTick(() => {
       this.focusSomething();
     });
   },
 
   methods: {
-    async loadInitialSettings() {
-      let firstLoginSetting, plSetting, brand;
-
-      // Load settings.
-      // For newer versions this will return all settings if you are somehow logged in,
-      // and just the public ones if you aren't.
-      try {
-        firstLoginSetting = this.$store.getters['management/byId'](MANAGEMENT.SETTING, SETTING.FIRST_LOGIN);
-        plSetting = this.$store.getters['management/byId'](MANAGEMENT.SETTING, SETTING.PL);
-        brand = this.$store.getters['management/byId'](MANAGEMENT.SETTING, SETTING.BRAND);
-      } catch (e) {
-        // Older versions used Norman API to get these
-        firstLoginSetting = await this.$store.dispatch('rancher/find', {
-          type: NORMAN.SETTING,
-          id:   SETTING.FIRST_LOGIN,
-          opt:  { url: `/v3/settings/${ SETTING.FIRST_LOGIN }` }
-        });
-
-        plSetting = await this.$store.dispatch('rancher/find', {
-          type: NORMAN.SETTING,
-          id:   SETTING.PL,
-          opt:  { url: `/v3/settings/${ SETTING.PL }` }
-        });
-
-        brand = await this.$store.dispatch('rancher/find', {
-          type: NORMAN.SETTING,
-          id:   SETTING.BRAND,
-          opt:  { url: `/v3/settings/${ SETTING.BRAND }` }
-        });
-      }
-
-      if (plSetting.value?.length && plSetting.value !== getVendor()) {
-        setVendor(plSetting.value);
-      }
-
-      if (brand?.value?.length && brand.value !== getBrand()) {
-        setBrand(brand.value);
-      }
-
-      return {
-        firstLoginSetting, plSetting, brand
-      };
-    },
-
     displayName(provider) {
       return this.t(`model.authConfig.provider.${ provider }`);
     },
@@ -267,7 +254,7 @@ export default {
 
         if ( this.remember ) {
           this.$cookies.set(USERNAME, this.username, {
-            encode:   (x) => x,
+            encode:   x => x,
             maxAge:   86400 * 365,
             path:     '/',
             sameSite: true,
@@ -290,7 +277,7 @@ export default {
           this.$store.dispatch('auth/setInitialPass', this.password);
           this.$router.push({ name: 'auth-setup' });
         } else {
-          this.$router.push({ name: 'index' });
+          this.$router.replace('/');
         }
       } catch (err) {
         this.err = err;
@@ -305,14 +292,7 @@ export default {
 </script>
 
 <template>
-  <Loading
-    v-if="$fetchState.pending"
-    mode="relative"
-  />
-  <main
-    v-else
-    class="main-layout login"
-  >
+  <main class="main-layout login">
     <div class="row gutless mb-20">
       <div class="col span-6 p-20">
         <p class="text-center">
@@ -335,7 +315,7 @@ export default {
             v-else-if="loggedOut"
             class="text-success text-center"
           >
-            {{ loggedOutSuccessMsg }}
+            {{ t('login.loggedOut') }}
           </h4>
           <h4
             v-else-if="timedOut"
@@ -407,9 +387,7 @@ export default {
         >
           <component
             :is="providerComponents[idx]"
-            v-for="(name, idx) in providers"
-            :key="idx"
-            class="mb-10"
+            v-for="(name, idx) in providers" :key="idx"class="mb-10"
             :focus-on-mount="(idx === 0 && !showLocal)"
             :name="name"
             :open="!showLocal"
@@ -421,7 +399,6 @@ export default {
           <form
             v-if="showLocal"
             :class="{'mt-30': !hasLoginMessage}"
-            @submit.prevent
           >
             <div class="span-6 offset-3">
               <div class="mb-20">
@@ -429,7 +406,7 @@ export default {
                   v-if="!firstLogin"
                   id="username"
                   ref="username"
-                  v-model:value.trim="username"
+                  v-model.trim="username"
                   data-testid="local-login-username"
                   :label="t('login.username')"
                   autocomplete="username"
@@ -502,19 +479,10 @@ export default {
             <LocaleSelector mode="login" />
           </div>
         </template>
-        <div
-          v-if="showLocaleSelector"
-          class="locale-selector"
-        >
-          <LocaleSelector
-            :style="localeSelectorStyle"
-            mode="login"
-          />
-        </div>
       </div>
+
       <BrandImage
         class="col span-6 landscape"
-        data-testid="login-landscape__img"
         file-name="login-landscape.svg"
       />
     </div>
@@ -572,17 +540,7 @@ export default {
     }
   }
 
-  .gutless {
-    height: 100vh;
-    & > .span-6 {
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      place-content: center;
-    }
-  }
-  .locale-selector {
+  .locale-elector {
     position: absolute;
     bottom: 30px;
   }

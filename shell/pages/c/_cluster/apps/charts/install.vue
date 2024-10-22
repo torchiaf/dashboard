@@ -5,7 +5,6 @@ import isEqual from 'lodash/isEqual';
 import { mapPref, DIFF } from '@shell/store/prefs';
 import { mapFeature, MULTI_CLUSTER, LEGACY } from '@shell/store/features';
 import { mapGetters } from 'vuex';
-import { markRaw } from 'vue';
 import { Banner } from '@components/Banner';
 import ButtonGroup from '@shell/components/ButtonGroup';
 import ChartReadme from '@shell/components/ChartReadme';
@@ -35,9 +34,10 @@ import { exceptionToErrorsArray } from '@shell/utils/error';
 import { clone, diff, get, set } from '@shell/utils/object';
 import { ignoreVariables } from './install.helpers';
 import { findBy, insertAt } from '@shell/utils/array';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import { saferDump } from '@shell/utils/create-yaml';
 import { LINUX, WINDOWS } from '@shell/store/catalog';
-import { SETTING } from '@shell/config/settings';
 
 const VALUES_STATE = {
   FORM: 'FORM',
@@ -82,9 +82,6 @@ export default {
   ],
 
   async fetch() {
-    this.errors = [];
-    // IMPORTANT! Any exception thrown before this.value is set will result in an empty page
-
     /*
       fetchChart is defined in shell/mixins. It first checks the URL
       query for an app name and namespace. It uses those values to check
@@ -95,43 +92,23 @@ export default {
       it checks for target name and namespace values defined in the
       Helm chart itself.
     */
-    try {
-      await this.fetchChart();
-    } catch (e) {
-      console.warn('Unable to fetch chart: ', e); // eslint-disable-line no-console
-    }
+    await this.fetchChart();
 
-    try {
-      await this.fetchAutoInstallInfo();
-    } catch (e) {
-      console.warn('Unable to determine if other charts require install: ', e); // eslint-disable-line no-console
-    }
+    await this.fetchAutoInstallInfo();
+    this.errors = [];
 
     // If the chart doesn't contain system `systemDefaultRegistry` properties there's no point applying them
     if (this.showCustomRegistry) {
       // Note: Cluster scoped registry is only supported for node driver clusters
-      try {
-        this.clusterRegistry = await this.getClusterRegistry();
-      } catch (e) {
-        console.warn('Unable to get cluster registry: ', e); // eslint-disable-line no-console
-      }
-
-      try {
-        this.globalRegistry = await this.getGlobalRegistry();
-      } catch (e) {
-        console.warn('Unable to get global registry: ', e); // eslint-disable-line no-console
-      }
+      this.clusterRegistry = await this.getClusterRegistry();
+      this.globalRegistry = await this.getGlobalRegistry();
       this.defaultRegistrySetting = this.clusterRegistry || this.globalRegistry;
     }
 
-    try {
-      this.serverUrlSetting = await this.$store.dispatch('management/find', {
-        type: MANAGEMENT.SETTING,
-        id:   SETTING.SERVER_URL,
-      });
-    } catch (e) {
-      console.error('Unable to fetch `server-url` setting: ', e); // eslint-disable-line no-console
-    }
+    this.serverUrlSetting = await this.$store.dispatch('management/find', {
+      type: MANAGEMENT.SETTING,
+      id:   'server-url'
+    });
 
     /*
       Figure out the namespace where the chart is
@@ -161,38 +138,20 @@ export default {
     }
 
     /* Check if the app is deprecated. */
-    try {
-      this.legacyApp = this.existing ? await this.existing.deployedAsLegacy() : false;
-    } catch (e) {
-      this.legacyApp = false;
-      console.warn('Unable to determine if existing install is a legacy app: ', e); // eslint-disable-line no-console
-    }
+    this.legacyApp = this.existing ? await this.existing.deployedAsLegacy() : false;
 
     /* Check if the app is a multicluster deprecated app.
     (Multicluster apps were replaced by Fleet.) */
-
-    try {
-      this.mcapp = this.existing ? await this.existing.deployedAsMultiCluster() : false;
-    } catch (e) {
-      this.mcapp = false;
-      console.warn('Unable to determine if existing install is a mc app: ', e); // eslint-disable-line no-console
-    }
+    this.mcapp = this.existing ? await this.existing.deployedAsMultiCluster() : false;
 
     /* The form state is intialized as a chartInstallAction resource. */
-    try {
-      this.value = await this.$store.dispatch('cluster/create', {
-        type:     'chartInstallAction',
-        metadata: {
-          namespace: this.forceNamespace || this.$store.getters['defaultNamespace'],
-          name:      this.existing?.spec?.name || this.query.appName || '',
-        }
-      });
-    } catch (e) {
-      console.error('Unable to create object of type `chartInstallAction`: ', e); // eslint-disable-line no-console
-
-      // Nothing's going to work without a `value`. See https://github.com/rancher/dashboard/issues/9452 to handle this and other catches.
-      return;
-    }
+    this.value = await this.$store.dispatch('cluster/create', {
+      type:     'chartInstallAction',
+      metadata: {
+        namespace: this.forceNamespace || this.$store.getters['defaultNamespace'],
+        name:      this.existing?.spec?.name || this.query.appName || '',
+      }
+    });
 
     /* Logic for when the Helm chart is not already installed */
     if ( !this.existing) {
@@ -249,17 +208,25 @@ export default {
       return;
     }
 
-    if ( this.version ) {
+    if ( this.version && process.client ) {
       /*
         Check if the Helm chart has provided the name
         of a Vue component to use for configuring
         chart values. If so, load that component.
 
         This will set this.valuesComponent,
-        this.showValuesComponent.
+        this.componentHasTabs and this.showValuesComponent.
       */
       await this.loadValuesComponent();
     }
+
+    /*
+      Check if the Helm chart has indicated
+      that the user should fill out the chart values
+      through a wizard-style workflow. If so, load
+      the chart steps.
+    */
+    await this.loadChartSteps();
 
     /*
       this.loadedVersion will only be true if you select a non-defalut
@@ -407,6 +374,7 @@ export default {
       showQuestions:           true,
       showSlideIn:             false,
       shownReadmeWindows:      [],
+      componentHasTabs:        false,
       showCommandStep:         false,
       showCustomRegistryInput: false,
       isNamespaceNew:          false,
@@ -444,6 +412,10 @@ export default {
         weight:         10
       },
 
+      customSteps: [
+
+      ],
+
       isPlainLayout: isPlainLayout(this.$route.query),
 
       legacyDefs: {
@@ -461,7 +433,7 @@ export default {
      * Return list of variables to filter chart questions
      */
     ignoreVariables() {
-      return ignoreVariables(this.versionInfo);
+      return ignoreVariables(this.currentCluster, this.versionInfo);
     },
 
     namespaceIsNew() {
@@ -483,7 +455,7 @@ export default {
       const cluster = this.currentCluster;
       const projects = this.$store.getters['management/all'](MANAGEMENT.PROJECT);
 
-      const out = projects.filter((x) => x.spec.clusterName === cluster?.id).map((project) => {
+      const out = projects.filter(x => x.spec.clusterName === cluster?.id).map((project) => {
         return {
           id:    project.id,
           label: project.nameDisplay,
@@ -627,19 +599,19 @@ export default {
     diffMode: mapPref(DIFF),
 
     step1Description() {
-      const descriptionKey = this.steps.find((s) => s.name === 'basics').descriptionKey;
+      const descriptionKey = this.steps.find(s => s.name === 'basics').descriptionKey;
 
       return this.$store.getters['i18n/withFallback'](descriptionKey, { action: this.action, existing: !!this.existing }, '');
     },
 
     step2Description() {
-      const descriptionKey = this.steps.find((s) => s.name === 'helmValues').descriptionKey;
+      const descriptionKey = this.steps.find(s => s.name === 'helmValues').descriptionKey;
 
       return this.$store.getters['i18n/withFallback'](descriptionKey, { action: this.action, existing: !!this.existing }, '');
     },
 
     step3Description() {
-      const descriptionKey = this.steps.find((s) => s.name === 'helmCli').descriptionKey;
+      const descriptionKey = this.steps.find(s => s.name === 'helmCli').descriptionKey;
 
       return this.$store.getters['i18n/withFallback'](descriptionKey, { action: this.action, existing: !!this.existing }, '');
     },
@@ -663,6 +635,7 @@ export default {
         steps.push(
           this.stepBasic,
           this.stepValues,
+          ...this.customSteps
         );
       }
 
@@ -732,9 +705,7 @@ export default {
 
   watch: {
     '$route.query'(neu, old) {
-      // If the query changes, refetch the chart
-      // When going back to app list, the query is empty and we don't want to refetch
-      if ( !isEqual(neu, old) && Object.keys(neu).length > 0 ) {
+      if ( !isEqual(neu, old) ) {
         this.$fetch();
         this.showSlideIn = false;
       }
@@ -814,13 +785,17 @@ export default {
     // for editing values
     await this.loadValuesComponent();
 
+    // Load Helm chart info used for showing
+    // wizard steps
+    await this.loadChartSteps();
+
     window.scrollTop = 0;
 
     this.preFormYamlOption = this.valuesComponent || this.hasQuestions ? VALUES_STATE.FORM : VALUES_STATE.YAML;
   },
 
-  beforeUnmount() {
-    this.shownReadmeWindows.forEach((name) => this.$store.dispatch('wm/close', name, { root: true }));
+  beforeDestroy() {
+    this.shownReadmeWindows.forEach(name => this.$store.dispatch('wm/close', name, { root: true }));
   },
 
   methods: {
@@ -829,32 +804,26 @@ export default {
 
       if (hasPermissionToSeeProvCluster) {
         const mgmCluster = this.$store.getters['currentCluster'];
-        const provClusterId = mgmCluster?.provClusterId;
-        let provCluster;
+        const provCluster = mgmCluster?.provClusterId ? await this.$store.dispatch('management/find', {
+          type: CAPI.RANCHER_CLUSTER,
+          id:   mgmCluster.provClusterId
+        }) : {};
 
-        try {
-          provCluster = provClusterId ? await this.$store.dispatch('management/find', {
-            type: CAPI.RANCHER_CLUSTER,
-            id:   provClusterId
-          }) : {};
-        } catch (e) {
-          console.error(`Unable to fetch prov cluster '${ provClusterId }': `, e); // eslint-disable-line no-console
-        }
+        if (provCluster.isRke2) { // isRke2 returns true for both RKE2 and K3s clusters.
+          const agentConfig = provCluster.spec?.rkeConfig?.machineSelectorConfig?.find(x => !x.machineLabelSelector).config;
 
-        if (provCluster?.isRke2) { // isRke2 returns true for both RKE2 and K3s clusters.
           // If a cluster scoped registry exists,
           // it should be used by default.
-          const clusterRegistry = provCluster.agentConfig?.['system-default-registry'] || '';
+          const clusterRegistry = agentConfig?.['system-default-registry'] || '';
 
           if (clusterRegistry) {
             return clusterRegistry;
           }
         }
-
-        if (provCluster?.isRke1) {
+        if (provCluster.isRke1) {
           // For RKE1 clusters, the cluster scoped private registry is on the management
           // cluster, not the provisioning cluster.
-          const rke1Registries = mgmCluster?.spec?.rancherKubernetesEngineConfig?.privateRegistries;
+          const rke1Registries = mgmCluster.spec?.rancherKubernetesEngineConfig?.privateRegistries;
 
           if (rke1Registries?.length > 0) {
             const defaultRegistry = rke1Registries.find((registry) => {
@@ -873,7 +842,7 @@ export default {
       // runtime will pull images from docker.io.
       const globalRegistry = await this.$store.dispatch('management/find', {
         type: MANAGEMENT.SETTING,
-        id:   SETTING.SYSTEM_DEFAULT_REGISTRY,
+        id:   'system-default-registry'
       });
 
       return globalRegistry.value;
@@ -894,16 +863,47 @@ export default {
         const hasChartComponent = this.$store.getters['type-map/hasCustomChart'](component);
 
         if ( hasChartComponent ) {
-          this.valuesComponent = markRaw(this.$store.getters['type-map/importChart'](component));
+          this.valuesComponent = this.$store.getters['type-map/importChart'](component);
+          const loaded = await this.valuesComponent();
+
           this.showValuesComponent = true;
+          this.componentHasTabs = loaded?.default?.hasTabs || false;
         } else {
           this.valuesComponent = null;
+          this.componentHasTabs = false;
           this.showValuesComponent = false;
         }
       } else {
         this.valuesComponent = null;
+        this.componentHasTabs = false;
         this.showValuesComponent = false;
       }
+    },
+
+    async loadChartSteps() {
+      const component = this.version?.annotations?.[CATALOG_ANNOTATIONS.COMPONENT];
+
+      if ( component ) {
+        const steps = await this.$store.getters['catalog/chartSteps'](component);
+
+        this.customSteps = await Promise.all( steps.map(cs => this.loadChartStep(cs)));
+      }
+    },
+
+    async loadChartStep(customStep) {
+      const loaded = await customStep.component();
+      const withFallBack = this.$store.getters['i18n/withFallback'];
+
+      return {
+        name:      customStep.name,
+        label:     withFallBack(loaded?.default?.label, null, customStep.name),
+        subtext:   withFallBack(loaded?.default?.subtext, null, ''),
+        weight:    loaded?.default?.weight,
+        ready:     false,
+        hidden:    true,
+        loading:   true,
+        component: customStep.component,
+      };
     },
 
     selectChart(chart) {
@@ -1006,7 +1006,7 @@ export default {
 
       const cluster = this.currentCluster;
       const projects = this.$store.getters['management/all'](MANAGEMENT.PROJECT);
-      const systemProjectId = projects.find((p) => p.spec?.displayName === 'System')?.id?.split('/')?.[1] || '';
+      const systemProjectId = projects.find(p => p.spec?.displayName === 'System')?.id?.split('/')?.[1] || '';
 
       const serverUrl = this.serverUrlSetting?.value || '';
       const isWindows = (cluster?.workerOSs || []).includes(WINDOWS);
@@ -1177,7 +1177,7 @@ export default {
 
       const more = [];
 
-      const auto = (this.version?.annotations?.[CATALOG_ANNOTATIONS.AUTO_INSTALL_GVK] || '').split(/\s*,\s*/).filter((x) => !!x).reverse();
+      const auto = (this.version?.annotations?.[CATALOG_ANNOTATIONS.AUTO_INSTALL_GVK] || '').split(/\s*,\s*/).filter(x => !!x).reverse();
 
       for ( const gvr of auto ) {
         const provider = this.$store.getters['catalog/versionProviding']({
@@ -1252,10 +1252,6 @@ export default {
       this.steps[0].ready = okRequires && okChart;
     },
 
-    updateStepTwoReady(update) {
-      this.updateStep('helmValues', { ready: update });
-    },
-
     getOptionLabel(opt) {
       return opt?.chartNameDisplay;
     },
@@ -1272,7 +1268,7 @@ export default {
     },
 
     updateStep(stepName, update) {
-      const step = this.steps.find((step) => step.name === stepName);
+      const step = this.steps.find(step => step.name === stepName);
 
       if (step) {
         for (const prop in update) {
@@ -1288,7 +1284,7 @@ export default {
   <Loading v-if="$fetchState.pending" />
   <div
     v-else-if="!legacyApp && !mcapp"
-    class="install-steps pt-20"
+    class="install-steps"
     :class="{ 'isPlainLayout': isPlainLayout}"
   >
     <TypeDescription resource="chart" />
@@ -1301,10 +1297,20 @@ export default {
       :banner-title-subtext="stepperSubtext"
       :finish-mode="action"
       class="wizard"
-      :class="{'windowsIncompatible': windowsIncompatible}"
       @cancel="cancel"
       @finish="finish"
     >
+      <template
+        v-for="customStep of customSteps"
+        v-slot:[customStep.name]
+      >
+        <component
+          :is="customStep.component"
+          :key="customStep.name"
+          @update="updateStep(customStep.name, $event)"
+          @errors="e=>errors.push(...e)"
+        />
+      </template>
       <template #bannerTitleImage>
         <div>
           <div class="logo-bg">
@@ -1343,17 +1349,13 @@ export default {
             class="mb-15"
           >
             <Banner
-              v-for="(msg, i) in requires"
-              :key="i"
-              color="error"
+               v-for="(msg, i) in requires" :key="i" color="error"
             >
               <span v-clean-html="msg" />
             </Banner>
 
             <Banner
-              v-for="(msg, i) in warnings"
-              :key="i"
-              color="warning"
+               v-for="(msg, i) in warnings" :key="i" color="warning"
             >
               <span v-clean-html="msg" />
             </Banner>
@@ -1540,21 +1542,46 @@ export default {
           <div class="scroll__content">
             <!-- Values (as Custom Component in ./shell/charts/) -->
             <template v-if="valuesComponent && showValuesComponent">
-              <component
-                :is="valuesComponent"
-                v-if="valuesComponent"
-                v-model:value="chartValues"
-                :mode="mode"
-                :chart="chart"
+              <Tabbed
+                v-if="componentHasTabs"
+                ref="tabs"
+                :side-tabs="true"
+                :class="{'with-name': showNameEditor}"
                 class="step__values__content"
-                :existing="existing"
-                :version="version"
-                :version-info="versionInfo"
-                :auto-install-info="autoInstallInfo"
-                @warn="e=>errors.push(e)"
-                @register-before-hook="registerBeforeHook"
-                @register-after-hook="registerAfterHook"
-              />
+                @changed="tabChanged($event)"
+              >
+                <component
+                  :is="valuesComponent"
+                  v-model:value="chartValues"
+                  :mode="mode"
+                  :chart="chart"
+                  class="step__values__content"
+                  :existing="existing"
+                  :version="version"
+                  :version-info="versionInfo"
+                  :auto-install-info="autoInstallInfo"
+                  @warn="e=>errors.push(e)"
+                  @register-before-hook="registerBeforeHook"
+                  @register-after-hook="registerAfterHook"
+                />
+              </Tabbed>
+              <template v-else>
+                <component
+                  :is="valuesComponent"
+                  v-if="valuesComponent"
+                  v-model:value="chartValues"
+                  :mode="mode"
+                  :chart="chart"
+                  class="step__values__content"
+                  :existing="existing"
+                  :version="version"
+                  :version-info="versionInfo"
+                  :auto-install-info="autoInstallInfo"
+                  @warn="e=>errors.push(e)"
+                  @register-before-hook="registerBeforeHook"
+                  @register-after-hook="registerAfterHook"
+                />
+              </template>
             </template>
 
             <!-- Values (as Questions, abstracted component based on question.yaml configuration from repositories)  -->
@@ -1562,7 +1589,6 @@ export default {
               v-else-if="hasQuestions && showQuestions"
               ref="tabs"
               :side-tabs="true"
-              :hide-single-tab="true"
               :class="{'with-name': showNameEditor}"
               class="step__values__content"
               @changed="tabChanged($event)"
@@ -1763,17 +1789,17 @@ export default {
         </span>
         <template v-if="!legacyEnabled">
           <span v-clean-html="t('catalog.install.error.legacy.enableLegacy.prompt', true)" />
-          <router-link :to="legacyFeatureRoute">
+          <nuxt-link :to="legacyFeatureRoute">
             {{ t('catalog.install.error.legacy.enableLegacy.goto') }}
-          </router-link>
+          </nuxt-link>
         </template>
         <template v-else-if="mcapp">
           <span v-clean-html="t('catalog.install.error.legacy.mcmNotSupported')" />
         </template>
         <template v-else>
-          <router-link :to="legacyAppRoute">
+          <nuxt-link :to="legacyAppRoute">
             <span v-clean-html="t('catalog.install.error.legacy.navigate')" />
-          </router-link>
+          </nuxt-link>
         </template>
       </Banner>
     </div>
@@ -1811,6 +1837,7 @@ export default {
       border: $padding solid white;
       border-radius: calc( 3 * var(--border-radius));
       position: relative;
+      margin-bottom: 15px
     }
 
     .logo {
@@ -1825,22 +1852,6 @@ export default {
       left: 0;
       margin: auto;
     }
-
-    // Hack - We're adding an absolute tag under the logo that we want to consume space without breaking vertical alignment of row.
-    // W  ith the slots available this isn't possible without adding tag specific styles to the root wizard classes
-    &.windowsIncompatible {
-      :deep() .header {
-        padding-bottom: 15px;
-      }
-    }
-
-    .os-label {
-      position: absolute;
-      background-color: var(--warning-banner-bg);
-      color:var(--warning);
-      margin-top: 5px;
-    }
-
   }
 
   .step {
@@ -2037,6 +2048,14 @@ export default {
       }
     }
   }
+}
+
+.os-label {
+  position: relative;
+  background-color: var(--warning-banner-bg);
+  color:var(--warning);
+  margin-top: 5px;
+  top: 21px;
 }
 
 </style>

@@ -25,7 +25,7 @@ export default {
   },
 
   data() {
-    const volumeMounts = (this.container.volumeMounts || []).filter((mount) => mount.name === this.name);
+    const volumeMounts = (this.container.volumeMounts || []).filter(mount => mount.name === this.name);
 
     return { volumeMounts };
   },
@@ -33,12 +33,9 @@ export default {
   computed: { ...mapGetters({ t: 'i18n/t' }) },
 
   watch: {
-    volumeMounts: {
-      handler(neu) {
-        this.container.volumeMounts = (this.container.volumeMounts || []).filter((mount) => mount.name && (mount.name !== this.name));
-        this.container.volumeMounts.push(...neu);
-      },
-      deep: true
+    volumeMounts(neu) {
+      this.container.volumeMounts = (this.container.volumeMounts || []).filter(mount => mount.name && (mount.name !== this.name));
+      this.container.volumeMounts.push(...neu);
     },
 
     name(neu) {
@@ -89,11 +86,9 @@ export default {
       <span />
     </div>
     <div
-      v-for="(volumeMount, i) in volumeMounts"
-      :key="i"
-      class="mount-rows"
+      v-for="(volumeMount, i) in volumeMounts" :key="i"class="mount-rows"
     >
-      <div :data-testid="`mount-path-${i}`">
+      <div>
         <LabeledInput
           :id="`mount-path-${i}`"
           v-model:value="volumeMount.mountPath"

@@ -2,8 +2,6 @@
 import KeyValue from '@shell/components/form/KeyValue';
 
 export default {
-  emits: ['update:value'],
-
   components: { KeyValue },
 
   props: {
@@ -38,10 +36,10 @@ export default {
   <div class="row">
     <div class="col span-12">
       <KeyValue
-        :value="value"
+        v-model:value="value"
         :mode="mode"
         :as-map="true"
-        @update:value="$emit('update:value', value)"
+        @update:value="$emit('input', value)"
       />
     </div>
   </div>

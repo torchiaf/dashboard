@@ -37,9 +37,9 @@ export function init(store) {
     {
       name:          'clusterScanProfile',
       label:         'Profile',
-      formatter:     'Link',
-      formatterOpts: { options: { internal: true }, urlKey: 'scanProfileLink' },
       value:         'status.lastRunScanProfileName',
+      formatter:     'Link',
+      formatterOpts: { options: { internal: true }, to: { name: 'c-cluster-product-resource-id', params: { resource: CIS.CLUSTER_SCAN_PROFILE } } },
       sort:          ['status.lastRunScanProfileName'],
     },
     {
@@ -115,8 +115,7 @@ export function init(store) {
       labelKey:      'cis.benchmarkVersion',
       value:         'spec.benchmarkVersion',
       formatter:     'Link',
-      formatterOpts: { options: { internal: true }, urlKey: 'benchmarkVersionLink' },
-      sort:          ['spec.benchmarkVersion'],
+      formatterOpts: { options: { internal: true }, to: { name: 'c-cluster-product-resource-id', params: { resource: CIS.BENCHMARK } } },
     },
     {
       name:     'skippedTests',

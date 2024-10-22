@@ -5,8 +5,6 @@ import Tab from '@shell/components/Tabbed/Tab';
 import { base64Decode } from '@shell/utils/crypto';
 
 export default {
-  emits: ['input'],
-
   components: {
     ResourceTabs,
     DetailText,
@@ -51,18 +49,13 @@ export default {
 </script>
 
 <template>
-  <ResourceTabs
-    :value="value"
-    @update:value="$emit('input', $event)"
-  >
+  <ResourceTabs v-model:value="value">
     <Tab
       name="data"
       label-key="secret.data"
     >
       <div
-        v-for="(row,idx) in parsedRows"
-        :key="idx"
-        class="mb-20"
+        v-for="(row,idx) in parsedRows" :key="idx"class="mb-20"
       >
         <DetailText
           :value="row.value"

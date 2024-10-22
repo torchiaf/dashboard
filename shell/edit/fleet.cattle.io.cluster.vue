@@ -11,8 +11,6 @@ import { FLEET } from '@shell/config/labels-annotations';
 export default {
   name: 'CruFleetCluster',
 
-  emits: ['input'],
-
   components: {
     CruResource,
     Labels,
@@ -82,10 +80,9 @@ export default {
     @cancel="done"
   >
     <NameNsDescription
-      :value="value"
+      v-model:value="value"
       :mode="mode"
       :namespaced="isNamespaced"
-      @update:value="$emit('input', $event)"
     />
 
     <hr class="mt-20 mb-20">

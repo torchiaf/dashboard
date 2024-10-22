@@ -22,11 +22,10 @@ const POLICY_TYPES = {
 };
 
 export default {
-  emits:        ['input'],
   // Props are found in CreateEditView
   // props: {},
-  inheritAttrs: false,
-  components:   {
+
+  components: {
     Banner,
     Checkbox,
     CruResource,
@@ -55,13 +54,11 @@ export default {
 
   data() {
     if ( !this.value.spec ) {
-      this.value['spec'] = {
-        policyTypes: [],
+      this.value['spec'] = {policyTypes: [],
         podSelector: {
           matchExpressions: [],
           matchLabels:      {},
-        }
-      };
+        }};
     }
 
     const matchingPods = {
@@ -147,8 +144,7 @@ export default {
 
   methods: {
     updateMatchingPods: throttle(function() {
-      // See https://github.com/rancher/dashboard/issues/10417, all pods bad, need to replace local selector somehow
-      const allInNamespace = this.allPods.filter((pod) => pod.metadata.namespace === this.value.metadata.namespace);
+      const allInNamespace = this.allPods.filter(pod => pod.metadata.namespace === this.value.metadata.namespace);
       const match = matching(allInNamespace, this.podSelectorExpressions);
       const matched = match.length || 0;
       const sample = match[0]?.nameDisplay;
@@ -200,16 +196,14 @@ export default {
               class="mt-20 mb-10"
               :mode="mode"
               :label="t('networkpolicy.ingress.enable')"
-              data-testid="network-policy-ingress-enable-checkbox"
             />
             <PolicyRules
               v-if="hasIngressPolicies"
-              :value="value"
+              v-model:value="value"
               type="ingress"
               :mode="mode"
               :all-namespaces="allNamespaces"
               :all-pods="allPods"
-              @update:value="$emit('input', $event)"
             />
           </Tab>
           <Tab
@@ -229,12 +223,11 @@ export default {
             />
             <PolicyRules
               v-if="hasEgressPolicies"
-              :value="value"
+              v-model:value="value"
               type="egress"
               :mode="mode"
               :all-namespaces="allNamespaces"
               :all-pods="allPods"
-              @update:value="$emit('input', $event)"
             />
           </Tab>
           <Tab

@@ -1,3 +1,4 @@
+import Vue from 'vue';
 import SteveModel from '@shell/plugins/steve/steve-class';
 import { HCI } from '@shell/config/labels-annotations';
 

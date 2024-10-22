@@ -8,6 +8,8 @@ import { get, set } from '@shell/utils/object';
 import { escapeHtml } from '@shell/utils/string';
 import { insertAt, isArray } from '@shell/utils/array';
 import SteveModel from '@shell/plugins/steve/steve-class';
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import { HARVESTER_NAME as HARVESTER } from '@shell/config/features';
 import { hasPSALabels, getPSATooltipsDescription, getPSALabels } from '@shell/utils/pod-security-admission';
 import { PSAIconsDisplay, PSALabelsNamespaceVersion } from '@shell/config/pod-security-admission';
@@ -102,7 +104,7 @@ export default class Namespace extends SteveModel {
       return true;
     }
 
-    if ( this.metadata.name.startsWith('cattle-') && this.metadata.name.endsWith('-system') ) {
+    if ( this.metadata.name.endsWith('-system') ) {
       return true;
     }
 
@@ -120,7 +122,7 @@ export default class Namespace extends SteveModel {
   // These are namespaces that are created by rancher to serve purposes in the background but the user shouldn't have
   // to worry themselves about them.
   get isObscure() {
-    return OBSCURE_NAMESPACE_PREFIX.some((prefix) => this.metadata.name.startsWith(prefix)) && this.isSystem;
+    return OBSCURE_NAMESPACE_PREFIX.some(prefix => this.metadata.name.startsWith(prefix)) && this.isSystem;
   }
 
   get projectId() {

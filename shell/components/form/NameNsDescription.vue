@@ -1,5 +1,7 @@
 <script>
-import { mapGetters, mapActions } from 'vuex';
+import { createApp } from 'vue';
+const vueApp = createApp({});
+import { mapGetters } from 'vuex';
 import { get, set } from '@shell/utils/object';
 import { sortBy } from '@shell/utils/sort';
 import { NAMESPACE } from '@shell/config/types';
@@ -7,16 +9,22 @@ import { DESCRIPTION } from '@shell/config/labels-annotations';
 import { _VIEW, _EDIT, _CREATE } from '@shell/config/query-params';
 import { LabeledInput } from '@components/Form/LabeledInput';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
-import { normalizeName } from '@shell/utils/kube';
+
+export function normalizeName(str) {
+  return (str || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+}
 
 export default {
-  name: 'NameNsDescription',
-
-  emits: ['update:value', 'isNamespaceNew'],
-
+  name:       'NameNsDescription',
   components: {
     LabeledInput,
-    LabeledSelect,
+    LabeledSelect
   },
 
   props: {
@@ -94,23 +102,9 @@ export default {
       type:    Boolean,
       default: false
     },
-    /**
-     * Use these objects instead of namespaces
-     */
     namespacesOverride: {
       type:    Array,
       default: null,
-    },
-    /**
-     * User these namespaces instead of determining list within component
-     */
-    namespaceOptions: {
-      type:    Array,
-      default: null,
-    },
-    createNamespaceOverride: {
-      type:    Boolean,
-      default: false,
     },
     descriptionLabel: {
       type:    String,
@@ -217,7 +211,6 @@ export default {
 
   computed: {
     ...mapGetters(['currentProduct', 'currentCluster', 'namespaces', 'allowedNamespaces']),
-    ...mapActions('cru-resource', ['setCreateNamespace']),
     namespaceReallyDisabled() {
       return (
         !!this.forceNamespace || this.namespaceDisabled || this.mode === _EDIT
@@ -232,26 +225,18 @@ export default {
      * Map namespaces from the store to options, adding divider and create button
      */
     options() {
-      let namespaces;
+      let namespaces = [];
 
-      if (this.namespacesOverride) {
-        // Use the resources provided
-        namespaces = this.namespacesOverride;
+      if (this.allowedNamespaces) {
+        namespaces = Object.keys(this.isCreate ? this.allowedNamespaces() : this.namespaces());
       } else {
-        if (this.namespaceOptions) {
-          // Use the namespaces provided
-          namespaces = (this.namespaceOptions.map((ns) => ns.name) || []).sort();
-        } else {
-          // Determine the namespaces
-          const namespaceObjs = this.isCreate ? this.allowedNamespaces() : this.namespaces();
-
-          namespaces = Object.keys(namespaceObjs);
-        }
+        // rancher v2.7.4 does not have the allowedNamespaces method, which requires compatibility with 2.7.4 import harvester v1.2.0
+        namespaces = Object.keys(this.namespaces());
       }
 
       const options = namespaces
-        .map((namespace) => ({ nameDisplay: namespace, id: namespace }))
-        .map(this.namespaceMapper || ((obj) => ({
+        .map(namespace => ({ nameDisplay: namespace, id: namespace }))
+        .map(this.namespaceMapper || (obj => ({
           label: obj.nameDisplay,
           value: obj.id,
         })));
@@ -276,7 +261,7 @@ export default {
         kind:     'divider'
       };
 
-      const createOverhead = this.canCreateNamespace || this.createNamespaceOverride ? [createButton, divider] : [];
+      const createOverhead = this.canCreateNamespace ? [createButton, divider] : [];
 
       return [
         ...createOverhead,
@@ -290,10 +275,6 @@ export default {
 
     isCreate() {
       return this.mode === _CREATE;
-    },
-
-    showCustomize() {
-      return this.mode === _CREATE && this.name && this.name.length > 0;
     },
 
     colSpan() {
@@ -317,7 +298,7 @@ export default {
 
   watch: {
     name(val) {
-      if (this.normalizeName) {
+      if ( this.normalizeName ) {
         val = normalizeName(val);
       }
 
@@ -326,12 +307,12 @@ export default {
       } else {
         this.value.metadata['name'] = val;
       }
-      this.$emit('update:value', this.value);
+      this.$emit('change');
     },
 
     namespace(val) {
       this.updateNamespace(val);
-      this.$emit('update:value', this.value);
+      this.$emit('change');
     },
 
     description(val) {
@@ -340,7 +321,7 @@ export default {
       } else {
         this.value.setAnnotation(DESCRIPTION, val);
       }
-      this.$emit('update:value', this.value);
+      this.$emit('change');
     },
   },
 
@@ -359,7 +340,7 @@ export default {
       }
 
       if (this.namespaced) {
-        this.$emit('isNamespaceNew', !val || (this.options && !this.options.find((n) => n.value === val)));
+        this.$emit('isNamespaceNew', !val || (this.options && !this.options.find(n => n.value === val)));
       }
 
       if (this.namespaceKey) {
@@ -377,28 +358,21 @@ export default {
     cancelCreateNamespace(e) {
       this.createNamespace = false;
       this.$parent.$emit('createNamespace', false);
-      // In practice we should always have a defaultNamespace... unless we're in non-kube extension world,  so fall back on options
-      this.namespace = this.$store.getters['defaultNamespace'] || this.options.find((o) => !!o.value)?.value;
+      this.namespace = this.$store.getters['defaultNamespace'];
     },
 
     selectNamespace(e) {
       if (!e || e.value === '') { // The blank value in the dropdown is labeled "Create a New Namespace"
         this.createNamespace = true;
-        this.$store.dispatch(
-          'cru-resource/setCreateNamespace',
-          true,
-        );
+        this.$parent.$emit('createNamespace', true);
         this.$emit('isNamespaceNew', true);
-        this.$nextTick(() => this.$refs.namespace.focus());
+        nextTick(() => this.$refs.namespace.focus());
       } else {
         this.createNamespace = false;
-        this.$store.dispatch(
-          'cru-resource/setCreateNamespace',
-          false,
-        );
+        this.$parent.$emit('createNamespace', false);
         this.$emit('isNamespaceNew', false);
       }
-    },
+    }
   },
 };
 </script>
@@ -472,8 +446,6 @@ export default {
       />
     </div>
 
-    <slot name="customize" />
-    <!-- // TODO: here goes the custom component -->
     <div
       v-show="!descriptionHidden"
       :data-testid="componentTestid + '-description'"
@@ -492,9 +464,7 @@ export default {
     </div>
 
     <div
-      v-for="(slot, i) in extraColumns"
-      :key="i"
-      :class="{ col: true, [colSpan]: true }"
+       v-for="(slot, i) in extraColumns" :key="i" :class="{ col: true, [colSpan]: true }"
     >
       <slot :name="slot" />
     </div>
@@ -520,16 +490,13 @@ button {
     padding-top: 7px;
   }
 }
-
 .row {
   &.name-ns-description {
     max-height: $input-height;
   }
-
   .namespace-select :deep() {
     .labeled-select {
       min-width: 40%;
-
       .v-select.inline {
         &.vs--single {
           padding-bottom: 2px;
@@ -545,10 +512,9 @@ button {
       max-height: initial;
     }
 
-    &>div>* {
+    & > div > * {
       margin-bottom: 20px;
     }
   }
-
 }
 </style>

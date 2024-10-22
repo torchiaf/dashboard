@@ -3,7 +3,6 @@ import { FLEET } from '@shell/config/types';
 import { STATE, NAME as NAME_COL, AGE } from '@shell/config/table-headers';
 import { FLEET as FLEET_FEATURE } from '@shell/store/features';
 import { gitRepoGraphConfig } from '@shell/pages/c/_cluster/fleet/GitRepoGraphConfig';
-import { BLANK_CLUSTER } from '@shell/store/store-types.js';
 
 export const NAME = 'fleet';
 export const CHART_NAME = 'fleet';
@@ -27,10 +26,6 @@ export function init(store) {
     removable:             false,
     showClusterSwitcher:   false,
     showWorkspaceSwitcher: true,
-    to:                    {
-      name:   'c-cluster-fleet',
-      params: { resource: FLEET.DASHBOARD, cluster: BLANK_CLUSTER }
-    },
   });
 
   virtualType({
@@ -42,7 +37,7 @@ export function init(store) {
     weight:     110,
     route:      {
       name:   'c-cluster-fleet',
-      params: { resource: FLEET.DASHBOARD, cluster: BLANK_CLUSTER }
+      params: { resource: FLEET.DASHBOARD }
     },
     exact: true,
   });

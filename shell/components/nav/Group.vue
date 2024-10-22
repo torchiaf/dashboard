@@ -5,8 +5,6 @@ export default {
 
   components: { Type },
 
-  emits: ['expand', 'close'],
-
   props: {
     depth: {
       type:    Number,
@@ -51,10 +49,6 @@ export default {
   },
 
   computed: {
-    isGroupActive() {
-      return this.isOverview || (this.hasActiveRoute() && this.isExpanded && this.showHeader);
-    },
-
     hasChildren() {
       return this.group.children?.length > 0;
     },
@@ -75,7 +69,7 @@ export default {
         if (overviewRoute && grp.overview) {
           const route = this.$router.resolve(overviewRoute || {});
 
-          return this.$route.fullPath.split('#')[0] === route?.fullPath;
+          return this.$route.fullPath === route?.route?.fullPath;
         }
       }
 
@@ -102,14 +96,8 @@ export default {
       // Don't auto-select first group entry if we're already expanded and contain the currently-selected nav item
       if (this.hasActiveRoute() && this.isExpanded) {
         return;
-      } else {
-        // Remove all active class if click on group header and not active route
-        const headerEl = document.querySelectorAll('.header');
-
-        headerEl.forEach((el) => {
-          el.classList.remove('active');
-        });
       }
+
       this.expandGroup();
 
       const items = this.group[this.childrenKey];
@@ -120,7 +108,7 @@ export default {
 
         // If there is a default type, use it
         if (this.group.defaultType) {
-          const found = items.findIndex((i) => i.name === this.group.defaultType);
+          const found = items.findIndex(i => i.name === this.group.defaultType);
 
           index = (found === -1) ? 0 : found;
         }
@@ -144,11 +132,6 @@ export default {
 
     // User clicked on the expander icon, so toggle the expansion so the user can see inside the group
     peek($event) {
-      // Add active class to the current header if click on chevron icon
-      $event.target.parentElement.classList.remove('active');
-      if (this.hasActiveRoute() && this.isExpanded) {
-        $event.target.parentElement.classList.add('active');
-      }
       this.isExpanded = !this.isExpanded;
       $event.stopPropagation();
     },
@@ -163,11 +146,11 @@ export default {
           return true;
         } else if (item.route) {
           const navLevels = ['cluster', 'product', 'resource'];
-          const matchesNavLevel = navLevels.filter((param) => !this.$route.params[param] || this.$route.params[param] !== item.route.params[param]).length === 0;
+          const matchesNavLevel = navLevels.filter(param => !this.$route.params[param] || this.$route.params[param] !== item.route.params[param]).length === 0;
           const withoutHash = this.$route.hash ? this.$route.fullPath.slice(0, this.$route.fullPath.indexOf(this.$route.hash)) : this.$route.fullPath;
           const withoutQuery = withoutHash.split('?')[0];
 
-          if (matchesNavLevel || this.$router.resolve(item.route).fullPath === withoutQuery) {
+          if (matchesNavLevel || this.$router.resolve(item.route).route.fullPath === withoutQuery) {
             return true;
           }
         }
@@ -205,7 +188,7 @@ export default {
 <template>
   <div
     class="accordion"
-    :class="{[`depth-${depth}`]: true, 'expanded': isExpanded, 'has-children': hasChildren, 'group-highlight': isGroupActive}"
+    :class="{[`depth-${depth}`]: true, 'expanded': isExpanded, 'has-children': hasChildren}"
   >
     <div
       v-if="showHeader"
@@ -214,13 +197,13 @@ export default {
       @click="groupSelected()"
     >
       <slot name="header">
-        <router-link
+        <n-link
           v-if="hasOverview"
           :to="group.children[0].route"
           :exact="group.children[0].exact"
         >
           <h6 v-clean-html="group.labelDisplay || group.label" />
-        </router-link>
+        </n-link>
         <h6
           v-else
           v-clean-html="group.labelDisplay || group.label"
@@ -229,7 +212,7 @@ export default {
       <i
         v-if="!onlyHasOverview && canCollapse"
         class="icon toggle"
-        :class="{'icon-chevron-right': !isExpanded, 'icon-chevron-down': isExpanded}"
+        :class="{'icon-chevron-down': !isExpanded, 'icon-chevron-up': isExpanded}"
         @click="peek($event, true)"
       />
     </div>
@@ -238,10 +221,7 @@ export default {
       class="list-unstyled body"
       v-bind="$attrs"
     >
-      <template
-        v-for="(child, idx) in group[childrenKey]"
-        :key="idx"
-      >
+      <template v-for="(child, idx) in group[childrenKey]" :key="idx">
         <li
           v-if="child.divider"
           :key="idx"
@@ -287,9 +267,8 @@ export default {
     position: relative;
     cursor: pointer;
     color: var(--body-text);
-    height: 33px;
 
-    H6 {
+    > H6 {
       color: var(--body-text);
       user-select: none;
       text-transform: none;
@@ -298,39 +277,38 @@ export default {
 
     > A {
       display: block;
-      box-sizing:border-box;
-      height: 100%;
+      padding-left: 10px;
       &:hover{
-        text-decoration: none;
-      }
+          text-decoration: none;
+        }
       &:focus{
         outline:none;
       }
       > H6 {
+        font-size: 14px;
         text-transform: none;
-        padding: 8px 0 8px 16px;
       }
     }
+
+    &.active {
+      background-color: var(--nav-active);
+    }
+  }
+
+  .body {
+    margin-left: 10px;
   }
 
   .accordion {
     .header {
-      &.active {
-        color: var(--primary-hover-text);
-        background-color: var(--primary-hover-bg);
-
-        h6 {
-          padding: 8px 0 8px 16px;
-          font-weight: bold;
-          color: var(--primary-hover-text);
-        }
-
-        &:hover {
-          background-color: var(--primary-hover-bg);
-        }
-      }
-      &:hover:not(.active) {
+      &:hover:not(.noHover) {
         background-color: var(--nav-hover);
+      }
+
+      > I {
+        &:hover {
+          background-color: var(--nav-expander-hover);
+        }
       }
     }
   }
@@ -338,21 +316,23 @@ export default {
   .accordion {
     &.depth-0 {
       > .header {
+        padding: 8px 0;
 
         &.noHover {
           cursor: default;
         }
 
         > H6 {
+          font-size: 14px;
           text-transform: none;
-          padding: 8px 0 8px 16px;
+          padding-left: 10px;
         }
 
         > I {
           position: absolute;
           right: 0;
           top: 0;
-          padding: 10px 10px 9px 7px;
+          padding: 10px 7px 9px 7px;
           user-select: none;
         }
       }
@@ -360,27 +340,24 @@ export default {
       > .body {
         margin-left: 0;
       }
-
-      &.group-highlight {
-        background: var(--nav-active);
-      }
     }
 
     &.depth-1 {
       > .header {
-        padding-left: 20px;
         > H6 {
-          line-height: 18px;
+          font-size: 13px;
+          line-height: 16px;
           padding: 8px 0 7px 5px !important;
         }
         > I {
-          padding: 10px 7px 9px 7px !important;
+          padding: 9px 7px 8px 7px !important;
         }
       }
     }
 
     &:not(.depth-0) {
       > .header {
+        padding-left: 10px;
         > H6 {
           // Child groups that aren't linked themselves
           display: inline-block;
@@ -397,18 +374,16 @@ export default {
     }
   }
 
-  .body :deep() > .child.router-link-active,
-  .header :deep() > .child.router-link-exact-active {
+ .body :deep() > .child.nuxt-link-active,
+ .header :deep() > .child.nuxt-link-exact-active {
     padding: 0;
 
     A, A I {
-      color: var(--primary-hover-text);
+      color: var(--body-text);
     }
 
     A {
-      color: var(--primary-hover-text);
-      background-color: var(--primary-hover-bg);
-      font-weight: bold;
+      background-color: var(--nav-active);
     }
   }
 
@@ -416,21 +391,11 @@ export default {
     A {
       border-left: solid 5px transparent;
       line-height: 16px;
-      font-size: 14px;
-      padding-left: 24px;
-      display: flex;
-      justify-content: space-between;
+      font-size: 13px;
     }
 
     A:focus {
       outline: none;
-    }
-
-    &.root {
-      background: transparent;
-      A {
-        padding-left: 14px;
-      }
     }
   }
 </style>

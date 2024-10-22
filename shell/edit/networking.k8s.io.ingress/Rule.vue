@@ -4,7 +4,6 @@ import { LabeledInput } from '@components/Form/LabeledInput';
 import { random32 } from '@shell/utils/string';
 
 export default {
-  emits:      ['update:value', 'remove'],
   components: { RulePath, LabeledInput },
   props:      {
     value: {
@@ -56,7 +55,7 @@ export default {
         if ((this.paths?.length === 1 && this.pathObjectIsEmpty(this.paths[0])) || this.paths?.length === 0) {
           delete out.http;
         }
-        this.$emit('update:value', out);
+        this.$emit('input', out);
       });
     },
     pathObjectIsEmpty(pathObject) {
@@ -148,12 +147,10 @@ export default {
       </div>
       <div class="col" />
     </div>
-    <template
-      v-for="(path, i) in paths"
-      :key="path.id"
-    >
+    <template v-for="(path, i) in paths" :key="i">
       <RulePath
         ref="paths"
+        :key="path.id"
         v-model:value="paths[i]"
         class="row mb-10"
         :rule-mode="ruleMode"

@@ -7,11 +7,11 @@ import CruResource from '@shell/components/CruResource';
 import InfoBox from '@shell/components/InfoBox';
 import { Checkbox } from '@components/Form/Checkbox';
 import { LabeledInput } from '@components/Form/LabeledInput';
+import { Banner } from '@components/Banner';
 import AllowedPrincipals from '@shell/components/auth/AllowedPrincipals';
 import FileSelector from '@shell/components/form/FileSelector';
 import AuthBanner from '@shell/components/auth/AuthBanner';
 import CopyToClipboardText from '@shell/components/CopyToClipboardText';
-import AuthProviderWarningBanners from '@shell/edit/auth/AuthProviderWarningBanners';
 
 const NAME = 'googleoauth';
 
@@ -21,19 +21,23 @@ export default {
     CruResource,
     InfoBox,
     LabeledInput,
+    Banner,
     Checkbox,
     AllowedPrincipals,
     FileSelector,
     AuthBanner,
-    CopyToClipboardText,
-    AuthProviderWarningBanners
+    CopyToClipboardText
   },
 
   mixins: [CreateEditView, AuthConfig],
 
   computed: {
     tArgs() {
-      const hostname = window.location.hostname;
+      let hostname = '';
+
+      if (process.client) {
+        hostname = window.location.hostname;
+      }
 
       return {
         hostname,
@@ -82,7 +86,7 @@ export default {
           :disable="disable"
           :edit="goToEdit"
         >
-          <template #rows>
+          <template slot="rows">
             <tr><td>{{ t(`authConfig.${NAME}.adminEmail`) }}: </td><td>{{ model.adminEmail }}</td></tr>
             <tr><td>{{ t(`authConfig.${NAME}.domain`) }}: </td><td>{{ model.hostname }}</td></tr>
 
@@ -100,9 +104,10 @@ export default {
       </template>
 
       <template v-else>
-        <AuthProviderWarningBanners
+        <Banner
           v-if="!model.enabled"
-          :t-args="tArgs"
+          :label="t('authConfig.stateBanner.disabled', tArgs)"
+          color="warning"
         />
         <div
           :style="{'align-items':'center'}"
@@ -196,7 +201,7 @@ export default {
                 class="role-tertiary add mt-5"
                 :label="t('generic.readFromFile')"
                 :mode="mode"
-                @selected="model.oauthCredential = $event"
+                @selected="$set(model, 'oauthCredential', $event)"
               />
             </div>
           </div>
@@ -231,11 +236,23 @@ export default {
                 class="role-tertiary add mt-5"
                 :label="t('generic.readFromFile')"
                 :mode="mode"
-                @selected="model.serviceAccountCredential = $event"
+                @selected="$set(model, 'serviceAccountCredential', $event)"
               />
             </div>
           </div>
         </InfoBox>
+
+        <div
+          v-if="!model.enabled"
+          class="row"
+        >
+          <div class="col span-12 google">
+            <Banner
+              v-clean-html="t('authConfig.associatedWarning', tArgs, true)"
+              color="info"
+            />
+          </div>
+        </div>
       </template>
     </CruResource>
   </div>

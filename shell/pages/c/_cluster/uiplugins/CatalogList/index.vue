@@ -7,21 +7,27 @@ import { SERVICE, WORKLOAD_TYPES } from '@shell/config/types';
 import { UI_PLUGIN_LABELS, UI_PLUGIN_NAMESPACE } from '@shell/config/uiplugins';
 import { UI_PLUGIN_CATALOG } from '@shell/config/table-headers';
 
+import ActionMenu from '@shell/components/ActionMenu';
 import ResourceTable from '@shell/components/ResourceTable';
 
 export default {
-  emits: ['showCatalogUninstallDialog', 'showCatalogLoadDialog'],
-
   name: 'CatalogList',
 
-  components: { ResourceTable },
+  props: {
+    plugins: {
+      type:     Array,
+      required: true
+    }
+  },
+
+  components: { ActionMenu, ResourceTable },
 
   mixins: [ResourceManager],
 
   data() {
     const actions = [
       {
-        action:  'showCatalogUninstallDialog',
+        action:  'uninstall',
         label:   this.t('plugins.uninstall.label'),
         icon:    'icon icon-trash',
         enabled: true,
@@ -30,7 +36,10 @@ export default {
 
     return {
       actions,
-      catalogHeaders: UI_PLUGIN_CATALOG,
+      catalogHeaders:    UI_PLUGIN_CATALOG,
+      menuTargetElement: null,
+      menuTargetEvent:   null,
+      menuOpen:          false,
     };
   },
 
@@ -38,39 +47,46 @@ export default {
     ...mapGetters({ allRepos: 'catalog/repos' }),
 
     namespacedDeployments() {
-      return this.$store.getters['management/all'](WORKLOAD_TYPES.DEPLOYMENT).filter((dep) => dep.metadata.namespace === UI_PLUGIN_NAMESPACE);
+      return this.$store.getters['management/all'](WORKLOAD_TYPES.DEPLOYMENT).filter(dep => dep.metadata.namespace === UI_PLUGIN_NAMESPACE);
     },
 
     namespacedServices() {
-      return this.$store.getters['management/all'](SERVICE).filter((svc) => svc.metadata.namespace === UI_PLUGIN_NAMESPACE);
+      return this.$store.getters['management/all'](SERVICE).filter(svc => svc.metadata.namespace === UI_PLUGIN_NAMESPACE);
     },
 
     catalogRows() {
       const rows = [];
-      const actions = this.actions;
 
-      if ( !isEmpty(this.namespacedDeployments) ) {
-        this.namespacedDeployments.forEach((deploy) => {
-          const resources = [this.namespacedServices, this.allRepos];
-          const deployName = deploy.metadata?.labels?.[UI_PLUGIN_LABELS.CATALOG_IMAGE];
+      if (this.plugins.length) {
+        // Find the resources associated with the image by the CATALOG_IMAGE label
+        this.plugins.forEach((plugin) => {
+          const resources = [this.namespacedDeployments, this.namespacedServices, this.allRepos];
+          const pluginName = plugin.metadata?.labels?.[UI_PLUGIN_LABELS.CATALOG_IMAGE];
 
-          if ( deployName ) {
+          if (pluginName) {
             const out = {
-              name:                       deployName,
-              state:                      deploy.metadata?.state?.name,
-              image:                      deploy.spec?.template?.spec?.containers[0]?.image,
-              service:                    null,
-              repo:                       null,
-              availableActions:           actions,
-              showCatalogUninstallDialog: () => this.$emit('showCatalogUninstallDialog', out)
+              uiplugin:        plugin,
+              catalog:         true,
+              name:            pluginName,
+              state:           plugin.metadata?.state?.name,
+              cacheState:      plugin.status?.cacheState,
+              version:         plugin.spec?.plugin?.version,
+              deployment:      null,
+              deploymentImage: null,
+              service:         null,
+              repo:            null
             };
-            const keys = ['service', 'repo'];
+            const keys = ['deployment', 'service', 'repo'];
 
             resources.forEach((resource, i) => {
-              out[keys[i]] = resource?.filter((item) => item.metadata?.labels?.[UI_PLUGIN_LABELS.CATALOG_IMAGE] === deployName)[0];
+              out[keys[i]] = resource?.filter(item => item.metadata?.labels?.[UI_PLUGIN_LABELS.CATALOG_IMAGE] === pluginName)[0];
             });
 
-            rows.push(out);
+            if (!isEmpty(out?.deployment)) {
+              out.deploymentImage = out.deployment.spec?.template?.spec?.containers[0]?.image;
+
+              rows.push(out);
+            }
           }
         });
       }
@@ -78,6 +94,20 @@ export default {
       return rows;
     }
   },
+
+  methods: {
+    setMenu(event) {
+      this.menuOpen = !!event;
+
+      if (event) {
+        this.menuTargetElement = this.$refs.catalogActions;
+        this.menuTargetEvent = event;
+      } else {
+        this.menuTargetElement = undefined;
+        this.menuTargetEvent = undefined;
+      }
+    }
+  }
 };
 </script>
 
@@ -104,6 +134,27 @@ export default {
               {{ t('plugins.manageCatalog.imageLoad.load') }}
             </button>
           </div>
+        </template>
+        <template #row-actions="{row}">
+          <button
+            ref="catalogActions"
+            aria-haspopup="true"
+            type="button"
+            class="btn btn-sm role-multi-action actions"
+            data-testid="extensions-page-catalog-row-menu"
+            @click="setMenu"
+          >
+            <i class="icon icon-actions" />
+          </button>
+          <ActionMenu
+            :custom-actions="actions"
+            :open="menuOpen"
+            :use-custom-target-element="true"
+            :custom-target-element="menuTargetElement"
+            :custom-target-event="menuTargetEvent"
+            @close="setMenu(false)"
+            @uninstall="e => $emit('showUninstallDialog', row, e.event)"
+          />
         </template>
       </ResourceTable>
     </div>

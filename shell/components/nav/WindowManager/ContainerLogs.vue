@@ -2,7 +2,7 @@
 import { saveAs } from 'file-saver';
 import AnsiUp from 'ansi_up';
 import { addParams } from '@shell/utils/url';
-import { base64DecodeToBuffer } from '@shell/utils/crypto';
+import { base64Decode } from '@shell/utils/crypto';
 import { LOGS_RANGE, LOGS_TIME, LOGS_WRAP } from '@shell/store/prefs';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import { Checkbox } from '@components/Form/Checkbox';
@@ -10,8 +10,6 @@ import AsyncButton from '@shell/components/AsyncButton';
 import Select from '@shell/components/form/Select';
 import VirtualList from 'vue3-virtual-scroll-list';
 import LogItem from '@shell/components/LogItem';
-import { shallowRef } from 'vue';
-import { debounce } from 'lodash';
 
 import { escapeRegex } from '@shell/utils/string';
 import { HARVESTER_NAME as VIRTUAL } from '@shell/config/features';
@@ -27,61 +25,6 @@ import Window from './Window';
 
 let lastId = 1;
 const ansiup = new AnsiUp();
-// Convert arrayBuffer(Uint8Array) to string
-// ref: https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder
-// ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of
-const ab2str = (input, outputEncoding = 'utf8') => {
-  const decoder = new TextDecoder(outputEncoding);
-
-  return decoder.decode(input);
-};
-
-// The utf-8 encoded messages pushed by websocket may truncate multi-byte utf-8 characters,
-// which causes the front-end to be unable to parse the truncated multi-byte utf-8 characters in the previous and next messages when decoding.
-// Therefore, we need to determine whether the last 4 bytes of the current pushed message contain incomplete utf-8 encoded characters.
-// ref: https://en.wikipedia.org/wiki/UTF-8#Encoding
-const isLogTruncated = (uint8ArrayBuffer) => {
-  const len = uint8ArrayBuffer.length;
-  const count = Math.min(4, len);
-  let isTruncated = false;
-
-  // Parses the last ${count} bytes of the array to determine if there are any truncated utf-8 characters.
-  for ( let i = 0; i < count; i++ ) {
-    const a = uint8ArrayBuffer[len - (1 + i)];
-
-    // 1 byte utf-8 character in binary form: 0xxxxxxxxx
-    if ((a & 0b10000000) === 0b00000000) {
-      break;
-    }
-    // Multi-byte utf-8 character, intermediate binary form: 10xxxxxx
-    if ((a & 0b11000000) === 0b10000000) {
-      continue;
-    }
-    // 2 byte utf-8 character in binary form: 110xxxxx 10xxxxxx
-    if ((a & 0b11100000) === 0b11000000) {
-      if ( i !== 1) {
-        isTruncated = true;
-      }
-      break;
-    }
-    // 3 byte utf-8 character in binary form: 1110xxxx 10xxxxxx 10xxxxxx
-    if ((a & 0b11110000) === 0b11100000) {
-      if (i !== 2) {
-        isTruncated = true;
-      }
-      break;
-    }
-    // 4 byte utf-8 character in binary form: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-    if ((a & 0b11111000) === 0b11110000) {
-      if (i !== 3) {
-        isTruncated = true;
-      }
-      break;
-    }
-  }
-
-  return isTruncated;
-};
 
 export default {
   components: {
@@ -132,19 +75,18 @@ export default {
 
   data() {
     return {
-      container:       this.initialContainer || this.pod?.defaultContainerName,
-      socket:          null,
-      isOpen:          false,
-      isFollowing:     true,
-      scrollThreshold: 80,
-      timestamps:      this.$store.getters['prefs/get'](LOGS_TIME),
-      wrap:            this.$store.getters['prefs/get'](LOGS_WRAP),
-      previous:        false,
-      search:          '',
-      backlog:         [],
-      lines:           [],
-      now:             new Date(),
-      logItem:         shallowRef(LogItem),
+      container:   this.initialContainer || this.pod?.defaultContainerName,
+      socket:      null,
+      isOpen:      false,
+      isFollowing: true,
+      timestamps:  this.$store.getters['prefs/get'](LOGS_TIME),
+      wrap:        this.$store.getters['prefs/get'](LOGS_WRAP),
+      previous:    false,
+      search:      '',
+      backlog:     [],
+      lines:       [],
+      now:         new Date(),
+      logItem:     LogItem
     };
   },
 
@@ -164,8 +106,8 @@ export default {
     containerChoices() {
       const isHarvester = this.$store.getters['currentProduct'].inStore === VIRTUAL;
 
-      const containers = (this.pod?.spec?.containers || []).map((x) => x.name);
-      const initContainers = (this.pod?.spec?.initContainers || []).map((x) => x.name);
+      const containers = (this.pod?.spec?.containers || []).map(x => x.name);
+      const initContainers = (this.pod?.spec?.initContainers || []).map(x => x.name);
 
       return isHarvester ? [] : [...containers, ...initContainers];
     },
@@ -278,27 +220,16 @@ export default {
       this.connect();
     },
 
-    lines: {
-      handler() {
-        if (this.isFollowing) {
-          this.$nextTick(() => {
-            this.follow();
-          });
-        }
-      },
-      deep: true
-    }
-
   },
 
-  beforeUnmount() {
+  beforeDestroy() {
     this.cleanup();
   },
 
   async mounted() {
     await this.connect();
     this.boundFlush = this.flush.bind(this);
-    this.timerFlush = setInterval(this.boundFlush, 200);
+    this.timerFlush = setInterval(this.boundFlush, 100);
   },
 
   methods: {
@@ -342,80 +273,34 @@ export default {
         console.error('Connect Error', e); // eslint-disable-line no-console
       });
 
-      let logBuffer = [];
-      let truncatedLog = '';
-
       this.socket.addEventListener(EVENT_MESSAGE, (e) => {
-        const decodedData = e.detail?.data || '';
-        const replacedData = decodedData.replace(/[-_]/g, (char) => char === '-' ? '+' : '/');
-        const b = base64DecodeToBuffer(replacedData);
-        const isTruncated = isLogTruncated(b);
+        const line = base64Decode(e.detail.data);
 
-        if (isTruncated === true) {
-          logBuffer.push(...b);
+        let msg = line;
+        let time = null;
 
-          return;
-        }
+        const idx = line.indexOf(' ');
 
-        let d;
+        if ( idx > 0 ) {
+          const timeStr = line.substr(0, idx);
+          const date = new Date(timeStr);
 
-        // If the logBuffer is not empty,
-        // there are truncated utf-8 characters in the previous message
-        // that need to be merged with the current message before decoding.
-        if (logBuffer.length > 0) {
-          // Convert arrayBuffer(Uint8Array) to string
-          // ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of
-          d = ab2str(Uint8Array.of(...logBuffer, ...b));
-          logBuffer = [];
-        } else {
-          d = b.toString();
-        }
-        let data = d;
-
-        if (truncatedLog) {
-          data = `${ truncatedLog }${ d }`;
-          truncatedLog = '';
-        }
-
-        if (!d.endsWith('\n')) {
-          const lines = data.split(/\n/);
-
-          if (lines.length === 1) {
-            truncatedLog = data;
-
-            return;
+          if ( !isNaN(date.getSeconds()) ) {
+            time = date.toISOString();
+            msg = line.substr(idx + 1);
           }
-          data = lines.slice(0, -1).join('\n');
-          truncatedLog = lines.slice(-1);
         }
-        // Websocket message may contain multiple lines - loop through each line, one by one
-        data.split('\n').filter((line) => line).forEach((line) => {
-          let msg = line;
-          let time = null;
 
-          const idx = line.indexOf(' ');
+        const parsedLine = {
+          id:     lastId++,
+          msg:    ansiup.ansi_to_html(msg),
+          rawMsg: msg,
+          time,
+        };
 
-          if ( idx > 0 ) {
-            const timeStr = line.substr(0, idx);
-            const date = new Date(timeStr);
+        Object.freeze(parsedLine);
 
-            if ( !isNaN(date.getSeconds()) ) {
-              time = date.toISOString();
-              msg = line.substr(idx + 1);
-            }
-          }
-
-          const parsedLine = {
-            id:     lastId++,
-            msg:    ansiup.ansi_to_html(msg),
-            rawMsg: msg,
-            time,
-          };
-
-          Object.freeze(parsedLine);
-
-          this.backlog.push(parsedLine);
-        });
+        this.backlog.push(parsedLine);
       });
 
       this.socket.connect();
@@ -431,21 +316,21 @@ export default {
           this.lines = this.lines.slice(-maxLines);
         }
       }
+
+      if ( this.isFollowing ) {
+        this.$nextTick(() => {
+          this.follow();
+        });
+      }
     },
 
-    updateFollowing: debounce(function() {
+    updateFollowing() {
       const virtualList = this.$refs.virtualList;
 
       if (virtualList) {
-        const scrollSize = virtualList.getScrollSize();
-        const clientSize = virtualList.getClientSize();
-        const offset = virtualList.getOffset();
-
-        const distanceFromBottom = scrollSize - clientSize - offset;
-
-        this.isFollowing = distanceFromBottom <= this.scrollThreshold;
+        this.isFollowing = virtualList.getScrollSize() - virtualList.getClientSize() === virtualList.getOffset();
       }
-    }, 100),
+    },
 
     parseRange(range) {
       range = `${ range }`.trim().toLowerCase();
@@ -517,8 +402,7 @@ export default {
       const virtualList = this.$refs.virtualList;
 
       if (virtualList) {
-        virtualList.scrollToBottom();
-        this.isFollowing = true;
+        virtualList.$el.scrollTop = virtualList.getScrollSize();
       }
     },
 
@@ -620,17 +504,16 @@ export default {
         </div>
 
         <div class="log-action log-action-group ml-5">
-          <v-dropdown
-            :triggers="['click']"
+          <v-popover
+            trigger="click"
             placement="top"
-            popperClass="containerLogsDropdown"
           >
             <button class="btn bg-primary btn-cog">
               <i class="icon icon-gear" />
               <i class="icon icon-chevron-up" />
             </button>
 
-            <template #popper>
+            <template slot="popover">
               <div class="filter-popup">
                 <LabeledSelect
                   v-model:value="range"
@@ -657,12 +540,12 @@ export default {
                 </div>
               </div>
             </template>
-          </v-dropdown>
+          </v-popover>
         </div>
 
         <div class="log-action log-action-group ml-5">
           <input
-            v-model="search"
+            v-model:value="search"
             class="input-sm"
             type="search"
             :placeholder="t('wm.containerLogs.search')"
@@ -685,11 +568,11 @@ export default {
         <VirtualList
           v-show="filtered.length"
           ref="virtualList"
-          class="virtual-list"
           data-key="id"
           :data-sources="filtered"
           :data-component="logItem"
           direction="vertical"
+          class="virtual-list"
           :keeps="200"
           @scroll="updateFollowing"
         />

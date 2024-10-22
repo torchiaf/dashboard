@@ -4,7 +4,7 @@ import { MANAGEMENT, NORMAN, SCHEMA, DEFAULT_WORKSPACE } from '@shell/config/typ
 import CreateEditView from '@shell/mixins/create-edit-view';
 import NameNsDescription from '@shell/components/form/NameNsDescription';
 import CruResource from '@shell/components/CruResource';
-import { _CREATE, _EDIT } from '@shell/config/query-params';
+import { _CREATE } from '@shell/config/query-params';
 import Loading from '@shell/components/Loading';
 import Labels from '@shell/components/form/Labels';
 import { HIDE_SENSITIVE } from '@shell/store/prefs';
@@ -19,8 +19,6 @@ import { rke1Supports } from '@shell/store/plugins';
 
 export default {
   name: 'CruCloudCredential',
-
-  emits: ['set-subtype', 'input'],
 
   components: {
     Loading,
@@ -72,11 +70,6 @@ export default {
       set(this.value, '_name', '');
     }
 
-    if (this.mode === _EDIT && this.value?.name?.length) {
-      this.value._name = this.value.name;
-      this.nameRequiredValidation = true;
-    }
-
     if ( this.value.provider ) {
       this.selectType(this.value.provider);
     }
@@ -84,25 +77,13 @@ export default {
 
   data() {
     return {
-      credCustomComponentValidation: false,
-      nameRequiredValidation:        false,
-      nodeDrivers:                   null,
-      kontainerDrivers:              null
+      nodeDrivers:      null,
+      kontainerDrivers: null
     };
-  },
-
-  watch: {
-    'value._name'(newValue) {
-      this.nameRequiredValidation = newValue?.length > 0;
-    }
   },
 
   computed: {
     rke2Enabled: mapFeature(RKE2_FEATURE),
-
-    validationPassed() {
-      return this.credCustomComponentValidation && this.nameRequiredValidation;
-    },
 
     storeOverride() {
       return 'rancher';
@@ -125,13 +106,13 @@ export default {
       const out = [];
 
       const drivers = [...this.nodeDrivers, ...this.kontainerDrivers]
-        .filter((x) => x.spec.active && x.id !== 'rancherkubernetesengine')
-        .map((x) => x.spec.displayName || x.id);
+        .filter(x => x.spec.active && x.id !== 'rancherkubernetesengine')
+        .map(x => x.spec.displayName || x.id);
 
-      let types = uniq(drivers.map((x) => this.$store.getters['plugins/credentialDriverFor'](x)));
+      let types = uniq(drivers.map(x => this.$store.getters['plugins/credentialDriverFor'](x)));
 
       if ( !this.rke2Enabled ) {
-        types = types.filter((x) => rke1Supports.includes(x));
+        types = types.filter(x => rke1Supports.includes(x));
       }
 
       const schema = this.$store.getters['rancher/schemaFor'](NORMAN.CLOUD_CREDENTIAL);
@@ -160,17 +141,13 @@ export default {
       }
 
       for ( const id of types ) {
-        let bannerAbbrv;
+        let bannerImage, bannerAbbrv;
 
-        let bannerImage = this.$store.app.$plugin.getDynamic('image', `providers/${ id }.svg`);
-
-        if (!bannerImage) {
-          try {
-            bannerImage = require(`~shell/assets/images/providers/${ id }.svg`);
-          } catch (e) {
-            bannerImage = null;
-            bannerAbbrv = this.initialDisplayFor(id);
-          }
+        try {
+          bannerImage = require(`~shell/assets/images/providers/${ id }.svg`);
+        } catch (e) {
+          bannerImage = null;
+          bannerAbbrv = this.initialDisplayFor(id);
         }
 
         out.push({
@@ -194,11 +171,6 @@ export default {
   },
 
   methods: {
-
-    createValidationChanged(passed) {
-      this.credCustomComponentValidation = passed;
-    },
-
     async saveCredential(btnCb) {
       if ( this.errors ) {
         clear(this.errors);
@@ -263,10 +235,6 @@ export default {
 
       return this.$store.getters['i18n/withFallback'](`secret.initials."${ type }"`, null, fallback);
     },
-
-    updateValue(key, value) {
-      this.value.setData(key, value);
-    }
   },
 };
 </script>
@@ -277,7 +245,7 @@ export default {
     <CruResource
       v-else
       :mode="mode"
-      :validation-passed="validationPassed"
+      :validation-passed="true"
       :selected-subtype="value._type"
       :resource="value"
       :errors="errors"
@@ -289,15 +257,11 @@ export default {
       @error="e=>errors = e"
     >
       <NameNsDescription
-        :value="value"
-        :name-editable="true"
+        v-model:value="value"
         name-key="_name"
         description-key="description"
-        name-label="cluster.credential.name.label"
-        name-placeholder="cluster.credential.name.placeholder"
         :mode="mode"
         :namespaced="false"
-        @update:value="$emit('input', $event)"
       />
       <keep-alive>
         <component
@@ -307,8 +271,6 @@ export default {
           :value="value"
           :mode="mode"
           :hide-sensitive-data="hideSensitiveData"
-          @validationChanged="createValidationChanged"
-          @valueChanged="updateValue"
         />
       </keep-alive>
     </CruResource>

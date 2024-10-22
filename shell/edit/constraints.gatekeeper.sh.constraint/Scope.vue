@@ -18,8 +18,6 @@ export const SCOPE_OPTIONS = [
 ];
 
 export default {
-  emits: ['update:value'],
-
   components: { LabeledSelect },
 
   props: {
@@ -47,6 +45,6 @@ export default {
     :value="value"
     :mode="mode"
     :options="SCOPE_OPTIONS"
-    @update:value="e=>$emit('update:value', e)"
+    @input="e=>$emit('input', e)"
   />
 </template>

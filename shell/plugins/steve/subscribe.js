@@ -1,17 +1,6 @@
-/**
- * Handles subscriptions to websockets which receive updates to resources
- *
- * Covers three use cases
- * 1) Handles subscription within this file
- * 2) Handles `cluster` subscriptions for some basic types in a web worker (SETTING.UI_PERFORMANCE advancedWorker = false)
- * 2) Handles `cluster` subscriptions and optimisations in an advanced worker (SETTING.UI_PERFORMANCE advancedWorker = true)
- */
-
 import { addObject, clear, removeObject } from '@shell/utils/array';
 import { get } from '@shell/utils/object';
-import { SCHEMA, MANAGEMENT } from '@shell/config/types';
-import { SETTING } from '@shell/config/settings';
-import { CSRF } from '@shell/config/cookies';
+import { SCHEMA } from '@shell/config/types';
 import { getPerformanceSetting } from '@shell/utils/settings';
 import Socket, {
   EVENT_CONNECTED,
@@ -19,23 +8,20 @@ import Socket, {
   EVENT_MESSAGE,
   //  EVENT_FRAME_TIMEOUT,
   EVENT_CONNECT_ERROR,
-  EVENT_DISCONNECT_ERROR,
-  NO_WATCH,
-  NO_SCHEMA,
-  REVISION_TOO_OLD,
-  NO_PERMS
+  EVENT_DISCONNECT_ERROR
 } from '@shell/utils/socket';
 import { normalizeType } from '@shell/plugins/dashboard-store/normalize';
 import day from 'dayjs';
 import { DATE_FORMAT, TIME_FORMAT } from '@shell/store/prefs';
 import { escapeHtml } from '@shell/utils/string';
-import { keyForSubscribe } from '@shell/plugins/steve/resourceWatcher';
-import { waitFor } from '@shell/utils/async';
-import { WORKER_MODES } from './worker';
-import acceptOrRejectSocketMessage from './accept-or-reject-socket-message';
-import { BLANK_CLUSTER, STORE } from '@shell/store/store-types.js';
-import paginationUtils from '@shell/utils/pagination-utils';
-import _ from 'lodash';
+import pAndNFiltering from '@shell/utils/projectAndNamespaceFiltering.utils';
+import { STORE } from '@shell/store/store-types';
+
+// eslint-disable-next-line
+import webworker from './web-worker.steve-sub-worker.js';
+
+export const NO_WATCH = 'NO_WATCH';
+export const NO_SCHEMA = 'NO_SCHEMA';
 
 // minimum length of time a disconnect notification is shown
 const MINIMUM_TIME_NOTIFIED = 3000;
@@ -44,34 +30,9 @@ const workerQueues = {};
 
 const supportedStores = [STORE.CLUSTER, STORE.RANCHER, STORE.MANAGEMENT];
 
-const isWaitingForDestroy = (storeName, store) => {
-  return store.$workers[storeName]?.waitingForDestroy && store.$workers[storeName].waitingForDestroy();
-};
-
-const waitForSettingsSchema = (storeName, store) => {
-  return waitFor(() => isWaitingForDestroy(storeName, store) || !!store.getters['management/byId'](SCHEMA, MANAGEMENT.SETTING));
-};
-
-const waitForSettings = (storeName, store) => {
-  return waitFor(() => isWaitingForDestroy(storeName, store) || !!store.getters['management/byId'](MANAGEMENT.SETTING, SETTING.UI_PERFORMANCE));
-};
-
-const isAdvancedWorker = (ctx) => {
-  const { rootGetters, getters } = ctx;
-  const storeName = getters.storeName;
-  const clusterId = rootGetters.clusterId;
-
-  if (!supportedStores.includes(storeName) || (clusterId === BLANK_CLUSTER && storeName === STORE.CLUSTER)) {
-    return false;
-  }
-
-  const perfSetting = getPerformanceSetting(rootGetters);
-
-  return perfSetting?.advancedWorker.enabled;
-};
-
-export async function createWorker(store, ctx) {
-  const { getters, dispatch } = ctx;
+// We only create a worker for the cluster store
+export function createWorker(store, ctx) {
+  const { getters } = ctx;
   const storeName = getters.storeName;
 
   store.$workers = store.$workers || {};
@@ -80,92 +41,24 @@ export async function createWorker(store, ctx) {
     return;
   }
 
-  if (!store.$workers[storeName]) {
-    // we know we need a worker at this point but we don't know which one so we're creating a mock interface
-    // it will simply queue up any messages for the real worker to process when it loads up
-    store.$workers[storeName] = {
-      postMessage: (msg) => {
-        if (Object.keys(msg)?.[0] === 'destroyWorker') {
-          // The worker has been destroyed before it's been set up. Flag this so we stop waiting for mgmt settings and then can destroy worker.
-          // This can occurr when the user is redirected to the log in page
-          // - workers created (but waiting)
-          // - logout is called
-          // - <store>/unsubscribe is dispatched
-          // - wait for worker object to be destroyed <-- requires initial wait to be unblocked
-          store.$workers[storeName].mode = WORKER_MODES.DESTROY_MOCK;
-
-          return;
-        }
-        if (workerQueues[storeName]) {
-          workerQueues[storeName].push(msg);
-        } else {
-          workerQueues[storeName] = [msg];
-        }
-      },
-      mode:              WORKER_MODES.WAITING,
-      waitingForDestroy: () => {
-        return store.$workers[storeName]?.mode === WORKER_MODES.DESTROY_MOCK;
-      },
-      destroy: () => {
-        // Similar to workerActions.destroyWorker
-        delete store.$workers[storeName];
-      }
-    };
-  }
-
-  await waitForSettingsSchema(storeName, store);
-  await waitForSettings(storeName, store);
-  if (store.$workers[storeName].waitingForDestroy()) {
-    store.$workers[storeName].destroy();
-
-    return;
-  }
-  const advancedWorker = isAdvancedWorker(ctx);
-
   const workerActions = {
     load: (resource) => {
       queueChange(ctx, resource, true, 'Change');
     },
     destroyWorker: () => {
       if (store.$workers) {
-        store.$workers[storeName].terminate();
         delete store.$workers[storeName];
       }
-    },
-    batchChanges: (batch) => {
-      dispatch('batchChanges', acceptOrRejectSocketMessage.validateBatchChange(ctx, batch));
-    },
-    dispatch: (msg) => {
-      dispatch(`ws.${ msg.name }`, msg);
-    },
-    redispatch: (msg) => {
-      /**
-       * because we had to queue up some messages prior to loading the worker:
-       * the basic worker will need to redispatch some of the queued messages back to the UI thread
-       */
-      Object.entries(msg).forEach(([action, params]) => {
-        dispatch(action, params);
-      });
-    },
-    [EVENT_CONNECT_ERROR]: (e) => {
-      dispatch('error', e );
-    },
-    [EVENT_DISCONNECT_ERROR]: (e) => {
-      dispatch('error', e );
-    },
+    }
   };
 
-  if (!store.$workers[storeName] || store.$workers[storeName].mode === WORKER_MODES.WAITING) {
-    const workerMode = advancedWorker ? WORKER_MODES.ADVANCED : WORKER_MODES.BASIC;
-    const worker = store.steveCreateWorker(workerMode);
+  if (!store.$workers[storeName]) {
+    const worker = new webworker();
 
     store.$workers[storeName] = worker;
 
     worker.postMessage({ initWorker: { storeName } });
 
-    /**
-     * Covers message from Worker to UI thread
-     */
     store.$workers[storeName].onmessage = (e) => {
       /* on the off chance there's more than key in the message, we handle them in the order that they "keys" method provides which is
       // good enough for now considering that we never send more than one message action at a time right now */
@@ -180,16 +73,18 @@ export async function createWorker(store, ctx) {
   while (workerQueues[storeName]?.length) {
     const message = workerQueues[storeName].shift();
 
-    // TODO: 11541: Web Worker communication fails due to Proxy objects in messages
-    store.$workers[storeName].postMessage(_.cloneDeep(message));
+    store.$workers[storeName].postMessage(message);
   }
 }
 
-export function equivalentWatch(a, b) {
-  const aresourceType = a.resourceType || a.type;
-  const bresourceType = b.resourceType || b.type;
+export function keyForSubscribe({
+  resourceType, type, namespace, id, selector
+} = {}) {
+  return `${ resourceType || type || '' }/${ namespace || '' }/${ id || '' }/${ selector || '' }`;
+}
 
-  if ( aresourceType !== bresourceType ) {
+export function equivalentWatch(a, b) {
+  if ( a.type !== b.type ) {
     return false;
   }
 
@@ -208,6 +103,66 @@ export function equivalentWatch(a, b) {
   return true;
 }
 
+/**
+ * Sockets will not be able to subscribe to more than one namespace. If this is requested we pretend to handle it
+ * - Changes to all resources are monitored (no namespace provided in sub)
+ * - We ignore any events not from a required namespace (we have the conversion of project --> namespaces already)
+ */
+const namespaceHandler = {
+  /**
+   * Note - namespace can be a list of projects or namespaces
+   */
+  subscribeNamespace: (namespace) => {
+    if (pAndNFiltering.isApplicable({ namespaced: namespace }) && namespace.length) {
+      return undefined; // AKA sub to everything
+    }
+
+    return namespace;
+  },
+
+  validChange: ({ getters, rootGetters }, type, data) => {
+    const haveNamespace = getters.haveNamespace(type);
+
+    if (haveNamespace?.length) {
+      const namespaces = rootGetters.activeNamespaceCache;
+
+      if (!namespaces[data.metadata.namespace]) {
+        return false;
+      }
+    }
+
+    return true;
+  },
+
+  validateBatchChange: ({ getters, rootGetters }, batch) => {
+    const namespaces = rootGetters.activeNamespaceCache;
+
+    Object.entries(batch).forEach(([type, entries]) => {
+      const haveNamespace = getters.haveNamespace(type);
+
+      if (!haveNamespace?.length) {
+        return;
+      }
+
+      const schema = getters.schemaFor(type);
+
+      if (!schema?.attributes?.namespaced) {
+        return;
+      }
+
+      Object.keys(entries).forEach((id) => {
+        const namespace = id.split('/')[0];
+
+        if (!namespace || !namespaces[namespace]) {
+          delete entries[id];
+        }
+      });
+    });
+
+    return batch;
+  }
+};
+
 function queueChange({ getters, state, rootGetters }, { data, revision }, load, label) {
   const type = getters.normalizeType(data.type);
 
@@ -221,7 +176,7 @@ function queueChange({ getters, state, rootGetters }, { data, revision }, load, 
 
   // console.log(`${ label } Event [${ state.config.namespace }]`, data.type, data.id); // eslint-disable-line no-console
 
-  if (!acceptOrRejectSocketMessage.validChange({ getters, rootGetters }, type, data)) {
+  if (!namespaceHandler.validChange({ getters, rootGetters }, type, data)) {
     return;
   }
 
@@ -257,16 +212,11 @@ function growlsDisabled(rootGetters) {
   return getPerformanceSetting(rootGetters)?.disableWebsocketNotification;
 }
 
-/**
- * Actions that cover all cases (see file description)
- */
-const sharedActions = {
-  async subscribe(ctx, opt) {
+export const actions = {
+  subscribe(ctx, opt) {
     const {
       state, commit, dispatch, getters, rootGetters
     } = ctx;
-
-    // ToDo: need to keep the worker up to date on CSRF cookie
 
     if (rootGetters['isSingleProduct']?.disableSteveSockets) {
       return;
@@ -276,31 +226,20 @@ const sharedActions = {
 
     commit('setWantSocket', true);
 
+    if ( process.server ) {
+      return;
+    }
+
     state.debugSocket && console.info(`Subscribe [${ getters.storeName }]`); // eslint-disable-line no-console
 
     const url = `${ state.config.baseUrl }/subscribe`;
-    const maxTries = growlsDisabled(rootGetters) ? null : 3;
-    const metadata = get(opt, 'metadata');
 
-    if (isAdvancedWorker(ctx)) {
-      if (!this.$workers[getters.storeName]) {
-        await createWorker(this, ctx);
-      }
-
-      // if the worker is in advanced mode then it'll contain it's own socket which it calls a 'watcher'
-      this.$workers[getters.storeName].postMessage({
-        createWatcher: {
-          metadata,
-          url:  `${ state.config.baseUrl }/subscribe`,
-          csrf: this.$cookies.get(CSRF, { parseJSON: false }),
-          maxTries
-        }
-      });
-    } else if ( socket ) {
+    if ( socket ) {
       socket.setAutoReconnect(true);
       socket.setUrl(url);
-      socket.connect(metadata);
     } else {
+      const maxTries = growlsDisabled(rootGetters) ? null : 3;
+
       socket = new Socket(`${ state.config.baseUrl }/subscribe`, true, null, null, maxTries);
 
       commit('setSocket', socket);
@@ -331,183 +270,25 @@ const sharedActions = {
           }
         }
       });
-      socket.connect(metadata);
     }
+
+    socket.connect(get(opt, 'metadata') );
   },
 
   unsubscribe({ commit, getters, state }) {
     const socket = state.socket;
+    const worker = (this.$workers || {})[getters.storeName];
 
     commit('setWantSocket', false);
-    const cleanupTasks = [];
-
-    const worker = (this.$workers || {})[getters.storeName];
 
     if (worker) {
       worker.postMessage({ destroyWorker: true }); // we're only passing the boolean here because the key needs to be something truthy to ensure it's passed on the object.
-      cleanupTasks.push(waitFor(() => !this.$workers[getters.storeName], 'Worker is destroyed'));
     }
 
     if ( socket ) {
-      cleanupTasks.push(socket.disconnect());
-    }
-
-    return Promise.all(cleanupTasks);
-  },
-
-  watch({
-    state, dispatch, getters, rootGetters
-  }, params) {
-    state.debugSocket && console.info(`Watch Request [${ getters.storeName }]`, JSON.stringify(params)); // eslint-disable-line no-console
-
-    let {
-      // eslint-disable-next-line prefer-const
-      type, selector, id, revision, namespace, stop, force
-    } = params;
-
-    namespace = acceptOrRejectSocketMessage.subscribeNamespace(namespace);
-    type = getters.normalizeType(type);
-
-    if (rootGetters['type-map/isSpoofed'](type)) {
-      state.debugSocket && console.info('Will not Watch (type is spoofed)', JSON.stringify(params)); // eslint-disable-line no-console
-
-      return;
-    }
-
-    const schema = getters.schemaFor(type, false, false);
-
-    if (!!schema?.attributes?.verbs?.includes && !schema.attributes.verbs.includes('watch')) {
-      state.debugSocket && console.info('Will not Watch (type does not have watch verb)', JSON.stringify(params)); // eslint-disable-line no-console
-
-      return;
-    }
-
-    // If socket is in error don't try to watch.... unless we `force` it
-    const inError = getters.inError(params);
-
-    if ( !stop && !force && inError ) {
-      // REVISION_TOO_OLD is a temporary state and will be handled when `resyncWatch` completes
-      if (inError !== REVISION_TOO_OLD) {
-        console.error(`Aborting Watch Request [${ getters.storeName }]. Watcher in error (${ inError })`, JSON.stringify(params)); // eslint-disable-line no-console
-      }
-
-      return;
-    }
-
-    if ( !stop && getters.watchStarted({
-      type, id, selector, namespace
-    }) ) {
-      // eslint-disable-next-line no-console
-      state.debugSocket && console.debug(`Already Watching [${ getters.storeName }]`, {
-        type, id, selector, namespace
-      });
-
-      return;
-    }
-
-    // isSteveCacheEnabled check is temporary and will be removed once Part 3 of https://github.com/rancher/dashboard/pull/10349 is resolved by backend
-    // Steve cache backed api does not return a revision, so `revision` here is always undefined
-    // Which means we find a revision within a resource itself and use it in the watch
-    // That revision is probably too old and results in a watch error
-    // Watch errors mean we make a http request to get latest revision (which is still missing) and try to re-watch with it...
-    // etc
-    if (typeof revision === 'undefined' && !paginationUtils.isSteveCacheEnabled({ rootGetters })) {
-      revision = getters.nextResourceVersion(type, id);
-    }
-
-    const msg = { resourceType: type };
-
-    if ( revision ) {
-      msg.resourceVersion = `${ revision }`;
-    }
-
-    if ( namespace ) {
-      msg.namespace = namespace;
-    }
-
-    if ( stop ) {
-      msg.stop = true;
-    }
-
-    if ( id ) {
-      msg.id = id;
-    }
-
-    if ( selector ) {
-      msg.selector = selector;
-    }
-
-    const worker = this.$workers?.[getters.storeName] || {};
-
-    if (worker.mode === WORKER_MODES.ADVANCED || worker.mode === WORKER_MODES.WAITING) {
-      if ( force ) {
-        msg.force = true;
-      }
-
-      worker.postMessage({ watch: msg });
-
-      return;
-    }
-
-    return dispatch('send', msg);
-  },
-
-  unwatch(ctx, {
-    type, id, namespace, selector
-  }) {
-    const { commit, getters, dispatch } = ctx;
-
-    if (getters['schemaFor'](type)) {
-      namespace = acceptOrRejectSocketMessage.subscribeNamespace(namespace);
-
-      const obj = {
-        type,
-        id,
-        namespace,
-        selector,
-        stop: true, // Stops the watch on a type
-      };
-
-      if (isAdvancedWorker(ctx)) {
-        dispatch('watch', obj); // Ask the backend to stop watching the type
-      } else if (getters['watchStarted'](obj)) {
-        // Set that we don't want to watch this type
-        // Otherwise, the dispatch to unwatch below will just cause a re-watch when we
-        // detect the stop message from the backend over the web socket
-        commit('setWatchStopped', obj);
-        dispatch('watch', obj); // Ask the backend to stop watching the type
-        // Make sure anything in the pending queue for the type is removed, since we've now removed the type
-        commit('clearFromQueue', type);
-      }
+      return socket.disconnect();
     }
   },
-
-  'ws.ping'({ getters, dispatch }, msg) {
-    if ( getters.storeName === 'management' ) {
-      const version = msg?.data?.version || null;
-
-      dispatch('updateServerVersion', version, { root: true });
-      console.info(`Ping [${ getters.storeName }] from ${ version || 'unknown version' }`); // eslint-disable-line no-console
-    }
-  },
-};
-
-/**
- * Mutations that cover all cases (both subscriptions here and in advanced worker)
- */
-const sharedMutations = {
-  debug(state, on, store) {
-    state.debugSocket = on !== false;
-    if (store && this.$workers[store]) {
-      this.$workers[store].postMessage({ toggleDebug: on !== false });
-    }
-  },
-};
-
-/**
- * Actions that cover cases 1 & 2 (see file description)
- */
-const defaultActions = {
 
   async flush({
     state, commit, dispatch, getters
@@ -555,9 +336,70 @@ const defaultActions = {
   },
 
   rehydrateSubscribe({ state, dispatch }) {
-    if ( state.wantSocket && !state.socket ) {
+    if ( process.client && state.wantSocket && !state.socket ) {
       dispatch('subscribe');
     }
+  },
+
+  watch({
+    state, dispatch, getters, rootGetters
+  }, params) {
+    state.debugSocket && console.info(`Watch Request [${ getters.storeName }]`, JSON.stringify(params)); // eslint-disable-line no-console
+
+    let {
+      // eslint-disable-next-line prefer-const
+      type, selector, id, revision, namespace, stop, force
+    } = params;
+
+    type = getters.normalizeType(type);
+
+    if (rootGetters['type-map/isSpoofed'](type)) {
+      state.debugSocket && console.info('Will not Watch (type is spoofed)', JSON.stringify(params)); // eslint-disable-line no-console
+
+      return;
+    }
+
+    if ( !stop && !force && !getters.canWatch(params) ) {
+      console.error(`Cannot Watch [${ getters.storeName }]`, JSON.stringify(params)); // eslint-disable-line no-console
+
+      return;
+    }
+
+    if ( !stop && getters.watchStarted({
+      type, id, selector, namespace
+    }) ) {
+      state.debugSocket && console.debug(`Already Watching [${ getters.storeName }]`, JSON.stringify(params)); // eslint-disable-line no-console
+
+      return;
+    }
+
+    if ( typeof revision === 'undefined' ) {
+      revision = getters.nextResourceVersion(type, id);
+    }
+
+    const msg = { resourceType: type };
+
+    if ( revision ) {
+      msg.resourceVersion = `${ revision }`;
+    }
+
+    if ( namespace ) {
+      msg.namespace = namespace;
+    }
+
+    if ( stop ) {
+      msg.stop = true;
+    }
+
+    if ( id ) {
+      msg.id = id;
+    }
+
+    if ( selector ) {
+      msg.selector = selector;
+    }
+
+    return dispatch('send', msg);
   },
 
   reconnectWatches({
@@ -593,17 +435,13 @@ const defaultActions = {
       await dispatch('find', {
         type: resourceType,
         id,
-        opt:  {
-          ...opt,
-          // Pass the namespace so `find` can construct the url correctly
-          namespaced: namespace,
-          // Ensure that find calls watch with no revision (otherwise it'll use the revision from the resource which is probably stale)
-          revision:   null
-        },
+        opt,
       });
+      commit('clearInError', params);
 
       return;
     }
+
     let have, want;
 
     if ( selector ) {
@@ -617,7 +455,7 @@ const defaultActions = {
       have = getters['all'](resourceType).slice();
 
       if ( namespace ) {
-        have = have.filter((x) => x.metadata?.namespace === namespace);
+        have = have.filter(x => x.metadata?.namespace === namespace);
       }
 
       want = await dispatch('findAll', {
@@ -686,9 +524,11 @@ const defaultActions = {
     }
 
     // Try resending any frames that were attempted to be sent while the socket was down, once.
-    for ( const obj of state.pendingFrames.slice() ) {
-      commit('dequeuePendingFrame', obj);
-      dispatch('sendImmediate', obj);
+    if ( !process.server ) {
+      for ( const obj of state.pendingFrames.slice() ) {
+        commit('dequeuePendingFrame', obj);
+        dispatch('sendImmediate', obj);
+      }
     }
   },
 
@@ -771,33 +611,26 @@ const defaultActions = {
     }
   },
 
+  'ws.ping'({ getters, dispatch }, msg) {
+    if ( getters.storeName === 'management' ) {
+      const version = msg?.data?.version || null;
+
+      dispatch('updateServerVersion', version, { root: true });
+      console.info(`Ping [${ getters.storeName }] from ${ version || 'unknown version' }`); // eslint-disable-line no-console
+    }
+  },
+
   /**
    * Steve only event
    */
-  'ws.resource.start'({
-    state, getters, commit, dispatch
-  }, msg) {
+  'ws.resource.start'({ state, getters, commit }, msg) {
     state.debugSocket && console.info(`Resource start: [${ getters.storeName }]`, msg); // eslint-disable-line no-console
-
-    const newWatch = {
+    commit('setWatchStarted', {
       type:      msg.resourceType,
       namespace: msg.namespace,
       id:        msg.id,
       selector:  msg.selector
-    };
-
-    state.started.filter((entry) => {
-      if (
-        entry.type === newWatch.type &&
-        entry.namespace !== newWatch.namespace
-      ) {
-        return true;
-      }
-    }).forEach((entry) => {
-      dispatch('unwatch', entry);
     });
-
-    commit('setWatchStarted', newWatch);
   },
 
   'ws.resource.error'({ getters, commit, dispatch }, msg) {
@@ -806,32 +639,22 @@ const defaultActions = {
     const err = msg.data?.error?.toLowerCase();
 
     if ( err.includes('watch not allowed') ) {
-      commit('setInError', { msg, reason: NO_WATCH });
+      commit('setInError', { type: msg.resourceType, reason: NO_WATCH });
     } else if ( err.includes('failed to find schema') ) {
-      commit('setInError', { msg, reason: NO_SCHEMA });
+      commit('setInError', { type: msg.resourceType, reason: NO_SCHEMA });
     } else if ( err.includes('too old') ) {
-      // Set an error for (all) subs of this type. This..
-      // 1) blocks attempts by resource.stop to resub (as type is in error)
-      // 2) will be cleared when resyncWatch --> watch (with force) --> resource.start completes
-      commit('setInError', { msg, reason: REVISION_TOO_OLD });
       dispatch('resyncWatch', msg);
-    } else if ( err.includes('the server does not allow this method on the requested resource')) {
-      commit('setInError', { msg, reason: NO_PERMS });
     }
   },
 
   /**
    * Steve only event
    *
-   * Steve has stopped watching this resource. This happens for a couple of reasons
-   * - We have requested that the resource watch should be stopped (and we receive this event as confirmation)
-   * - Steve tells us that the resource watch has been stopped. Possible reasons
-   *   - The rancher <--> k8s socket closed (happens every ~30 mins on mgmt socket)
-   *   - Permissions has changed for the subscribed resource, so rancher closes socket
+   * Steve only seems to send out `resource.stop` messages for two reasons
+   * - We have requested that the resource watch should be stopped and we receive this event as confirmation
+   * - Steve tells us that the resource is no longer watched
    */
-  'ws.resource.stop'({
-    state, getters, commit, dispatch
-  }, msg) {
+  'ws.resource.stop'({ getters, commit, dispatch }, msg) {
     const type = msg.resourceType;
     const obj = {
       type,
@@ -840,33 +663,53 @@ const defaultActions = {
       selector:  msg.selector
     };
 
-    state.debugSocket && console.info(`Resource Stop [${ getters.storeName }]`, type, msg); // eslint-disable-line no-console
-
-    if (!type) {
-      console.error(`Resource Stop [${ getters.storeName }]. Received resource.stop with an empty resourceType, aborting`, msg); // eslint-disable-line no-console
-
-      return;
-    }
+    // console.warn(`Resource stop: [${ getters.storeName }]`, msg); // eslint-disable-line no-console
 
     // If we're trying to watch this event, attempt to re-watch
-    //
-    // To make life easier in the advanced worker `resource.stop` --> `watch` is handled here (basically for access to getters.nextResourceVersion)
-    // This means the concept of resource sub watch state needs massaging
-    const advancedWorker = msg.advancedWorker;
-    const localState = !advancedWorker;
-    const watchStarted = localState ? getters['watchStarted'](obj) : advancedWorker;
+    if ( getters['schemaFor'](type) && getters['watchStarted'](obj) ) {
+      // Try reconnecting once
 
-    if ( getters['schemaFor'](type) && watchStarted) {
-      if (localState) {
-        commit('setWatchStopped', obj);
+      commit('setWatchStopped', obj);
+
+      // In summary, we need to re-watch but with a reliable `revision` (to avoid `too old` message kicking off a full re-fetch of all
+      // resources). To get a reliable `revision` go out and fetch the latest for that resource type, in theory our local cache should be
+      // up to date with that revision.
+
+      const revisionExisting = getters.nextResourceVersion(type, obj.id);
+
+      let revisionLatest;
+
+      if (revisionExisting) {
+        // Attempt to fetch the latest revision at the time the resource watch was stopped, in theory our local cache should be up to
+        // date with this
+        // Ideally we shouldn't need to fetch here and supply `0`, `-1` or `null` to start watching from the latest revision, however steve
+        // will send the current state of each resource via a `resource.created` event.
+        const opt = { limit: 1 };
+
+        opt.url = getters.urlFor(type, null, opt);
+        revisionLatest = dispatch('request', { opt, type } )
+          .then(res => res.revision)
+          .catch((err) => {
+            // For some reason we can't fetch a reasonable revision, so force a re-fetch
+            console.warn(`Resource error retrieving resourceVersion, forcing re-fetch`, type, ':', err); // eslint-disable-line no-console
+            dispatch('resyncWatch', msg);
+            throw err;
+          });
+      } else {
+        // Some v1 resource types don't have revisions (either at the collection or resource level), so we avoided making an API request
+        // for them
+        revisionLatest = Promise.resolve(null); // Null to ensure we don't go through `nextResourceVersion` again
       }
 
-      dispatch('watch', obj);
+      setTimeout(() => {
+        // Delay a bit so that immediate start/error/stop causes
+        // only a slow infinite loop instead of a tight one.
+        revisionLatest.then(revision => dispatch('watch', { ...obj, revision }));
+      }, 5000);
     }
   },
 
   'ws.resource.create'(ctx, msg) {
-    ctx.state.debugSocket && console.info(`Resource Create [${ ctx.getters.storeName }]`, msg.resourceType, msg); // eslint-disable-line no-console
     queueChange(ctx, msg, true, 'Create');
   },
 
@@ -917,8 +760,6 @@ const defaultActions = {
     const data = msg.data;
     const type = data.type;
 
-    ctx.state.debugSocket && console.info(`Resource Remove [${ ctx.getters.storeName }]`, type, msg); // eslint-disable-line no-console
-
     if (type === SCHEMA) {
       const worker = (this.$workers || {})[ctx.getters.storeName];
 
@@ -947,10 +788,7 @@ const defaultActions = {
   },
 };
 
-/**
- * Mutations that cover cases 1 & 2 (see file description)
- */
-const defaultMutations = {
+export const mutations = {
   setSocket(state, socket) {
     state.socket = socket;
   },
@@ -968,7 +806,7 @@ const defaultMutations = {
   },
 
   setWatchStarted(state, obj) {
-    const existing = state.started.find((entry) => equivalentWatch(obj, entry));
+    const existing = state.started.find(entry => equivalentWatch(obj, entry));
 
     if ( !existing ) {
       addObject(state.started, obj);
@@ -978,7 +816,7 @@ const defaultMutations = {
   },
 
   setWatchStopped(state, obj) {
-    const existing = state.started.find((entry) => equivalentWatch(obj, entry));
+    const existing = state.started.find(entry => equivalentWatch(obj, entry));
 
     if ( existing ) {
       removeObject(state.started, existing);
@@ -987,10 +825,10 @@ const defaultMutations = {
     }
   },
 
-  setInError(state, { msg, reason }) {
+  setInError(state, msg) {
     const key = keyForSubscribe(msg);
 
-    state.inError[key] = reason;
+    state.inError[key] = msg.reason;
   },
 
   clearInError(state, msg) {
@@ -999,35 +837,27 @@ const defaultMutations = {
     delete state.inError[key];
   },
 
+  debug(state, on) {
+    state.debugSocket = on !== false;
+  },
+
   resetSubscriptions(state) {
-    // Clear out socket state. This is only ever called from reset... which is always called after we `disconnect` above.
-    // This could probably be folded in to there
     clear(state.started);
     clear(state.pendingFrames);
     clear(state.queue);
     clearTimeout(state.queueTimer);
     state.deferredRequests = {};
     state.queueTimer = null;
-  },
-
-  clearFromQueue(state, type) {
-    // Remove anything in the queue that is a resource update for the given type
-    state.queue = state.queue.filter((item) => {
-      return item.body?.type !== type;
-    });
-  },
+  }
 };
 
-/**
- * Getters that cover cases 1 & 2 (see file description)
- */
-const defaultGetters = {
-  inError: (state) => (obj) => {
-    return state.inError[keyForSubscribe(obj)];
+export const getters = {
+  canWatch: state => (obj) => {
+    return !state.inError[keyForSubscribe(obj)];
   },
 
-  watchStarted: (state) => (obj) => {
-    return !!state.started.find((entry) => equivalentWatch(obj, entry));
+  watchStarted: state => (obj) => {
+    return !!state.started.find(entry => equivalentWatch(obj, entry));
   },
 
   nextResourceVersion: (state, getters) => (type, id) => {
@@ -1064,16 +894,16 @@ const defaultGetters = {
 
     return null;
   },
-};
 
-export const actions = {
-  ...sharedActions,
-  ...defaultActions,
-};
+  currentGeneration: state => (type) => {
+    type = normalizeType(type);
 
-export const mutations = {
-  ...sharedMutations,
-  ...defaultMutations,
-};
+    const cache = state.types[type];
 
-export const getters = { ...defaultGetters };
+    if ( !cache ) {
+      return null;
+    }
+
+    return cache.generation;
+  },
+};

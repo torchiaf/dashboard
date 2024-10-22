@@ -6,8 +6,6 @@ import {
 } from '@shell/utils/position';
 
 export default {
-  emits: ['draggable'],
-
   data() {
     return {
       dragOffset:     0,
@@ -22,6 +20,10 @@ export default {
 
     height: {
       get() {
+        if ( process.server ) {
+          return 0;
+        }
+
         if ( this.userHeight ) {
           return this.userHeight;
         }
@@ -50,6 +52,10 @@ export default {
 
     width: {
       get() {
+        if ( process.server ) {
+          return 0;
+        }
+
         if (this.userWidth) {
           return this.userWidth;
         }
@@ -323,9 +329,7 @@ export default {
         <i class="icon icon-code" />
       </div>
       <div
-        v-for="(tab, i) in tabs"
-        :key="i"
-        class="tab"
+         v-for="(tab, i) in tabs" :key="i" class="tab"
         :class="{'active': tab.id === active}"
         @click="switchTo(tab.id)"
       >
@@ -336,8 +340,7 @@ export default {
         />
         <span class="tab-label"> {{ tab.label }}</span>
         <i
-          data-testid="wm-tab-close-button"
-          class="closer icon icon-fw icon-x wm-closer-button"
+          class="closer icon icon-fw icon-x"
           @click.stop="close(tab.id)"
         />
       </div>
@@ -360,9 +363,7 @@ export default {
       </div>
     </div>
     <div
-      v-for="(tab, i) in tabs"
-      :key="i"
-      class="body"
+       v-for="(tab, i) in tabs" :key="i" class="body"
       :class="{'active': tab.id === active}"
       draggable="false"
       @dragstart.prevent.stop
@@ -435,16 +436,9 @@ export default {
           margin-left: 5px;
           border: 1px solid var(--body-text);
           border-radius: var(--border-radius);
-          line-height: 12px;
-          font-size: 10px;
-          width: 14px;
-          align-self: center;
-          display: flex;
-          justify-content: center;
 
           &:hover {
-            border-color: var(--link-border);
-            color: var(--link-border);
+            background-color: var(--wm-closer-hover-bg);
           }
         }
       }
@@ -504,5 +498,4 @@ export default {
       border-right: var(--nav-border-size) solid var(--nav-border);
     }
   }
-
 </style>

@@ -1,7 +1,8 @@
 import { insertAt } from '@shell/utils/array';
 import { clone } from '@shell/utils/object';
-import { WORKLOAD_TYPES, WORKLOAD_TYPE_TO_KIND_MAPPING } from '@shell/config/types';
+import { WORKLOAD_TYPES } from '@shell/config/types';
 import Workload from './workload';
+import { WORKLOAD_TYPE_TO_KIND_MAPPING } from '@shell/detail/workload/index';
 
 export default class CronJob extends Workload {
   get state() {
@@ -17,7 +18,7 @@ export default class CronJob extends Workload {
     const suspended = this.spec?.suspend || false;
 
     const jobSchema = this.$getters['schemaFor'](WORKLOAD_TYPES.JOB);
-    const canRunNow = !!jobSchema?.collectionMethods.find((x) => ['blocked-post', 'post'].includes(x.toLowerCase()));
+    const canRunNow = !!jobSchema?.collectionMethods.find(x => ['blocked-post', 'post'].includes(x.toLowerCase()));
 
     insertAt(out, 0, {
       action:   'runNow',

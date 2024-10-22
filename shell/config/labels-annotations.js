@@ -11,11 +11,9 @@ export const CATTLE_PUBLIC_ENDPOINTS = 'field.cattle.io/publicEndpoints';
 export const TARGET_WORKLOADS = 'field.cattle.io/targetWorkloadIds';
 export const UI_MANAGED = 'management.cattle.io/ui-managed';
 export const CREATOR_ID = 'field.cattle.io/creatorId';
-export const CREATOR_PRINCIPAL_ID = 'field.cattle.io/creator-principal-name';
 export const RESOURCE_QUOTA = 'field.cattle.io/resourceQuota';
 export const AZURE_MIGRATED = 'auth.cattle.io/azuread-endpoint-migrated';
 export const WORKSPACE_ANNOTATION = 'objectset.rio.cattle.io/id';
-export const NODE_ARCHITECTURE = 'kubernetes.io/arch';
 
 export const KUBERNETES = {
   SERVICE_ACCOUNT_UID:  'kubernetes.io/service-account.uid',
@@ -56,11 +54,7 @@ export const CAPI = {
   DELETE_MACHINE:       'cluster.x-k8s.io/delete-machine',
   PROVIDER:             'provider.cattle.io',
   SECRET_AUTH:          'v2prov-secret-authorized-for-cluster',
-  SECRET_WILL_DELETE:   'v2prov-authorized-secret-deletes-on-cluster-removal',
-  /**
-   * Annotation for overriding the cluster provider,
-   */
-  UI_CUSTOM_PROVIDER:   'ui.rancher/provider'
+  SECRET_WILL_DELETE:   'v2prov-authorized-secret-deletes-on-cluster-removal'
 };
 
 export const CATALOG = {
@@ -91,12 +85,11 @@ export const CATALOG = {
   _CLUSTER_TPL:  'cluster-template',
   _CLUSTER_TOOL: 'cluster-tool',
 
-  COMPONENT:         'catalog.cattle.io/ui-component',
-  SOURCE_REPO_TYPE:  'catalog.cattle.io/ui-source-repo-type',
-  SOURCE_REPO_NAME:  'catalog.cattle.io/ui-source-repo',
-  COLOR:             'catalog.cattle.io/ui-color',
-  DISPLAY_NAME:      'catalog.cattle.io/display-name',
-  CLUSTER_REPO_NAME: 'catalog.cattle.io/cluster-repo-name',
+  COMPONENT:        'catalog.cattle.io/ui-component',
+  SOURCE_REPO_TYPE: 'catalog.cattle.io/ui-source-repo-type',
+  SOURCE_REPO_NAME: 'catalog.cattle.io/ui-source-repo',
+  COLOR:            'catalog.cattle.io/ui-color',
+  DISPLAY_NAME:     'catalog.cattle.io/display-name',
 
   SUPPORTED_OS: 'catalog.cattle.io/os',
   PERMITTED_OS: 'catalog.cattle.io/permits-os',
@@ -112,8 +105,7 @@ export const FLEET = {
   CLUSTER_DISPLAY_NAME: 'management.cattle.io/cluster-display-name',
   CLUSTER_NAME:         'management.cattle.io/cluster-name',
   BUNDLE_ID:            'fleet.cattle.io/bundle-id',
-  MANAGED:              'fleet.cattle.io/managed',
-  CLUSTER:              'fleet.cattle.io/cluster'
+  MANAGED:              'fleet.cattle.io/managed'
 };
 
 export const RBAC = { PRODUCT: 'management.cattle.io/ui-product' };
@@ -151,7 +143,6 @@ export const HCI = {
   CLOUD_PROVIDER_NETWORK:   'cloudprovider.harvesterhci.io/network',
   CLOUD_PROVIDER_PROJECT:   'cloudprovider.harvesterhci.io/project',
   CLUSTER_NETWORK:          'network.harvesterhci.io/clusternetwork',
-  PRIMARY_SERVICE:          'cloudprovider.harvesterhci.io/primary-service',
 };
 
 // Annotations that can be on management.cattle.io.cluster to configure a custom badge
@@ -161,7 +152,7 @@ export const CLUSTER_BADGE = {
   TEXT:      'ui.rancher/badge-text',
   // Badge color - as a hex color - e.g. #ff00ff
   COLOR:     'ui.rancher/badge-color',
-  // Custom icon text - max 3 characters
+  // Custom icon text - max 2 characters
   ICON_TEXT: 'ui.rancher/badge-icon-text',
 };
 
@@ -180,5 +171,3 @@ export const SYSTEM_LABELS = [
   'node.kubernetes.io',
   'egress.rke2.io'
 ];
-
-export const CLOUD_CREDENTIALS = { EXPIRATION: 'rancher.io/expiration-timestamp' };

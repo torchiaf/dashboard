@@ -1,7 +1,7 @@
 <script>
 import ConsumptionGauge from '@shell/components/ConsumptionGauge';
 import Alert from '@shell/components/Alert';
-import ResourceTable from '@shell/components/ResourceTable';
+import SortableTable from '@shell/components/SortableTable';
 import Tab from '@shell/components/Tabbed/Tab';
 import {
   EFFECT,
@@ -11,6 +11,7 @@ import {
   VALUE
 } from '@shell/config/table-headers';
 import ResourceTabs from '@shell/components/form/ResourceTabs';
+import EmberPage from '@shell/components/EmberPage';
 import { METRIC, POD } from '@shell/config/types';
 import createEditView from '@shell/mixins/create-edit-view';
 import { formatSi, exponentNeeded, UNITS } from '@shell/utils/units';
@@ -19,15 +20,13 @@ import { mapGetters } from 'vuex';
 import { allDashboardsExist } from '@shell/utils/grafana';
 import Loading from '@shell/components/Loading';
 import metricPoller from '@shell/mixins/metric-poller';
-import { FilterArgs, PaginationParamFilter } from '@shell/types/store/pagination.types';
+import { haveV1Monitoring } from '@shell/utils/monitoring';
 
 const NODE_METRICS_DETAIL_URL = '/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy/d/rancher-node-detail-1/rancher-node-detail?orgId=1';
 const NODE_METRICS_SUMMARY_URL = '/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy/d/rancher-node-1/rancher-node?orgId=1';
 
 export default {
   name: 'DetailNode',
-
-  emits: ['input'],
 
   components: {
     Alert,
@@ -36,7 +35,8 @@ export default {
     Loading,
     ResourceTabs,
     Tab,
-    ResourceTable,
+    SortableTable,
+    EmberPage,
   },
 
   mixins: [createEditView, metricPoller],
@@ -49,32 +49,25 @@ export default {
   },
 
   async fetch() {
-    this.filterByApi = this.$store.getters[`cluster/paginationEnabled`](POD);
+    this.showMetrics = await allDashboardsExist(this.$store, this.currentCluster.id, [NODE_METRICS_DETAIL_URL, NODE_METRICS_SUMMARY_URL]);
 
-    if (this.filterByApi) {
-      // Only get pods associated with this node. The actual values used are from a get all in node model `pods` getter (this works as it just gets all...)
-      const opt = { // Of type ActionFindPageArgs
-        pagination: new FilterArgs({
-          sort:    [{ field: 'metadata.name', asc: true }],
-          filters: PaginationParamFilter.createSingleField({
-            field: 'spec.nodeName',
-            value: this.value.id,
-          })
-        })
-      };
+    if (haveV1Monitoring(this.$store.getters)) {
+      const v3Nodes = await this.$store.dispatch('rancher/request', {
+        url:    '/v3/nodes',
+        method: 'get'
+      });
 
-      this.$store.dispatch(`cluster/findPage`, { type: POD, opt });
-    } else {
-      this.$store.dispatch('cluster/findAll', { type: POD });
+      this.v3Nodes = v3Nodes;
     }
 
-    this.showMetrics = await allDashboardsExist(this.$store, this.currentCluster.id, [NODE_METRICS_DETAIL_URL, NODE_METRICS_SUMMARY_URL]);
+    return this.$store.dispatch('cluster/findAll', { type: POD });
   },
 
   data() {
     const podSchema = this.$store.getters['cluster/schemaFor'](POD);
 
     return {
+      v3Nodes:          null,
       metrics:          { cpu: 0, memory: 0 },
       infoTableHeaders: [
         {
@@ -89,8 +82,8 @@ export default {
         }
       ],
       imageTableHeaders: [
-        { ...SIMPLE_NAME, width: null },
-        { ...IMAGE_SIZE, width: 100 } // Ensure one header has a size, all other columns will scale
+        { ...SIMPLE_NAME, width: 400 },
+        IMAGE_SIZE
       ],
       taintTableHeaders: [
         KEY,
@@ -100,13 +93,28 @@ export default {
       podTableHeaders: this.$store.getters['type-map/headersFor'](podSchema),
       NODE_METRICS_DETAIL_URL,
       NODE_METRICS_SUMMARY_URL,
-      showMetrics:     false,
-      filterByApi:     undefined,
+      showMetrics:     false
     };
   },
 
   computed: {
     ...mapGetters(['currentCluster']),
+    v1MonitoringUrl() {
+      if (this.v3Nodes && this.v3Nodes.data) {
+        const node = this.v3Nodes.data.find((n) => {
+          return n.nodeName === this.value.metadata?.name;
+        });
+
+        if (node) {
+          // Custom page just with node metrics graphs
+          const id = this.currentCluster.id;
+
+          return `/k/${ id }/monitoring/${ node.id }/metrics`;
+        }
+      }
+
+      return null;
+    },
     memoryUnits() {
       const exponent = exponentNeeded(this.value.ramReserved, 1024);
 
@@ -131,7 +139,7 @@ export default {
 
     infoTableRows() {
       return Object.keys(this.value.status.nodeInfo)
-        .map((key) => ({
+        .map(key => ({
           key:   this.t(`node.detail.tab.info.key.${ key }`),
           value: this.value.status.nodeInfo[key]
         }));
@@ -140,7 +148,7 @@ export default {
     imageTableRows() {
       const images = this.value.status.images || [];
 
-      return images.map((image) => ({
+      return images.map(image => ({
         // image.names[1] typically has the user friendly name but on occasion there's only one name and we should use that
         name:      image.names ? (image.names[1] || image.names[0]) : '---',
         sizeBytes: image.sizeBytes
@@ -236,16 +244,15 @@ export default {
     </div>
     <div class="spacer" />
     <ResourceTabs
-      :value="value"
+      v-model:value="value"
       :mode="mode"
-      @update:value="$emit('input', $event)"
     >
       <Tab
         name="pods"
         :label="t('node.detail.tab.pods')"
         :weight="4"
       >
-        <ResourceTable
+        <SortableTable
           key-field="_key"
           :headers="podTableHeaders"
           :rows="value.pods"
@@ -276,7 +283,7 @@ export default {
         class="bordered-table"
         :weight="2"
       >
-        <ResourceTable
+        <SortableTable
           key-field="_key"
           :headers="infoTableHeaders"
           :rows="infoTableRows"
@@ -291,7 +298,7 @@ export default {
         :label="t('node.detail.tab.images')"
         :weight="1"
       >
-        <ResourceTable
+        <SortableTable
           key-field="_key"
           :headers="imageTableHeaders"
           :rows="imageTableRows"
@@ -304,7 +311,7 @@ export default {
         :label="t('node.detail.tab.taints')"
         :weight="0"
       >
-        <ResourceTable
+        <SortableTable
           key-field="_key"
           :headers="taintTableHeaders"
           :rows="taintTableRows"
@@ -312,6 +319,19 @@ export default {
           :table-actions="false"
           :search="false"
         />
+      </Tab>
+      <Tab
+        v-if="v1MonitoringUrl"
+        name="v1Metrics"
+        :label="t('node.detail.tab.metrics')"
+        :weight="0"
+      >
+        <div id="ember-anchor">
+          <EmberPage
+            inline="ember-anchor"
+            :src="v1MonitoringUrl"
+          />
+        </div>
       </Tab>
     </ResourceTabs>
   </div>

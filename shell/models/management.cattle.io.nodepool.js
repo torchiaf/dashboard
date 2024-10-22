@@ -1,7 +1,6 @@
 import { CAPI, MANAGEMENT, NORMAN } from '@shell/config/types';
 import { sortBy } from '@shell/utils/sort';
 import HybridModel from '@shell/plugins/steve/hybrid-class';
-import { notOnlyOfRole } from '@shell/models/cluster.x-k8s.io.machine';
 
 export default class MgmtNodePool extends HybridModel {
   get nodeTemplate() {
@@ -32,7 +31,7 @@ export default class MgmtNodePool extends HybridModel {
   }
 
   get provisioningCluster() {
-    return this.$getters['all'](CAPI.RANCHER_CLUSTER).find((c) => c.name === this.spec.clusterName);
+    return this.$getters['all'](CAPI.RANCHER_CLUSTER).find(c => c.name === this.spec.clusterName);
   }
 
   get doneOverride() {
@@ -72,7 +71,7 @@ export default class MgmtNodePool extends HybridModel {
   get nodes() {
     const nodePoolName = this.id.replace('/', ':');
 
-    return this.$getters['all'](MANAGEMENT.NODE).filter((node) => node.spec.nodePoolName === nodePoolName);
+    return this.$getters['all'](MANAGEMENT.NODE).filter(node => node.spec.nodePoolName === nodePoolName);
   }
 
   get nodeSummary() {
@@ -143,7 +142,7 @@ export default class MgmtNodePool extends HybridModel {
         value:     this.ready,
         sort:      4,
       },
-    ].filter((x) => x.value > 0);
+    ].filter(x => x.value > 0);
 
     return sortBy(out, 'sort:desc');
   }
@@ -160,22 +159,6 @@ export default class MgmtNodePool extends HybridModel {
 
   get canUpdate() {
     return this.norman?.hasLink('update');
-  }
-
-  get isControlPlane() {
-    return this.spec?.controlPlane === true;
-  }
-
-  get isEtcd() {
-    return this.spec?.etcd === true;
-  }
-
-  canScaleDownPool() {
-    if (!this.isEtcd && !this.isControlPlane) {
-      return true;
-    }
-
-    return notOnlyOfRole(this, this?.provisioningCluster?.nodes);
   }
 
   remove() {

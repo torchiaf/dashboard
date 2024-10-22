@@ -2,13 +2,12 @@
 import { mapGetters } from 'vuex';
 
 import {
-  REPO_TYPE, REPO, CHART, VERSION, NAMESPACE, NAME, DESCRIPTION as DESCRIPTION_QUERY, DEPRECATED as DEPRECATED_QUERY, HIDDEN, _FLAGGED, _CREATE, _EDIT
+  REPO_TYPE, REPO, CHART, VERSION, NAMESPACE, NAME, DESCRIPTION as DESCRIPTION_QUERY, DEPRECATED, HIDDEN, _FLAGGED, _CREATE, _EDIT
 } from '@shell/config/query-params';
 import { CATALOG as CATALOG_ANNOTATIONS } from '@shell/config/labels-annotations';
 import { SHOW_PRE_RELEASE, mapPref } from '@shell/store/prefs';
 import { NAME as EXPLORER } from '@shell/config/product/explorer';
 import { NAME as MANAGER } from '@shell/config/product/manager';
-import { OPA_GATE_KEEPER_ID } from '@shell/pages/c/_cluster/gatekeeper/index.vue';
 
 import { formatSi, parseSi } from '@shell/utils/units';
 import { CAPI, CATALOG } from '@shell/config/types';
@@ -21,14 +20,12 @@ import { merge } from 'lodash';
 export default {
   data() {
     return {
-      version:          null,
-      versionInfo:      null,
-      versionInfoError: null,
-      existing:         null,
+      version:     null,
+      versionInfo: null,
+      existing:    null,
 
       ignoreWarning: false,
 
-      chart: null,
     };
   },
 
@@ -36,6 +33,19 @@ export default {
     ...mapGetters(['currentCluster', 'isRancher']),
 
     showPreRelease: mapPref(SHOW_PRE_RELEASE),
+
+    chart() {
+      if ( this.repo && this.query.chartName ) {
+        return this.$store.getters['catalog/chart']({
+          repoType:      this.query.repoType,
+          repoName:      this.query.repoName,
+          chartName:     this.query.chartName,
+          includeHidden: true,
+        });
+      }
+
+      return null;
+    },
 
     repo() {
       return this.$store.getters['catalog/repo']({
@@ -87,7 +97,7 @@ export default {
         out.push(nue);
       });
 
-      const selectedMatch = out.find((v) => v.id === selectedVersion);
+      const selectedMatch = out.find(v => v.id === selectedVersion);
 
       if (!selectedMatch) {
         out.unshift({
@@ -101,7 +111,7 @@ export default {
         });
       }
 
-      const currentVersion = out.find((v) => v.originalVersion === this.currentVersion);
+      const currentVersion = out.find(v => v.originalVersion === this.currentVersion);
 
       if (currentVersion) {
         currentVersion.label = this.t('catalog.install.versions.current', { ver: this.currentVersion });
@@ -112,7 +122,7 @@ export default {
 
     // Conditionally filter out prerelease versions of the chart.
     filteredVersions() {
-      return this.showPreRelease ? this.mappedVersions : this.mappedVersions.filter((v) => !v.isPre);
+      return this.showPreRelease ? this.mappedVersions : this.mappedVersions.filter(v => !v.isPre);
     },
 
     query() {
@@ -125,18 +135,16 @@ export default {
         versionName:  query[VERSION],
         appNamespace: query[NAMESPACE] || '',
         appName:      query[NAME] || '',
-        description:  query[DESCRIPTION_QUERY],
-        hidden:       query[HIDDEN],
-        deprecated:   query[DEPRECATED_QUERY]
+        description:  query[DESCRIPTION_QUERY]
       };
     },
 
     showDeprecated() {
-      return this.query.deprecated === 'true' || this.query.deprecated === _FLAGGED;
+      return this.$route.query[DEPRECATED] === _FLAGGED;
     },
 
     showHidden() {
-      return this.query.hidden === _FLAGGED;
+      return this.$route.query[HIDDEN] === _FLAGGED;
     },
 
     // If the user is installing the app for the first time,
@@ -177,24 +185,13 @@ export default {
         }
       }
 
-      if (this.chart?.id === OPA_GATE_KEEPER_ID) {
-        warnings.unshift(this.t('gatekeeperIndex.deprecated', {}, true));
-      }
-
-      if (this.existing && this.existing.upgradeAvailable === false) {
-        warnings.unshift(this.t('catalog.install.warning.managed', {
-          name:    this.existing.name,
-          version: this.chart ? this.query.versionName : null
-        }, true));
-      }
-
       return warnings;
     },
 
     requires() {
       const requires = [];
 
-      const required = (this.version?.annotations?.[CATALOG_ANNOTATIONS.REQUIRES_GVK] || '').split(/\s*,\s*/).filter((x) => !!x).reverse();
+      const required = (this.version?.annotations?.[CATALOG_ANNOTATIONS.REQUIRES_GVK] || '').split(/\s*,\s*/).filter(x => !!x).reverse();
 
       if ( required.length ) {
         for ( const gvr of required ) {
@@ -246,38 +243,8 @@ export default {
   },
 
   methods: {
-    /**
-     * Populate `this.chart`
-     *
-     * `chart` used to be a computed property pointing at getter catalog/chart
-     *
-     * this however stopped recalculating given changes to the store
-     *
-     * (the store would populate a charts collection, which the getter uses to find the chart,
-     * however this did not kick off the computed property, so this.charts was not populated)
-     *
-     * Now we find and cache the chart
-     */
-    fetchStoreChart() {
-      if (!this.chart && this.repo && this.query.chartName) {
-        this.chart = this.$store.getters['catalog/chart']({
-          repoType:       this.query.repoType,
-          repoName:       this.query.repoName,
-          chartName:      this.query.chartName,
-          includeHidden:  true,
-          showDeprecated: this.showDeprecated
-        });
-      }
-
-      return this.chart;
-    },
-
     async fetchChart() {
-      this.versionInfoError = null;
-
-      await this.$store.dispatch('catalog/load'); // not the problem
-
-      this.fetchStoreChart();
+      await this.$store.dispatch('catalog/load', { force: true, reset: true }); // not the problem
 
       if ( this.query.appNamespace && this.query.appName ) {
         // First check the URL query for an app name and namespace.
@@ -330,7 +297,7 @@ export default {
         if (this.showPreRelease) {
           this.query.versionName = this.chart.versions[0].version;
         } else {
-          const firstRelease = this.chart.versions.find((v) => !isPrerelease(v.version));
+          const firstRelease = this.chart.versions.find(v => !isPrerelease(v.version));
 
           this.query.versionName = firstRelease?.version || this.chart.versions[0].version;
         }
@@ -378,8 +345,6 @@ export default {
         // - values: All Helm chart values for the currently installed
         //   app.
       } catch (e) {
-        this.versionInfoError = e;
-
         console.error('Unable to fetch VersionInfo: ', e); // eslint-disable-line no-console
       }
     }, // End of fetchChart
@@ -392,7 +357,7 @@ export default {
         It is an array of chart names that lets Rancher know of other
         charts that should be auto-installed at the same time.
       */
-      const auto = (this.version?.annotations?.[CATALOG_ANNOTATIONS.AUTO_INSTALL] || '').split(/\s*,\s*/).filter((x) => !!x).reverse();
+      const auto = (this.version?.annotations?.[CATALOG_ANNOTATIONS.AUTO_INSTALL] || '').split(/\s*,\s*/).filter(x => !!x).reverse();
 
       for ( const constraint of auto ) {
         const provider = this.$store.getters['catalog/versionSatisfying']({

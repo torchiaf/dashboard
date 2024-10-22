@@ -20,10 +20,7 @@ import ArrayList from '@shell/components/form/ArrayList.vue';
 export default {
   name: 'FleetCruWorkspace',
 
-  emits: ['input'],
-
-  inheritAttrs: false,
-  components:   {
+  components: {
     CruResource,
     Labels,
     Loading,
@@ -175,10 +172,9 @@ export default {
     @cancel="done"
   >
     <NameNsDescription
-      :value="value"
+      v-model:value="value"
       :mode="mode"
       :namespaced="false"
-      @update:value="$emit('input', $event)"
     />
 
     <Tabbed
@@ -203,9 +199,8 @@ export default {
         label-key="generic.labelsAndAnnotations"
       >
         <Labels
-          :value="value"
+          v-model:value="value"
           :mode="mode"
-          @update:value="$emit('input', $event)"
         />
       </Tab>
       <Tab

@@ -12,9 +12,6 @@ import {
 } from '@shell/config/query-params';
 import { ExtensionPoint, PanelLocation } from '@shell/core/types';
 import ExtensionPanel from '@shell/components/ExtensionPanel';
-import TabTitle from '@shell/components/TabTitle';
-
-// i18n-uses resourceDetail.header.*
 
 /**
  * Resource Detail Masthead component.
@@ -26,7 +23,7 @@ export default {
   name: 'MastheadResourceDetail',
 
   components: {
-    BadgeState, Banner, ButtonGroup, ExtensionPanel, TabTitle
+    BadgeState, Banner, ButtonGroup, ExtensionPanel
   },
   props: {
     value: {
@@ -85,11 +82,6 @@ export default {
       type:    String,
       default: null,
     },
-
-    canViewYaml: {
-      type:    Boolean,
-      default: false,
-    }
   },
 
   data() {
@@ -193,16 +185,13 @@ export default {
 
     project() {
       if (this.isNamespace) {
-        const cluster = this.$store.getters['currentCluster'];
+        const id = (this.value?.metadata?.labels || {})[PROJECT];
+        const clusterId = this.$store.getters['currentCluster'].id;
 
-        if (cluster) {
-          const id = (this.value?.metadata?.labels || {})[PROJECT];
-
-          return this.$store.getters['management/byId'](MANAGEMENT.PROJECT, `${ cluster.id }/${ id }`);
-        }
+        return this.$store.getters['management/byId'](MANAGEMENT.PROJECT, `${ clusterId }/${ id }`);
+      } else {
+        return null;
       }
-
-      return null;
     },
 
     banner() {
@@ -235,7 +224,7 @@ export default {
     },
 
     parent() {
-      const displayName = this.value?.parentNameOverride || this.$store.getters['type-map/labelFor'](this.schema);
+      const displayName = this.value.parentNameOverride || this.$store.getters['type-map/labelFor'](this.schema);
       const product = this.$store.getters['currentProduct'].name;
 
       const defaultLocation = {
@@ -389,7 +378,7 @@ export default {
     },
 
     hideNamespaceLocation() {
-      return this.$store.getters['currentProduct'].hideNamespaceLocation || this.value.namespaceLocation === null;
+      return this.$store.getters['currentProduct'].hideNamespaceLocation;
     },
 
     resourceExternalLink() {
@@ -432,29 +421,16 @@ export default {
       <div class="title">
         <div class="primaryheader">
           <h1>
-            <TabTitle
-              v-if="isCreate"
-              :showChild="false"
-            >
-              {{ parent.displayName }}
-            </TabTitle>
-            <TabTitle
-              v-else
-              :showChild="false"
-            >
-              {{ displayName }}
-            </TabTitle>
-            <router-link
+            <nuxt-link
               v-if="location"
               :to="location"
             >
               {{ parent.displayName }}:
-            </router-link>
+            </nuxt-link>
             <span v-else>{{ parent.displayName }}:</span>
             <span v-if="value.detailPageHeaderActionOverride && value.detailPageHeaderActionOverride(realMode)">{{ value.detailPageHeaderActionOverride(realMode) }}</span>
             <t
               v-else
-              class="masthead-resource-title"
               :k="'resourceDetail.header.' + realMode"
               :subtype="resourceSubtype"
               :name="displayName"
@@ -490,17 +466,16 @@ export default {
           v-if="!isCreate"
           class="subheader"
         >
-          <span v-if="isNamespace && project">{{ t("resourceDetail.masthead.project") }}: <router-link :to="project.detailLocation">{{ project.nameDisplay }}</router-link></span>
-          <span v-else-if="isWorkspace">{{ t("resourceDetail.masthead.workspace") }}: <router-link :to="workspaceLocation">{{ namespace }}</router-link></span>
+          <span v-if="isNamespace && project">{{ t("resourceDetail.masthead.project") }}: <nuxt-link :to="project.detailLocation">{{ project.nameDisplay }}</nuxt-link></span>
+          <span v-else-if="isWorkspace">{{ t("resourceDetail.masthead.workspace") }}: <nuxt-link :to="workspaceLocation">{{ namespace }}</nuxt-link></span>
           <span v-else-if="namespace && !hasMultipleNamespaces">
             {{ t("resourceDetail.masthead.namespace") }}:
-            <router-link
+            <nuxt-link
               v-if="!hideNamespaceLocation"
               :to="namespaceLocation"
-              data-testid="masthead-subheader-namespace"
             >
               {{ namespace }}
-            </router-link>
+            </nuxt-link>
             <span v-else>
               {{ namespace }}
             </span>
@@ -543,7 +518,6 @@ export default {
             <button
               v-if="isView"
               ref="actions"
-              data-testid="mathead-action-menu"
               aria-haspopup="true"
               type="button"
               class="btn role-multi-action actions"
@@ -589,10 +563,6 @@ export default {
 
   HEADER {
     margin: 0;
-
-    .title {
-      overflow: hidden;
-    }
   }
 
   .primaryheader {
@@ -602,17 +572,6 @@ export default {
 
     h1 {
       margin: 0;
-      overflow: hidden;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-
-      .masthead-resource-title {
-        padding: 0 8px;
-        text-overflow: ellipsis;
-        overflow: hidden;
-        white-space: nowrap;
-      }
     }
   }
 
@@ -625,8 +584,7 @@ export default {
     }
 
     .live-data {
-      color: var(--body-text);
-      margin-left: 3px;
+      color: var(--body-text)
     }
   }
 
@@ -636,6 +594,9 @@ export default {
 
   .masthead-state {
     font-size: initial;
+    display: inline-block;
+    position: relative;
+    top: -2px;
   }
 
   .masthead-istio {

@@ -15,8 +15,7 @@ export const defaultContainer = {
     readOnlyRootFilesystem:   false,
     privileged:               false,
     allowPrivilegeEscalation: false,
-  },
-  volumeMounts: []
+  }
 };
 export default class Workload extends WorkloadService {
   // remove clone as yaml/edit as yaml until API supported
@@ -86,7 +85,7 @@ export default class Workload extends WorkloadService {
     return out;
   }
 
-  applyDefaults() {
+  applyDefaults(vm) {
     const { spec = {} } = this;
 
     if (this.type === WORKLOAD_TYPES.CRON_JOB) {
@@ -119,7 +118,7 @@ export default class Workload extends WorkloadService {
         spec.selector = {};
       }
     }
-    this.spec = spec;
+    vm.$set(this, 'spec', spec);
   }
 
   toggleRollbackModal( workload = this ) {
@@ -453,8 +452,8 @@ export default class Workload extends WorkloadService {
   async getPortsWithServiceType() {
     const ports = [];
 
-    this.containers.forEach((container) => ports.push(...(container.ports || [])));
-    (this.initContainers || []).forEach((container) => ports.push(...(container.ports || [])));
+    this.containers.forEach(container => ports.push(...(container.ports || [])));
+    (this.initContainers || []).forEach(container => ports.push(...(container.ports || [])));
 
     // Only get services owned if we can access the service resource
     const canAccessServices = this.$getters['schemaFor'](SERVICE);
@@ -549,7 +548,7 @@ export default class Workload extends WorkloadService {
 
   get pods() {
     const relationships = this.metadata?.relationships || [];
-    const podRelationship = relationships.filter((relationship) => relationship.toType === POD)[0];
+    const podRelationship = relationships.filter(relationship => relationship.toType === POD)[0];
 
     if (podRelationship) {
       const pods = this.$getters['podsByNamespace'](this.metadata.namespace);
@@ -591,7 +590,7 @@ export default class Workload extends WorkloadService {
       return undefined;
     }
 
-    return (get(this, 'metadata.relationships') || []).filter((relationship) => relationship.toType === WORKLOAD_TYPES.JOB);
+    return (get(this, 'metadata.relationships') || []).filter(relationship => relationship.toType === WORKLOAD_TYPES.JOB);
   }
 
   get jobs() {
@@ -601,7 +600,7 @@ export default class Workload extends WorkloadService {
 
     return this.jobRelationships.map((obj) => {
       return this.$getters['byId'](WORKLOAD_TYPES.JOB, obj.toId );
-    }).filter((x) => !!x);
+    }).filter(x => !!x);
   }
 
   get jobGauges() {
@@ -644,27 +643,10 @@ export default class Workload extends WorkloadService {
 
   async matchingPods() {
     const all = await this.$dispatch('findAll', { type: POD });
-    const allInNamespace = all.filter((pod) => pod.metadata.namespace === this.metadata.namespace);
+    const allInNamespace = all.filter(pod => pod.metadata.namespace === this.metadata.namespace);
 
     const selector = convertSelectorObj(this.spec.selector);
 
-    // See https://github.com/rancher/dashboard/issues/10417, all pods bad, need to replace local selector somehow
     return matching(allInNamespace, selector);
-  }
-
-  cleanForSave(data) {
-    const val = super.cleanForSave(data);
-
-    // remove fields from containers
-    val.spec?.template?.spec?.containers?.forEach((container) => {
-      this.cleanContainerForSave(container);
-    });
-
-    // remove fields from initContainers
-    val.spec?.template?.spec?.initContainers?.forEach((container) => {
-      this.cleanContainerForSave(container);
-    });
-
-    return val;
   }
 }

@@ -11,21 +11,18 @@ export const state = function() {
 };
 
 export const getters = {
-  find: (state) => ({ key, val }) => {
+  find: state => ({ key, val }) => {
     return findBy(state.stack, key, val);
   }
 };
 
 export const mutations = {
   add(state, data) {
-    state.stack = [
-      ...state.stack,
-      {
-        id:      state.nextId++,
-        started: (new Date().getTime()),
-        ...data
-      }
-    ];
+    state.stack.push({
+      id:      state.nextId++,
+      started: (new Date().getTime()),
+      ...data
+    });
   },
 
   remove(state, id) {

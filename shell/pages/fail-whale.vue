@@ -2,19 +2,11 @@
 import BrandImage from '@shell/components/BrandImage';
 import { mapGetters, mapState } from 'vuex';
 import { stringify } from '@shell/utils/error';
-import Header from '@shell/components/nav/Header';
-import Brand from '@shell/mixins/brand';
-import FixedBanner from '@shell/components/FixedBanner';
-import GrowlManager from '@shell/components/GrowlManager';
-import BrowserTabVisibility from '@shell/mixins/browser-tab-visibility';
-import PromptModal from '@shell/components/PromptModal';
 
 export default {
+  layout: 'home',
 
-  components: {
-    BrandImage, FixedBanner, GrowlManager, Header, PromptModal
-  },
-  mixins: [Brand, BrowserTabVisibility],
+  components: { BrandImage },
 
   data() {
     const store = this.$store;
@@ -33,8 +25,6 @@ export default {
   computed: {
     ...mapState(['error']),
     ...mapGetters(['isSingleProduct']),
-    ...mapState(['managementReady']),
-    ...mapGetters(['showTopLevelMenu']),
 
     home() {
       if (this.isSingleProduct?.afterLoginRoute) {
@@ -58,69 +48,48 @@ export default {
 </script>
 
 <template>
-  <div class="dashboard-root">
-    <FixedBanner :header="true" />
-    <PromptModal />
-    <div
-      class="dashboard-content"
-      :class="{'dashboard-padding-left': showTopLevelMenu}"
-    >
-      <Header
-        v-if="managementReady"
-        :simple="true"
-      />
-
-      <main class="main-layout">
-        <div
+  <div v-if="error">
+    <main class="main-layout error">
+      <div class="text-center">
+        <BrandImage
+          file-name="error-desert-landscape.svg"
+          width="900"
+          height="300"
+        />
+        <h1 v-if="error.status">
+          HTTP Error {{ error.status }}: {{ error.statusText }}
+        </h1>
+        <h1 v-else>
+          Error
+        </h1>
+        <h2
           v-if="error"
-          class="outlet"
+          class="text-secondary mt-20"
         >
-          <main class="main-layout error">
-            <div class="text-center">
-              <BrandImage
-                file-name="error-desert-landscape.svg"
-                width="900"
-                height="300"
-              />
-              <h1 v-if="error.status">
-                HTTP Error {{ error.status }}: {{ error.statusText }}
-              </h1>
-              <h1 v-else>
-                Error
-              </h1>
-              <h2
-                v-if="error"
-                class="text-secondary mt-20"
-              >
-                {{ displayError }}
-              </h2>
-              <p class="mt-20">
-                <a
-                  :href="home"
-                  class="btn role-primary"
-                >
-                  {{ t('nav.home') }}
-                </a>
-              </p>
-              <hr
-                class="custom-content"
-                :style="styles"
-              >
-              <p class="mt-20">
-                <a
-                  class="btn role-secondary"
-                  @click="$router.push(previousRoute.fullPath)"
-                >
-                  {{ t('nav.failWhale.reload') }}
-                </a>
-              </p>
-            </div>
-          </main>
-        </div>
-      </main>
-    </div>
-    <FixedBanner :footer="true" />
-    <GrowlManager />
+          {{ displayError }}
+        </h2>
+        <p class="mt-20">
+          <a
+            :href="home"
+            class="btn role-primary"
+          >
+            {{ t('nav.home') }}
+          </a>
+        </p>
+        <hr
+          class="custom-content"
+          :style="styles"
+        >
+        <p class="mt-20">
+          <a
+            class="btn role-secondary"
+            @click="$router.push(previousRoute.fullPath)"
+          >
+            {{ t('nav.failWhale.reload') }}
+          </a>
+        </p>
+      </div>
+    </main>
   </div>
 </template>
 
@@ -160,38 +129,6 @@ export default {
       padding: 0 12px;
       position: relative;
       top: -12px;
-    }
-  }
-
-  .dashboard-root {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-  }
-
-  .dashboard-content {
-    display: grid;
-    flex-grow:1;
-
-    grid-template-areas:
-      "header"
-      "main";
-
-    grid-template-columns: auto;
-    grid-template-rows:    var(--header-height) auto;
-
-    > HEADER {
-      grid-area: header;
-    }
-  }
-
-  MAIN {
-    grid-area: main;
-    overflow: auto;
-
-    .outlet {
-      min-height: 100%;
-      padding: 0;
     }
   }
 </style>

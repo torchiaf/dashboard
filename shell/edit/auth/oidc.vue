@@ -3,31 +3,26 @@ import Loading from '@shell/components/Loading';
 import CreateEditView from '@shell/mixins/create-edit-view';
 import AuthConfig from '@shell/mixins/auth-config';
 import CruResource from '@shell/components/CruResource';
+import { LabeledInput } from '@components/Form/LabeledInput';
+import { Banner } from '@components/Banner';
 import AllowedPrincipals from '@shell/components/auth/AllowedPrincipals';
 import FileSelector from '@shell/components/form/FileSelector';
 import AuthBanner from '@shell/components/auth/AuthBanner';
-import AuthProviderWarningBanners from '@shell/edit/auth/AuthProviderWarningBanners';
-import AdvancedSection from '@shell/components/AdvancedSection.vue';
-import ArrayList from '@shell/components/form/ArrayList';
-import { LabeledInput } from '@components/Form/LabeledInput';
 import { RadioGroup } from '@components/Form/Radio';
 
 export default {
   components: {
     Loading,
     CruResource,
+    LabeledInput,
+    Banner,
     AllowedPrincipals,
     FileSelector,
     AuthBanner,
-    AuthProviderWarningBanners,
-    AdvancedSection,
-    ArrayList,
-    LabeledInput,
     RadioGroup
   },
 
   mixins: [CreateEditView, AuthConfig],
-
   data() {
     return {
       customEndpoint: {
@@ -41,14 +36,10 @@ export default {
           true
         ]
       },
-      oidcUrls: {
-        url:              null,
-        realm:            null,
-        jwksUrl:          null,
-        tokenEndpoint:    null,
-        userInfoEndpoint: null,
-      },
-      oidcScope: []
+      keycloakUrls: {
+        url:   null,
+        realm: null
+      }
     };
   },
 
@@ -68,84 +59,42 @@ export default {
       };
     },
 
-    validationPassed() {
-      if ( this.model.enabled && !this.editConfig ) {
-        return true;
-      }
-
-      const { clientId, clientSecret } = this.model;
-      const isValidScope = this.model.id === 'keycloakoidc' || this.oidcScope?.includes('openid');
-
-      if ( !isValidScope ) {
-        return false;
-      }
-
-      if ( !this.customEndpoint.value ) {
-        const { url, realm } = this.oidcUrls;
-
-        return !!(clientId && clientSecret && url && realm);
-      } else {
-        const { rancherUrl, issuer } = this.model;
-
-        return !!(clientId && clientSecret && rancherUrl && issuer);
-      }
-    }
   },
-
   watch: {
-    'oidcUrls.url'() {
-      this.updateEndpoints();
+    'keycloakUrls.url'() {
+      this.updateIssuerEndpoint();
     },
-
-    'oidcUrls.realm'() {
-      this.updateEndpoints();
+    'keycloakUrls.realm'() {
+      this.updateIssuerEndpoint();
     },
-
     'model.enabled'(neu) {
       // Cover case where oidc gets disabled and we return to the edit screen with a reset model
       if (!neu) {
-        this.oidcUrls = {
-          url:              null,
-          realm:            null,
-          jwksUrl:          null,
-          tokenEndpoint:    null,
-          userInfoEndpoint: null,
+        this.keycloakUrls = {
+          url:   null,
+          realm: null
         };
         this.customEndpoint.value = false;
-        this.oidcScope = this.model?.scope?.split(' ');
-      } else {
-        this.oidcScope = this.model?.scope?.split(' ');
       }
     },
-
     editConfig(neu, old) {
-      // Cover use case where user edits existing oidc (oidcUrls aren't persisted, so if we have issuer set custom endpoints to true)
+      // Cover use case where user edits existing oidc (keycloakUrls aren't persisted, so if we have issuer & authEndpoint set custom endpoints to true)
       if (!old && neu) {
-        this.customEndpoint.value = !this.oidcUrls.url && !!this.model.issuer;
+        this.customEndpoint.value = (!this.keycloakUrls.url && !this.keycloakUrls.authEndpoint) && (!!this.model.issuer && !!this.model.authEndpoint);
       }
     }
   },
 
   methods: {
-    updateEndpoints() {
-      if (!this.oidcUrls.url) {
+    updateIssuerEndpoint() {
+      if (!this.keycloakUrls.url) {
         return;
       }
-      const isKeycloak = this.model.id === 'keycloakoidc';
+      const url = this.keycloakUrls.url.replaceAll(' ', '');
 
-      const url = this.oidcUrls.url.replaceAll(' ', '');
-      const realmsPath = isKeycloak ? 'auth/realms' : 'realms';
-
-      this.model.issuer = `${ url }/${ realmsPath }/${ this.oidcUrls.realm || '' }`;
-
-      if ( isKeycloak ) {
-        this.model.authEndpoint = `${ this.model.issuer || '' }/protocol/openid-connect/auth`;
-      }
+      this.model.issuer = `${ url }/auth/realms/${ this.keycloakUrls.realm || '' }`;
+      this.model.authEndpoint = `${ this.model.issuer || '' }/protocol/openid-connect/auth`;
     },
-
-    updateScope() {
-      this.model.scope = this.oidcScope.join(' ');
-    }
   }
 };
 </script>
@@ -159,7 +108,7 @@ export default {
       :mode="mode"
       :resource="model"
       :subtypes="[]"
-      :validation-passed="validationPassed"
+      :validation-passed="true"
       :finish-button-mode="model.enabled ? 'edit' : 'enable'"
       :can-yaml="false"
       :errors="errors"
@@ -174,7 +123,7 @@ export default {
           :disable="disable"
           :edit="goToEdit"
         >
-          <template #rows>
+          <template slot="rows">
             <tr><td>{{ t(`authConfig.oidc.rancherUrl`) }}: </td><td>{{ model.rancherUrl }}</td></tr>
             <tr><td>{{ t(`authConfig.oidc.clientId`) }}: </td><td>{{ model.clientId }}</td></tr>
             <tr><td>{{ t(`authConfig.oidc.issuer`) }}: </td><td>{{ model.issuer }}</td></tr>
@@ -192,9 +141,10 @@ export default {
       </template>
 
       <template v-else>
-        <AuthProviderWarningBanners
+        <Banner
           v-if="!model.enabled"
-          :t-args="tArgs"
+          :label="t('authConfig.stateBanner.disabled', tArgs)"
+          color="warning"
         />
 
         <h3>{{ t(`authConfig.oidc.${NAME}`) }}</h3>
@@ -206,7 +156,6 @@ export default {
               :label="t(`authConfig.oidc.clientId`)"
               :mode="mode"
               required
-              data-testid="oidc-client-id"
             />
           </div>
           <div class="col span-6">
@@ -215,7 +164,6 @@ export default {
               :label="t(`authConfig.oidc.clientSecret`)"
               :mode="mode"
               required
-              data-testid="oidc-client-secret"
             />
           </div>
         </div>
@@ -233,7 +181,7 @@ export default {
               class="role-tertiary add mt-5"
               :label="t('generic.readFromFile')"
               :mode="mode"
-              @selected="model.privateKey = $event"
+              @selected="$set(model, 'privateKey', $event)"
             />
           </div>
           <div class="col span-6">
@@ -248,20 +196,7 @@ export default {
               class="role-tertiary add mt-5"
               :label="t('generic.readFromFile')"
               :mode="mode"
-              @selected="model.certificate = $event"
-            />
-          </div>
-        </div>
-
-        <div class="row mb-20">
-          <div class="col span-6">
-            <ArrayList
-              v-model:value="oidcScope"
-              :mode="mode"
-              :title="t('authConfig.oidc.scope.label')"
-              :value-placeholder="t('authConfig.oidc.scope.placeholder')"
-              :protip="t('authConfig.oidc.scope.protip', {}, true)"
-              @update:value="updateScope"
+              @selected="$set(model, 'certificate', $event)"
             />
           </div>
         </div>
@@ -274,7 +209,6 @@ export default {
               label-key="authConfig.oidc.customEndpoint.label"
               :labels="customEndpoint.labels"
               :options="customEndpoint.options"
-              data-testid="oidc-custom-endpoint"
             >
               <template #label>
                 <h4>{{ t('authConfig.oidc.customEndpoint.label') }}</h4>
@@ -286,22 +220,20 @@ export default {
         <div class="row mb-20">
           <div class="col span-6">
             <LabeledInput
-              v-model:value="oidcUrls.url"
-              :label="t(`authConfig.oidc.url`)"
+              v-model:value="keycloakUrls.url"
+              :label="t(`authConfig.oidc.keycloak.url`)"
               :mode="mode"
               :required="!customEndpoint.value"
               :disabled="customEndpoint.value"
-              data-testid="oidc-url"
             />
           </div>
           <div class="col span-6">
             <LabeledInput
-              v-model:value="oidcUrls.realm"
-              :label="t(`authConfig.oidc.realm`)"
+              v-model:value="keycloakUrls.realm"
+              :label="t(`authConfig.oidc.keycloak.realm`)"
               :mode="mode"
               :required="!customEndpoint.value"
               :disabled="customEndpoint.value"
-              data-testid="oidc-realm"
             />
           </div>
         </div>
@@ -314,7 +246,6 @@ export default {
               :mode="mode"
               required
               :disabled="!customEndpoint.value"
-              data-testid="oidc-rancher-url"
             />
           </div>
         </div>
@@ -327,7 +258,6 @@ export default {
               :mode="mode"
               required
               :disabled="!customEndpoint.value"
-              data-testid="oidc-issuer"
             />
           </div>
           <div class="col span-6">
@@ -335,57 +265,26 @@ export default {
               v-model:value="model.authEndpoint"
               :label="t(`authConfig.oidc.authEndpoint`)"
               :mode="mode"
+              required
               :disabled="!customEndpoint.value"
-              :required="model.id === 'keycloakoidc'"
-              data-testid="oidc-auth-endpoint"
             />
           </div>
         </div>
-
-        <AdvancedSection :mode="mode">
-          <div class="row mb-20">
-            <div class="col span-6">
-              <LabeledInput
-                v-model:value="model.jwksUrl"
-                :label="t(`authConfig.oidc.jwksUrl`)"
-                :mode="mode"
-                :disabled="!customEndpoint.value"
-              />
-            </div>
-            <div class="col span-6">
-              <LabeledInput
-                v-model:value="model.tokenEndpoint"
-                :label="t(`authConfig.oidc.tokenEndpoint`)"
-                :mode="mode"
-                :disabled="!customEndpoint.value"
-              />
-            </div>
-          </div>
-
-          <div class="row mb-20">
-            <div class="col span-6">
-              <LabeledInput
-                v-model:value="model.userInfoEndpoint"
-                :label="t(`authConfig.oidc.userInfoEndpoint`)"
-                :mode="mode"
-                :disabled="!customEndpoint.value"
-              />
-            </div>
-            <div class="col span-6">
-              <LabeledInput
-                v-model:value="model.acrValue"
-                :label="t(`authConfig.oidc.acrValue`)"
-                :mode="mode"
-                :disabled="!customEndpoint.value"
-              />
-            </div>
-          </div>
-        </AdvancedSection>
       </template>
+      <div
+        v-if="!model.enabled"
+        class="row"
+      >
+        <div class="col span-12">
+          <Banner
+            v-clean-html="t('authConfig.associatedWarning', tArgs, true)"
+            color="info"
+          />
+        </div>
+      </div>
     </CruResource>
   </div>
 </template>
-
 <style lang="scss" scoped>
   .banner {
     display: block;

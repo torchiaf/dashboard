@@ -10,8 +10,6 @@ import CreateEditView from '@shell/mixins/create-edit-view';
 import { set } from '@shell/utils/object';
 
 export default {
-  emits: ['input'],
-
   components: {
     Tab,
     Tabbed,
@@ -62,9 +60,8 @@ export default {
   >
     <NameNsDescription
       ref="nd"
-      :value="value"
+      v-model:value="value"
       :mode="mode"
-      @update:value="$emit('input', $event)"
     />
 
     <Tabbed

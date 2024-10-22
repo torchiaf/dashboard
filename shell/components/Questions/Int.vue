@@ -2,19 +2,16 @@
 import { LabeledInput } from '@components/Form/LabeledInput';
 import Question from './Question';
 
-export default {
-  emits: ['update:value'],
+//  @TODO valid_chars, invalid_chars
 
+export default {
   components: { LabeledInput },
   mixins:     [Question]
 };
 </script>
 
 <template>
-  <div
-    :data-testid="`int-row-${question.variable}`"
-    class="row"
-  >
+  <div class="row">
     <div class="col span-6">
       <LabeledInput
         type="text"
@@ -24,15 +21,11 @@ export default {
         :required="question.required"
         :value="value"
         :disabled="disabled"
-        :tooltip="displayTooltip"
-        :rules="rules"
-        :data-testid="`int-input-${question.variable}`"
-        @update:value="val = parseInt($event, 10); if ( !isNaN(val) ) { $emit('update:value', val) }"
+        @input="val = parseInt($event, 10); if ( !isNaN(val) ) { $emit('input', val) }"
       />
     </div>
     <div
       v-if="showDescription"
-      :data-testid="`int-description-${question.variable}`"
       class="col span-6 mt-10"
     >
       {{ displayDescription }}

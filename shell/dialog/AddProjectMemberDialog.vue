@@ -6,8 +6,6 @@ import Banner from '@components/Banner/Banner.vue';
 import { NORMAN } from '@shell/config/types';
 
 export default {
-  emits: ['close'],
-
   components: {
     Card,
     ProjectMemberEditor,
@@ -79,7 +77,7 @@ export default {
 
     async createBindings() {
       const principalProperty = await this.principalProperty();
-      const promises = this.member.roleTemplateIds.map((roleTemplateId) => this.$store.dispatch(`rancher/create`, {
+      const promises = this.member.roleTemplateIds.map(roleTemplateId => this.$store.dispatch(`rancher/create`, {
         type:                NORMAN.PROJECT_ROLE_TEMPLATE_BINDING,
         roleTemplateId,
         [principalProperty]: this.member.principalId,
@@ -93,7 +91,7 @@ export default {
       this.error = null;
       this.createBindings()
         .then((bindings) => {
-          return Promise.all(bindings.map((b) => b.save()));
+          return Promise.all(bindings.map(b => b.save()));
         })
         .then(() => {
           btnCB(true);
@@ -114,52 +112,53 @@ export default {
     :show-highlight-border="false"
     :sticky="true"
   >
-    <template #title>
-      <h4
-        v-clean-html="t('addProjectMemberDialog.title')"
-        class="text-default-text"
+    <h4
+      slot="title"
+      v-clean-html="t('addProjectMemberDialog.title')"
+      class="text-default-text"
+    />
+
+    <div
+      slot="body"
+      class="pl-10 pr-10"
+    >
+      <Banner
+        v-if="error"
+        color="error"
+      >
+        {{ error }}
+      </Banner>
+      <ProjectMemberEditor
+        v-model:value="member"
+        :use-two-columns-for-custom="true"
       />
-    </template>
+    </div>
 
-    <template #body>
-      <div class="pl-10 pr-10">
-        <Banner
-          v-if="error"
-          color="error"
-        >
-          {{ error }}
-        </Banner>
-        <ProjectMemberEditor
-          v-model:value="member"
-          :use-two-columns-for-custom="true"
-        />
-      </div>
-    </template>
+    <div
+      slot="actions"
+      class="buttons"
+    >
+      <button
+        class="btn role-secondary mr-10"
+        @click="close"
+      >
+        {{ t('generic.cancel') }}
+      </button>
 
-    <template #actions>
-      <div class="buttons">
-        <button
-          class="btn role-secondary mr-10"
-          @click="close"
-        >
-          {{ t('generic.cancel') }}
-        </button>
+      <AsyncButton
+        v-if="saveInModal"
+        mode="create"
+        @click="cb=>saveBindings(cb)"
+      />
 
-        <AsyncButton
-          v-if="saveInModal"
-          mode="create"
-          @click="cb=>saveBindings(cb)"
-        />
-
-        <button
-          v-else
-          class="btn role-primary"
-          @click="apply"
-        >
-          {{ t('generic.add') }}
-        </button>
-      </div>
-    </template>
+      <button
+        v-else
+        class="btn role-primary"
+        @click="apply"
+      >
+        {{ t('generic.add') }}
+      </button>
+    </div>
   </Card>
 </template>
 <style lang='scss' scoped>

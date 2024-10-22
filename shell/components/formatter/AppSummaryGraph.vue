@@ -85,36 +85,34 @@ export default {
 </script>
 
 <template>
-  <v-dropdown
+  <v-popover
     v-if="show"
     class="text-center hand"
     placement="top"
-    :show-group="row.id"
-    :triggers="show ? ['click'] : []"
+    :open-group="row.id"
+    :trigger="show ? 'click' : 'manual'"
     offset="1"
   >
     <ProgressBarMulti
       :values="colorParts"
       class="mb-5"
     />
-    <router-link
+    <n-link
       v-if="linkTo"
       :to="linkTo"
     >
       {{ displayLabel }}
-    </router-link>
+    </n-link>
     <span v-else>{{ displayLabel }}</span>
 
-    <template #popper>
+    <template #popover>
       <table
         v-if="show"
         class="fixed"
       >
         <tbody>
           <tr
-            v-for="(obj, i) in stateParts"
-            :key="i"
-          >
+             v-for="(obj, i) in stateParts" :key="i" >
             <td
               class="text-left pr-20"
               :class="{[obj.textColor]: true}"
@@ -128,7 +126,7 @@ export default {
         </tbody>
       </table>
     </template>
-  </v-dropdown>
+  </v-popover>
   <div
     v-else
     class="text-center text-muted"

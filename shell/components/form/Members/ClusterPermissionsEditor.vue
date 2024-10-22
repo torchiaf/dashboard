@@ -16,8 +16,6 @@ export function canViewClusterPermissionsEditor(store) {
 }
 
 export default {
-  emits: ['update:value'],
-
   components: {
     Card,
     Checkbox,
@@ -136,14 +134,14 @@ export default {
 
       if (this.permissionGroup === 'custom') {
         return this.customPermissions
-          .filter((permission) => permission.value)
-          .map((permission) => permission.key);
+          .filter(permission => permission.value)
+          .map(permission => permission.key);
       }
 
       return [this.permissionGroup];
     },
     options() {
-      const customRoles = this.customRoles.map((role) => ({
+      const customRoles = this.customRoles.map(role => ({
         label:       role.nameDisplay,
         description: role.description || role.metadata?.annotations?.[DESCRIPTION] || this.t('members.clusterPermissions.noDescription'),
         value:       role.id
@@ -179,7 +177,7 @@ export default {
     },
     customPermissionsUpdate() {
       return this.customPermissions.reduce((acc, customPermissionsItem) => {
-        const lockedExist = this.roleTemplates.find((roleTemplateItem) => roleTemplateItem.id === customPermissionsItem.key);
+        const lockedExist = this.roleTemplates.find(roleTemplateItem => roleTemplateItem.displayName === customPermissionsItem.label);
 
         if (lockedExist.locked) {
           customPermissionsItem['locked'] = true;
@@ -200,7 +198,7 @@ export default {
     async principalProperty() {
       const principal = await this.principal;
 
-      return principal?.principalType === 'group' ? 'groupPrincipalId' : 'userPrincipalId';
+      return principal.principalType === 'group' ? 'groupPrincipalId' : 'userPrincipalId';
     },
 
     onAdd(principalId) {
@@ -211,7 +209,7 @@ export default {
     async updateBindings() {
       if (this.principalId) {
         const principalProperty = await this.principalProperty();
-        const bindingPromises = this.roleTemplateIds.map((id) => this.$store.dispatch(`rancher/create`, {
+        const bindingPromises = this.roleTemplateIds.map(id => this.$store.dispatch(`rancher/create`, {
           type:                NORMAN.CLUSTER_ROLE_TEMPLATE_BINDING,
           clusterId:           this.clusterName,
           roleTemplateId:      id,
@@ -220,7 +218,7 @@ export default {
 
         const bindings = await Promise.all(bindingPromises);
 
-        this.$emit('update:value', bindings);
+        this.$emit('input', bindings);
       }
     }
   },
@@ -239,7 +237,6 @@ export default {
           class="mb-20"
           :mode="mode"
           :retain-selection="true"
-          data-testid="cluster-member-select"
           @add="onAdd"
         />
       </div>
@@ -270,9 +267,7 @@ export default {
           :class="{'two-column': useTwoColumnsForCustom}"
         >
           <div
-            v-for="(permission, i) in customPermissionsUpdate"
-            :key="i"
-          >
+             v-for="(permission, i) in customPermissionsUpdate" :key="i" >
             <Checkbox
               v-model:value="permission.value"
               :disabled="permission.locked"

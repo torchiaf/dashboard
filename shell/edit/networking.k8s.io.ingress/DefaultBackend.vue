@@ -6,7 +6,6 @@ import { Banner } from '@components/Banner';
 import { get, set } from '@shell/utils/object';
 
 export default {
-  emits:      ['update:value'],
   components: {
     LabeledInput, LabeledSelect, Banner
   },
@@ -45,12 +44,12 @@ export default {
       return this.mode === _VIEW;
     },
     portOptions() {
-      const service = this.serviceTargets.find((s) => s.label === this.serviceName);
+      const service = this.serviceTargets.find(s => s.label === this.serviceName);
 
       return service?.ports || [];
     },
     serviceTargetStatus() {
-      const isValueAnOption = !this.serviceName || this.serviceTargets.find((target) => this.serviceName === target.value);
+      const isValueAnOption = !this.serviceName || this.serviceTargets.find(target => this.serviceName === target.value);
 
       return isValueAnOption ? null : 'warning';
     },
@@ -76,7 +75,7 @@ export default {
       set(backend, this.value.servicePortPath, this.servicePort);
       set(this.value.spec, this.value.defaultBackendPath, backend);
 
-      this.$emit('update:value', this.value);
+      this.$emit('input', this.value);
     }
   },
   watch: {
@@ -116,7 +115,7 @@ export default {
       >
         <LabeledInput
           v-if="portOptions.length === 0 || isView"
-          v-model:value.number="servicePort"
+          v-model.number="servicePort"
           :mode="mode"
           :label="t('ingress.defaultBackend.port.label')"
           :placeholder="t('ingress.defaultBackend.port.placeholder')"

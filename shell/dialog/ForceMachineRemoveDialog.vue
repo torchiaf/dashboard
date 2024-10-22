@@ -8,8 +8,6 @@ import { Card } from '@components/Card';
 import CopyToClipboardText from '@shell/components/CopyToClipboardText';
 
 export default {
-  emits: ['close'],
-
   components: {
     AsyncButton,
     Banner,
@@ -74,39 +72,41 @@ export default {
     class="prompt-restore"
     :show-highlight-border="false"
   >
-    <template #title>
-      <h4 class="text-default-text">
-        {{ t('promptForceRemove.modalTitle') }}
-      </h4>
-    </template>
-    <template #body>
-      <div class="pl-10 pr-10">
-        <span
-          v-clean-html="t('promptForceRemove.removeWarning', { nameToMatch }, true)"
-        />
-        <div class="mt-10 mb-10">
-          {{ t('promptForceRemove.confirmName') }}
-        </div>
-        <div class="mb-10">
-          <CopyToClipboardText :text="nameToMatch" />
-        </div>
-        <input
-          id="confirm"
-          v-model="confirmName"
-          type="text"
-        >
-        <div class="text-info mt-20">
-          {{ protip }}
-        </div>
-        <Banner
-          v-for="(error, i) in errors"
-          :key="i"
-          class=""
-          color="error"
-          :label="error"
-        />
+    <h4
+      slot="title"
+      class="text-default-text"
+    >
+      {{ t('promptForceRemove.modalTitle') }}
+    </h4>
+    <div
+      slot="body"
+      class="pl-10 pr-10"
+    >
+      <span
+        v-clean-html="t('promptForceRemove.removeWarning', { nameToMatch }, true)"
+      />
+      <div class="mt-10 mb-10">
+        {{ t('promptForceRemove.confirmName') }}
       </div>
-    </template>
+      <div class="mb-10">
+        <CopyToClipboardText :text="nameToMatch" />
+      </div>
+      <input
+        id="confirm"
+        v-model:value="confirmName"
+        type="text"
+      >
+      <div class="text-info mt-20">
+        {{ protip }}
+      </div>
+      <Banner
+        v-for="(error, i) in errors"
+        :key="i"
+        class=""
+        color="error"
+        :label="error"
+      />
+    </div>
     <template #actions>
       <button
         class="btn role-secondary mr-10"

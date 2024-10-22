@@ -8,9 +8,7 @@ import { MANAGEMENT, FLEET } from '@shell/config/types';
 import { FLEET as FLEET_LABELS } from '@shell/config/labels-annotations';
 
 export default {
-  name: 'FleetDetailCluster',
-
-  emits: ['input'],
+  name: 'DetailCluster',
 
   components: {
     Loading,
@@ -38,8 +36,6 @@ export default {
     this.allRepos = await this.$store.dispatch('management/findAll', { type: FLEET.GIT_REPO });
 
     await this.$store.dispatch('management/findAll', { type: FLEET.WORKSPACE });
-
-    await this.$store.dispatch('management/findAll', { type: FLEET.BUNDLE_DEPLOYMENT });
   },
 
   data() {
@@ -47,13 +43,6 @@ export default {
   },
 
   computed: {
-    allBundleDeployments() {
-      return this.value.bundleDeployments;
-    },
-    clusterId() {
-      return this.value?.metadata?.labels[FLEET_LABELS.CLUSTER_NAME];
-    },
-
     repos() {
       return this.allRepos.filter((x) => {
         return x.targetClusters.includes(this.value);
@@ -77,10 +66,9 @@ export default {
     <ResourcesSummary :value="value.status.resourceCounts" />
 
     <ResourceTabs
-      :value="value"
+      v-model:value="value"
       mode="view"
       class="mt-20"
-      @update:value="$emit('input', $event)"
     >
       <Tab
         label="Git Repos"
@@ -88,7 +76,6 @@ export default {
         :weight="19"
       >
         <FleetRepos
-          :clusterId="clusterId"
           :rows="repos"
           :schema="repoSchema"
           :paging="true"

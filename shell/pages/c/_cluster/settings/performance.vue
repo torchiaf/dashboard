@@ -8,24 +8,21 @@ import { MANAGEMENT } from '@shell/config/types';
 import { DEFAULT_PERF_SETTING, SETTING } from '@shell/config/settings';
 import { _EDIT, _VIEW } from '@shell/config/query-params';
 import UnitInput from '@shell/components/form/UnitInput';
-import { STEVE_CACHE } from '@shell/store/features';
-import { NAME as SETTING_PRODUCT } from '@shell/config/product/settings';
 
 const incompatible = {
-  incrementalLoading: ['forceNsFilterV2', 'serverPagination'],
-  manualRefresh:      ['forceNsFilterV2', 'serverPagination'],
+  incrementalLoading: ['forceNsFilterV2'],
+  manualRefresh:      ['forceNsFilterV2'],
   forceNsFilterV2:    ['incrementalLoading', 'manualRefresh'],
-  serverPagination:   ['incrementalLoading', 'manualRefresh'],
 };
 
 const l10n = {
   incrementalLoading: 'incrementalLoad',
   manualRefresh:      'manualRefresh',
   forceNsFilterV2:    'nsFiltering',
-  serverPagination:   'serverPagination'
 };
 
 export default {
+  layout:     'authenticated',
   components: {
     Checkbox,
     Loading,
@@ -61,20 +58,13 @@ export default {
 
   data() {
     return {
-      uiPerfSetting:              null,
+      uiPerfSetting:              DEFAULT_PERF_SETTING,
       authUserTTL:                null,
       bannerVal:                  {},
       value:                      {},
       errors:                     [],
       gcStartedEnabled:           null,
       isInactivityThresholdValid: false,
-      ffUrl:                      this.$router.resolve({
-        name:   'c-cluster-product-resource',
-        params: {
-          product:  SETTING_PRODUCT,
-          resource: MANAGEMENT.FEATURE
-        }
-      }).href
     };
   },
 
@@ -87,33 +77,6 @@ export default {
 
     canSave() {
       return this.value.inactivity.enabled ? this.isInactivityThresholdValid : true;
-    },
-
-    steveCacheEnabled() {
-      return this.$store.getters['features/get'](STEVE_CACHE);
-    },
-
-    steveCacheApplicableResources() {
-      const storeResources = [];
-
-      Object.entries(this.value.serverPagination.stores).forEach(([store, settings]) => {
-        const resources = [];
-
-        if (settings.resources.enableAll) {
-          resources.push(this.t('performance.serverPagination.resources.all'));
-        } else {
-          settings.resources.enableSome.enabled.forEach((resource) => {
-            resources.push(resource);
-          });
-          if (settings.resources.enableSome.generic) {
-            resources.push(this.t('performance.serverPagination.resources.generic', {}, true));
-          }
-        }
-
-        storeResources.push(`${ store }: ${ resources.join(', ') }`);
-      });
-
-      return storeResources.join('. ');
     }
   },
 
@@ -161,8 +124,8 @@ export default {
         return;
       }
 
-      // We're enabling a preference. Are there any incompatible preferences?
-      if ((incompatible[property] || []).every((p) => !this.value[p].enabled)) {
+      // We're enabling a preference. Are there any incomaptible preferences?
+      if ((incompatible[property] || []).every(p => !this.value[p].enabled)) {
         // No, just set and exit
         this.value[property].enabled = true;
 
@@ -173,11 +136,9 @@ export default {
       this.$store.dispatch('cluster/promptModal', {
         component:      'GenericPrompt',
         componentProps: {
-          applyMode: 'enable',
-          confirm:   (confirmed) => {
-            this.value[property].enabled = confirmed;
-          },
+          applyMode:   'enable',
           applyAction: (buttonDone) => {
+            this.value[property].enabled = true;
             (incompatible[property] || []).forEach((incompatible) => {
               this.value[incompatible].enabled = false;
             });
@@ -191,7 +152,6 @@ export default {
   },
 };
 </script>
-
 <template>
   <Loading v-if="$fetchState.pending" />
   <div v-else>
@@ -200,35 +160,6 @@ export default {
     </h1>
     <div>
       <div class="ui-perf-setting">
-        <!-- Server Side Pagination -->
-        <div class="mt-40">
-          <h2>{{ t('performance.serverPagination.label') }}</h2>
-          <p>{{ t('performance.serverPagination.description') }}</p>
-          <Banner
-            color="error"
-            label-key="performance.experimental"
-          />
-          <Banner
-            v-if="!steveCacheEnabled"
-            v-clean-html="t(`performance.serverPagination.featureFlag`, { ffUrl }, true)"
-            color="warning"
-          />
-          <Checkbox
-            v-model:value="value.serverPagination.enabled"
-            :mode="mode"
-            :label="t('performance.serverPagination.checkboxLabel')"
-            class="mt-10 mb-20"
-            :primary="true"
-            :disabled="(!steveCacheEnabled && !value.serverPagination.enabled)"
-            @update:value="compatibleWarning('serverPagination', $event)"
-          />
-          <p :class="{ 'text-muted': !value.serverPagination.enabled }">
-            {{ t('performance.serverPagination.applicable') }}
-          </p>
-          <p :class="{ 'text-muted': !value.serverPagination.enabled }">
-            {{ steveCacheApplicableResources }}
-          </p>
-        </div>
         <!-- Inactivity -->
         <div class="mt-20">
           <h2>{{ t('performance.inactivity.title') }}</h2>
@@ -318,7 +249,7 @@ export default {
               {{ t('performance.manualRefresh.setting') }}
             </p>
             <LabeledInput
-              v-model:value.number="value.manualRefresh.threshold"
+              v-model.number="value.manualRefresh.threshold"
               :mode="mode"
               :label="t('performance.manualRefresh.inputLabel')"
               :disabled="!value.manualRefresh.enabled"
@@ -397,7 +328,7 @@ export default {
                 {{ t('performance.gc.howRun.count.description') }}
               </p>
               <LabeledInput
-                v-model:value.number="value.garbageCollection.countThreshold"
+                v-model.number="value.garbageCollection.countThreshold"
                 :mode="mode"
                 :label="t('performance.gc.howRun.count.inputLabel')"
                 :disabled="!value.garbageCollection.enabled"
@@ -443,10 +374,7 @@ export default {
         </div>
       </div>
     </div>
-    <template
-      v-for="(err, i) in errors"
-      :key="i"
-    >
+    <template  v-for="(err, i) in errors" :key="i" >
       <Banner
         color="error"
         :label="err"
@@ -463,7 +391,6 @@ export default {
     </div>
   </div>
 </template>
-
 <style scoped lang='scss'>
 .overlay {
   width: 100%;

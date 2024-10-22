@@ -1,12 +1,16 @@
 <script>
 import { mapGetters } from 'vuex';
-import { NEU_VECTOR_NAMESPACE } from '@shell/config/product/neuvector';
+
+import InstallRedirect from '@shell/utils/install-redirect';
+
+import { NAME, CHART_NAME, NEU_VECTOR_NAMESPACE } from '@shell/config/product/neuvector';
 
 import LazyImage from '@shell/components/LazyImage';
-import Loading from '@shell/components/Loading';
 
 export default {
-  components: { LazyImage, Loading },
+  components: { LazyImage },
+
+  middleware: InstallRedirect(NAME, CHART_NAME, undefined, false),
 
   data() {
     return {
@@ -17,7 +21,6 @@ export default {
 
   computed: { ...mapGetters(['currentCluster']) },
 
-  // i18n-uses neuvector.overview.linkedList.neuvector.label, neuvector.overview.linkedList.neuvector.description
   mounted() {
     this.externalLinks = [
       {
@@ -33,8 +36,7 @@ export default {
 </script>
 
 <template>
-  <Loading v-if="$fetchState.pending" />
-  <section v-else>
+  <section>
     <header class="row">
       <div class="col span-12">
         <h1>
@@ -50,9 +52,7 @@ export default {
     </header>
     <div class="links">
       <div
-        v-for="(fel, i) in externalLinks"
-        :key="i"
-        class="link-container"
+         v-for="(fel, i) in externalLinks" :key="i" class="link-container"
       >
         <a
           :href="fel.link"

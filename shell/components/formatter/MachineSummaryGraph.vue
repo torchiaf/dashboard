@@ -29,20 +29,18 @@ export default {
 </script>
 
 <template>
-  <v-dropdown
+  <v-popover
     class="text-center hand machine-summary-graph"
     placement="top"
-    :show-group="row.id"
-    :triggers="['click']"
+    :open-group="row.id"
+    trigger="click"
     offset="1"
   >
-    <template #popper>
+    <template #popover>
       <table class="fixed">
         <tbody>
           <tr
-            v-for="(obj, i) in row.stateParts"
-            :key="i"
-          >
+             v-for="(obj, i) in row.stateParts" :key="i" >
             <td
               class="text-left pr-20"
               :class="{[obj.textColor]: true}"
@@ -75,7 +73,7 @@ export default {
         class="count"
       >{{ ready }} of {{ row.desired }}</span>
     </div>
-  </v-dropdown>
+  </v-popover>
 </template>
 
 <style lang="scss" scoped>

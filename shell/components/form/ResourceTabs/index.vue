@@ -13,7 +13,6 @@ import { _VIEW } from '@shell/config/query-params';
 import RelatedResources from '@shell/components/RelatedResources';
 import { ExtensionPoint, TabLocation } from '@shell/core/types';
 import { getApplicableExtensionEnhancements } from '@shell/core/plugin-helpers';
-import { isConditionReadyAndWaiting } from '@shell/plugins/dashboard-store/resource-class';
 
 export default {
 
@@ -61,11 +60,6 @@ export default {
     needRelated: {
       type:    Boolean,
       default: true
-    },
-
-    extensionParams: {
-      type:    Object,
-      default: null
     }
   },
 
@@ -73,27 +67,28 @@ export default {
     const inStore = this.$store.getters['currentStore'](EVENT);
 
     return {
-      hasEvents:      this.$store.getters[`${ inStore }/schemaFor`](EVENT), // @TODO be smarter about which resources actually ever have events
-      allEvents:      [],
-      selectedTab:    this.defaultTab,
-      didLoadEvents:  false,
-      extensionTabs:  getApplicableExtensionEnhancements(this, ExtensionPoint.TAB, TabLocation.RESOURCE_DETAIL, this.$route, this, this.extensionParams),
-      inStore,
-      showConditions: false,
+      hasEvents:     this.$store.getters[`${ inStore }/schemaFor`](EVENT), // @TODO be smarter about which resources actually ever have events
+      allEvents:     [],
+      selectedTab:   this.defaultTab,
+      didLoadEvents: false,
+      extensionTabs: getApplicableExtensionEnhancements(this, ExtensionPoint.TAB, TabLocation.RESOURCE_DETAIL, this.$route),
     };
   },
 
-  beforeUnmount() {
+  beforeDestroy() {
     this.$store.dispatch('cluster/forgetType', EVENT);
   },
 
-  fetch() {
-    // By this stage the `value` should be set. Taking a chance that this is true
-    // The alternative is have an expensive watch on the `value` and trigger there (as well)
-    this.setShowConditions();
-  },
-
   computed: {
+    showConditions() {
+      const inStore = this.$store.getters['currentStore'](this.value.type);
+
+      if ( this.$store.getters[`${ inStore }/schemaFor`](this.value.type) ) {
+        return this.isView && this.needConditions && this.value?.type && this.$store.getters[`${ inStore }/pathExistsInSchema`](this.value.type, 'status.conditions');
+      }
+
+      return false;
+    },
     showEvents() {
       return this.isView && this.needEvents && this.hasEvents;
     },
@@ -145,7 +140,7 @@ export default {
     },
     conditionsHaveIssues() {
       if (this.showConditions) {
-        return this.value.status?.conditions?.filter((cond) => !isConditionReadyAndWaiting(cond)).some((cond) => cond.error);
+        return this.value.status?.conditions?.some(cond => cond.error);
       }
 
       return false;
@@ -165,24 +160,7 @@ export default {
           this.didLoadEvents = true;
         });
       }
-    },
-
-    /**
-    * Conditions come from a resource's `status`. They are used by both core resources like workloads as well as those from CRDs
-    * - Workloads
-    * - Nodes
-    * - Fleet git repo
-    * - Cluster (provisioning)
-    *
-    * Check here if the resource type contains conditions via the schema resourceFields
-    */
-    async setShowConditions() {
-      if (this.isView && this.needConditions && !!this.value?.type && !!this.schema?.fetchResourceFields) {
-        await this.schema.fetchResourceFields();
-
-        this.showConditions = this.$store.getters[`${ this.inStore }/pathExistsInSchema`](this.value.type, 'status.conditions');
-      }
-    },
+    }
   }
 };
 </script>

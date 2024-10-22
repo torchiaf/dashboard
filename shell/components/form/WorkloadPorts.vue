@@ -12,8 +12,6 @@ import { HARVESTER_NAME as HARVESTER } from '@shell/config/features';
 import { CAPI, SERVICE } from '@shell/config/types';
 
 export default {
-  emits: ['update:value'],
-
   components: {
     LabeledInput,
     LabeledSelect,
@@ -58,7 +56,7 @@ export default {
     });
 
     // show host port column if existing port data has any host ports defined
-    const showHostPorts = !!rows.some((row) => !!row.hostPort);
+    const showHostPorts = !!rows.some(row => !!row.hostPort);
 
     return {
       rows,
@@ -112,15 +110,15 @@ export default {
     },
 
     clusterIPServicePorts() {
-      return ((this.services.filter((svc) => svc.spec.type === 'ClusterIP') || [])[0] || {})?.spec?.ports;
+      return ((this.services.filter(svc => svc.spec.type === 'ClusterIP') || [])[0] || {})?.spec?.ports;
     },
 
     loadBalancerServicePorts() {
-      return ((this.services.filter((svc) => svc.spec.type === 'LoadBalancer') || [])[0] || {})?.spec?.ports;
+      return ((this.services.filter(svc => svc.spec.type === 'LoadBalancer') || [])[0] || {})?.spec?.ports;
     },
 
     nodePortServicePorts() {
-      return ((this.services.filter((svc) => svc.spec.type === 'NodePort') || [])[0] || {})?.spec?.ports;
+      return ((this.services.filter(svc => svc.spec.type === 'NodePort') || [])[0] || {})?.spec?.ports;
     },
 
     ipamOptions() {
@@ -134,11 +132,11 @@ export default {
     },
 
     ipamIndex() {
-      return this.rows.findIndex((row) => row._serviceType === 'LoadBalancer' && row.protocol === 'TCP');
+      return this.rows.findIndex(row => row._serviceType === 'LoadBalancer' && row.protocol === 'TCP');
     },
 
     serviceWithIpam() {
-      return this.services.find((s) => s?.metadata?.annotations[HCI_LABELS_ANNOTATIONS.CLOUD_PROVIDER_IPAM]);
+      return this.services.find(s => s?.metadata?.annotations[HCI_LABELS_ANNOTATIONS.CLOUD_PROVIDER_IPAM]);
     },
 
     showIpam() {
@@ -161,7 +159,7 @@ export default {
     },
 
     provisioningCluster() {
-      const out = this.$store.getters['management/all'](CAPI.RANCHER_CLUSTER).find((c) => c?.status?.clusterName === this.currentCluster.metadata.name);
+      const out = this.$store.getters['management/all'](CAPI.RANCHER_CLUSTER).find(c => c?.status?.clusterName === this.currentCluster.metadata.name);
 
       return out;
     },
@@ -215,7 +213,7 @@ export default {
         delete value._showHost;
         out.push(value);
       }
-      this.$emit('update:value', out);
+      this.$emit('input', out);
     },
 
     setServiceType(row) {
@@ -270,9 +268,7 @@ export default {
       {{ t('workload.container.ports.detailedDescription') }}
     </p>
     <div
-      v-for="(row, idx) in rows"
-      :key="idx"
-      class="ports-row"
+      v-for="(row, idx) in rows" :key="idx"class="ports-row"
       :class="{
         'show-host':row._showHost,
         'loadBalancer': row._serviceType === 'LoadBalancer',
@@ -304,7 +300,7 @@ export default {
 
       <div class="port">
         <LabeledInput
-          v-model:value.number="row.containerPort"
+          v-model.number="row.containerPort"
           :mode="mode"
           type="number"
           min="1"
@@ -333,7 +329,7 @@ export default {
       >
         <LabeledInput
           ref="port"
-          v-model:value.number="row.hostPort"
+          v-model.number="row.hostPort"
           :mode="mode"
           type="number"
           min="1"
@@ -375,7 +371,7 @@ export default {
       <div v-if="row._serviceType === 'LoadBalancer' || row._serviceType === 'NodePort'">
         <LabeledInput
           ref="port"
-          v-model:value.number="row._listeningPort"
+          v-model.number="row._listeningPort"
           type="number"
           :mode="mode"
           :label="t('workload.container.ports.listeningPort')"
@@ -391,7 +387,6 @@ export default {
             :mode="mode"
             :options="ipamOptions"
             :label="t('servicesPage.harvester.ipam.label')"
-            :disabled="mode === 'edit'"
             @update:value="queueUpdate"
           />
         </div>

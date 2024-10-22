@@ -1,7 +1,7 @@
 <script>
 import Loading from '@shell/components/Loading';
 import CreateEditView from '@shell/mixins/create-edit-view';
-import AuthConfig, { SLO_OPTION_VALUES } from '@shell/mixins/auth-config';
+import AuthConfig from '@shell/mixins/auth-config';
 import CruResource from '@shell/components/CruResource';
 import { LabeledInput } from '@components/Form/LabeledInput';
 import { Checkbox } from '@components/Form/Checkbox';
@@ -9,9 +9,10 @@ import { Banner } from '@components/Banner';
 import AllowedPrincipals from '@shell/components/auth/AllowedPrincipals';
 import FileSelector from '@shell/components/form/FileSelector';
 import AuthBanner from '@shell/components/auth/AuthBanner';
-import config, { OKTA, SHIBBOLETH } from '@shell/edit/auth/ldap/config';
-import AuthProviderWarningBanners from '@shell/edit/auth/AuthProviderWarningBanners';
-import RadioGroup from '@components/Form/Radio/RadioGroup.vue';
+import config from '@shell/edit/auth/ldap/config';
+
+export const SHIBBOLETH = 'shibboleth';
+export const OKTA = 'okta';
 
 // Standard LDAP defaults
 const LDAP_DEFAULTS = {
@@ -43,18 +44,16 @@ export default {
     Banner,
     AllowedPrincipals,
     Checkbox,
-    RadioGroup,
     FileSelector,
     config,
-    AuthBanner,
-    AuthProviderWarningBanners
+    AuthBanner
   },
 
   mixins: [CreateEditView, AuthConfig],
   data() {
     return {
       showLdap:        false,
-      showLdapDetails: false
+      showLdapDetails: false,
     };
   },
 
@@ -65,24 +64,6 @@ export default {
         provider: this.displayName,
         username: this.principal.loginName || this.principal.name,
       };
-    },
-
-    isLogoutAllSupported() {
-      return this.model?.logoutAllSupported;
-    },
-
-    sloOptions() {
-      return [
-        { value: SLO_OPTION_VALUES.rancher, label: this.t('authConfig.saml.sloOptions.onlyRancher', { name: this.model?.nameDisplay }) },
-        { value: SLO_OPTION_VALUES.all, label: this.t('authConfig.saml.sloOptions.logoutAll', { name: this.model?.nameDisplay }) },
-        { value: SLO_OPTION_VALUES.both, label: this.t('authConfig.saml.sloOptions.choose') },
-      ];
-    },
-
-    sloTypeText() {
-      const sloOptionSelected = this.sloOptions.find((item) => item.value === this.sloType);
-
-      return sloOptionSelected?.label || '';
     },
 
     toSave() {
@@ -116,30 +97,8 @@ export default {
         // Use a spread of config, so that if don't make changes to the defaults if the user edits them
         this.model['openLdapConfig'] = { ...LDAP_DEFAULTS };
       }
-    },
-    // sloType is defined on shell/mixins/auth-config.js
-    sloType(neu) {
-      switch (neu) {
-      case SLO_OPTION_VALUES.rancher:
-        this.model.logoutAllEnabled = false;
-        this.model.logoutAllForced = false;
-        break;
-      case SLO_OPTION_VALUES.all:
-        this.model.logoutAllEnabled = true;
-        this.model.logoutAllForced = true;
-        break;
-      case SLO_OPTION_VALUES.both:
-        this.model.logoutAllEnabled = true;
-        this.model.logoutAllForced = false;
-        break;
-      }
     }
-  },
-  methods: {
-    onSelected(val, key) {
-      this.model[key] = val;
-    }
-  },
+  }
 };
 </script>
 
@@ -167,21 +126,20 @@ export default {
           :disable="disable"
           :edit="goToEdit"
         >
-          <template #rows>
+          <template
+            slot="rows"
+          >
             <tr><td>{{ t(`authConfig.saml.displayName`) }}: </td><td>{{ model.displayNameField }}</td></tr>
             <tr><td>{{ t(`authConfig.saml.userName`) }}: </td><td>{{ model.userNameField }}</td></tr>
             <tr><td>{{ t(`authConfig.saml.UID`) }}: </td><td>{{ model.uidField }}</td></tr>
             <tr><td>{{ t(`authConfig.saml.entityID`) }}: </td><td>{{ model.entityID }}</td></tr>
             <tr><td>{{ t(`authConfig.saml.api`) }}: </td><td>{{ model.rancherApiHost }}</td></tr>
             <tr><td>{{ t(`authConfig.saml.groups`) }}: </td><td>{{ model.groupsField }}</td></tr>
-            <tr v-if="isLogoutAllSupported">
-              <td>{{ t(`authConfig.saml.sloTitle`) }}: </td><td>{{ sloTypeText }}</td>
-            </tr>
           </template>
 
           <template
             v-if="supportsLDAPSearch"
-            #footer
+            slot="footer"
           >
             <Banner
               v-if="showLdap"
@@ -231,13 +189,13 @@ export default {
       </template>
 
       <template v-else>
-        <AuthProviderWarningBanners
+        <Banner
           v-if="!model.enabled"
-          :t-args="tArgs"
+          :label="t('authConfig.stateBanner.disabled', tArgs)"
+          color="warning"
         />
 
         <h3>{{ t(`authConfig.saml.${NAME}`) }}</h3>
-
         <div class="row mb-20">
           <div class="col span-6">
             <LabeledInput
@@ -275,7 +233,6 @@ export default {
             />
           </div>
         </div>
-
         <div class="row mb-20">
           <div
             v-if="NAME === 'keycloak' || NAME === 'ping'"
@@ -311,7 +268,7 @@ export default {
               class="role-tertiary add mt-5"
               :label="t('generic.readFromFile')"
               :mode="mode"
-              @selected="onSelected($event, 'spKey')"
+              @selected="$set(model, 'spKey', $event)"
             />
           </div>
           <div class="col span-4">
@@ -327,7 +284,7 @@ export default {
               class="role-tertiary add mt-5"
               :label="t('generic.readFromFile')"
               :mode="mode"
-              @selected="onSelected($event, 'spCert')"
+              @selected="$set(model, 'spCert', $event)"
             />
           </div>
           <div class="col span-4">
@@ -343,38 +300,23 @@ export default {
               class="role-tertiary add mt-5"
               :label="t('generic.readFromFile')"
               :mode="mode"
-              @selected="onSelected($event, 'idpMetadataContent')"
+              @selected="$set(model, 'idpMetadataContent', $event)"
             />
           </div>
         </div>
-
-        <!-- SLO logout -->
         <div
-          v-if="isLogoutAllSupported"
-          class="mt-10 mb-30"
+          v-if="!model.enabled"
+          class="row"
         >
-          <div class="row">
-            <div class="col span-12">
-              <h3>{{ t('authConfig.saml.sloTitle') }}</h3>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col span-4">
-              <RadioGroup
-                v-model:value="sloType"
-                :mode="mode"
-                :options="sloOptions"
-                :disabled="!model.logoutAllSupported"
-                name="sloTypeRadio"
-              />
-            </div>
+          <div class="col span-12">
+            <Banner color="info">
+              <div v-clean-html="t('authConfig.associatedWarning', tArgs, true)" />
+            </Banner>
           </div>
         </div>
-
-        <!-- LDAP search -->
         <div v-if="supportsLDAPSearch">
           <div class="row">
-            <h3>{{ t('authConfig.saml.search.title') }}</h3>
+            <h2>{{ t('authConfig.saml.search.title') }}</h2>
           </div>
           <div class="row">
             <Banner

@@ -20,10 +20,9 @@ import ResourceManager from '@shell/mixins/resource-manager';
 const DEFAULT_STORAGE = '10Gi';
 
 export default {
-  name:         'PersistentVolumeClaim',
-  emits:        ['input'],
-  inheritAttrs: false,
-  components:   {
+  name: 'PersistentVolumeClaim',
+
+  components: {
     Banner,
     Checkbox,
     CruResource,
@@ -46,7 +45,7 @@ export default {
       this.resourceManagerFetchSecondaryResources(this.secondaryResourceData);
     }
 
-    this.storageClassOptions = storageClasses.map((s) => s.name).sort();
+    this.storageClassOptions = storageClasses.map(s => s.name).sort();
     this.storageClassOptions.unshift(this.t('persistentVolumeClaim.useDefault'));
 
     this.value.spec['storageClassName'] = this.value.spec.storageClassName || this.storageClassOptions[0];
@@ -120,7 +119,7 @@ export default {
         return this.value.spec.volumeName;
       },
       set(value) {
-        const persistentVolume = this.persistentVolumes.find((pv) => pv.metadata.name === value);
+        const persistentVolume = this.persistentVolumes.find(pv => pv.metadata.name === value);
 
         this.value.spec['storageClassName'] = '';
 
@@ -195,7 +194,7 @@ export default {
       }
     },
     isPersistentVolumeSelectable(option) {
-      const persistentVolume = this.persistentVolumes.find((pv) => pv.metadata.name === option.value);
+      const persistentVolume = this.persistentVolumes.find(pv => pv.metadata.name === option.value);
 
       return persistentVolume.status.phase === 'Available';
     },
@@ -235,11 +234,10 @@ export default {
     />
 
     <ResourceTabs
-      :value="value"
+      v-model:value="value"
       :mode="mode"
       :side-tabs="true"
       :default-tab="defaultTab"
-      @update:value="$emit('input', $event)"
     >
       <Tab
         name="volumeclaim"

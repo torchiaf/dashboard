@@ -8,11 +8,7 @@ import KeyValue from '@shell/components/form/KeyValue';
 import Taints from '@shell/components/form/Taints';
 import { MANAGEMENT } from '@shell/config/types';
 
-import { sanitizeKey, sanitizeIP, sanitizeValue } from '@shell/utils/string';
-
 export default {
-  emits: ['copied-windows'],
-
   components: {
     Banner, Checkbox, CopyCode, InfoBox, KeyValue, LabeledInput, Taints
   },
@@ -56,8 +52,8 @@ export default {
       this.etcd && out.push('--etcd');
       this.controlPlane && out.push('--controlplane');
       this.worker && out.push('--worker');
-      this.address && out.push(`--address ${ sanitizeIP(this.address) }`);
-      this.internalAddress && out.push(`--internal-address ${ sanitizeIP(this.internalAddress) }`);
+      this.address && out.push(`--address ${ sanitizeValue(this.address) }`);
+      this.internalAddress && out.push(`--internal-address ${ sanitizeValue(this.internalAddress) }`);
       this.nodeName && out.push(`--node-name ${ sanitizeValue(this.nodeName) }`);
 
       for ( const key in this.labels ) {
@@ -150,6 +146,13 @@ export default {
   },
 };
 
+function sanitizeKey(k) {
+  return (k || '').replace(/[^a-z0-9./_-]/ig, '');
+}
+
+function sanitizeValue(v) {
+  return (v || '').replace(/[^a-z0-9._-]/ig, '');
+}
 </script>
 
 <template>
@@ -171,12 +174,6 @@ export default {
       <Checkbox
         v-model:value="worker"
         label-key="model.machine.role.worker"
-      />
-      <Banner
-        v-if="!etcd || !controlPlane || !worker"
-        data-testid="node-role-warning"
-        color="warning"
-        :label="t('cluster.custom.nodeRole.warning')"
       />
     </InfoBox>
 

@@ -1,7 +1,7 @@
 <script>
 import RoleDetailEdit from '@shell/components/auth/RoleDetailEdit';
 
-export default { emits: ['set-subtype'], components: { RoleDetailEdit } };
+export default { components: { RoleDetailEdit } };
 </script>
 <template>
   <RoleDetailEdit

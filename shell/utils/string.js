@@ -272,7 +272,7 @@ const quotedMatch = /[^."']+|"([^"]*)"|'([^']*)'/g;
 export function splitObjectPath(path) {
   if ( path.includes('"') || path.includes("'") ) {
     // Path with quoted section
-    return path.match(quotedMatch).map((x) => x.replace(/['"]/g, ''));
+    return path.match(quotedMatch).map(x => x.replace(/['"]/g, ''));
   }
 
   // Regular path
@@ -308,16 +308,4 @@ export function isIpv4(ip) {
   const reg = /^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
 
   return reg.test(ip);
-}
-
-export function sanitizeKey(k) {
-  return (k || '').replace(/[^a-z0-9./_-]/ig, '');
-}
-
-export function sanitizeValue(v) {
-  return (v || '').replace(/[^a-z0-9._-]/ig, '');
-}
-
-export function sanitizeIP(v) {
-  return (v || '').replace(/[^a-z0-9.:_-]/ig, '');
 }

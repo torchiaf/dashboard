@@ -9,6 +9,7 @@ export default {
 
 <template>
   <ResourceDetail
+    store-override="rancher"
     resource-override="cloudcredential"
     parent-route-override="c-cluster-manager-cloudCredential"
   />

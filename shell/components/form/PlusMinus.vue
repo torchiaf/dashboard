@@ -1,7 +1,5 @@
 <script>
 export default {
-  emits: ['minus', 'plus'],
-
   props: {
     value: {
       type:     Number,

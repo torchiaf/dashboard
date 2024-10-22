@@ -39,14 +39,6 @@ export default class CatalogApp extends SteveModel {
     return out;
   }
 
-  get warnDeletionMessage() {
-    if (this.upgradeAvailable === false) {
-      return this.t('catalog.delete.warning.managed', { name: this.name });
-    }
-
-    return null;
-  }
-
   matchingChart(includeHidden) {
     const chart = this.spec?.chart;
 
@@ -55,13 +47,12 @@ export default class CatalogApp extends SteveModel {
     }
 
     const chartName = chart.metadata?.name;
-    const repoName = chart.metadata?.annotations?.[CATALOG_ANNOTATIONS.SOURCE_REPO_NAME] || this.metadata?.labels?.[CATALOG_ANNOTATIONS.CLUSTER_REPO_NAME];
-    const preferRepoType = chart.metadata?.annotations?.[CATALOG_ANNOTATIONS.SOURCE_REPO_TYPE] || 'cluster';
-
+    const preferRepoType = chart.metadata?.annotations?.[CATALOG_ANNOTATIONS.SOURCE_REPO_TYPE];
+    const preferRepoName = chart.metadata?.annotations?.[CATALOG_ANNOTATIONS.SOURCE_REPO_NAME];
     const match = this.$rootGetters['catalog/chart']({
       chartName,
-      repoName,
       preferRepoType,
+      preferRepoName,
       includeHidden
     });
 
@@ -98,7 +89,7 @@ export default class CatalogApp extends SteveModel {
     let versions = chart.versions;
 
     if (!showPreRelease) {
-      versions = chart.versions.filter((v) => !isPrerelease(v.version));
+      versions = chart.versions.filter(v => !isPrerelease(v.version));
     }
 
     versions = compatibleVersionsFor(chart, workerOSs, showPreRelease);
@@ -137,14 +128,14 @@ export default class CatalogApp extends SteveModel {
       return true;
     }
 
-    const versionInChart = chart.versions.find((version) => version.version === thisVersion);
+    const versionInChart = chart.versions.find(version => version.version === thisVersion);
 
     if (!versionInChart) {
       return true;
     }
     const compatibleVersions = compatibleVersionsFor(chart, workerOSs, true) || [];
 
-    const thisVersionCompatible = !!compatibleVersions.find((version) => version.version === thisVersion);
+    const thisVersionCompatible = !!compatibleVersions.find(version => version.version === thisVersion);
 
     return thisVersionCompatible;
   }
@@ -272,7 +263,7 @@ export default class CatalogApp extends SteveModel {
           });
 
         if (mcapps) {
-          return mcapps.find((mcapp) => mcapp.spec?.targets?.find((target) => target.appName === this.metadata?.name));
+          return mcapps.find(mcapp => mcapp.spec?.targets?.find(target => target.appName === this.metadata?.name));
         }
       } catch (e) {}
 

@@ -12,8 +12,6 @@ const OPERATOR_VALUES = {
 };
 
 export default {
-  emits: ['update:value', 'input'],
-
   components: {
     ArrayList,
     LabeledInput,
@@ -72,7 +70,7 @@ export default {
         return this.value;
       },
       set(localValue) {
-        this.$emit('update:value', localValue);
+        this.$emit('input', localValue);
       }
     }
   },
@@ -98,7 +96,7 @@ export default {
     },
     onValueInput(scope, rawValue) {
       scope.row.value.values = rawValue.split(',')
-        .map((entry) => entry.trim());
+        .map(entry => entry.trim());
       scope.queueUpdate();
     }
   },
@@ -111,13 +109,12 @@ export default {
     :class="{[mode]: true}"
   >
     <ArrayList
-      :value="value"
+      v-model:value="localValue"
       :protip="false"
       :show-header="true"
       :add-label="addLabel"
       :default-add-value="defaultAddValue"
       :mode="mode"
-      @update:value="$emit('input', $event)"
     >
       <template v-slot:column-headers>
         <div class="box">

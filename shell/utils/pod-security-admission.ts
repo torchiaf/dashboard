@@ -1,13 +1,13 @@
 import { reduce, filter, keys } from 'lodash';
 import { PSALabelPrefix, PSALabelsNamespaces } from '@shell/config/pod-security-admission';
 import { camelToTitle } from '@shell/utils/string';
-import { PSA } from '@shell/types/resources/pod-security-admission';
+import { PSA } from '@shell/types/pod-security-admission';
 
 /**
  * Return PSA labels present in the resource
  * @returns string[]
  */
-export const getPSALabels = (resource: PSA): string[] => filter(keys(resource?.metadata?.labels), (key) => PSALabelsNamespaces.includes(key));
+export const getPSALabels = (resource: PSA): string[] => filter(keys(resource?.metadata?.labels), key => PSALabelsNamespaces.includes(key));
 
 /**
  * Return boolean value if the label is a PSA label

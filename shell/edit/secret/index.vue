@@ -32,8 +32,6 @@ const creatableTypes = [
 export default {
   name: 'CruSecret',
 
-  emits: ['set-subtype', 'input'],
-
   components: {
     LabeledInput,
     LabeledSelect,
@@ -143,9 +141,9 @@ export default {
       // Cloud credentials
       if ( this.isCloud ) {
         const machineTypes = uniq(this.nodeDrivers
-          .filter((x) => x.spec.active)
-          .map((x) => x.spec.displayName || x.id)
-          .map((x) => this.$store.getters['plugins/credentialDriverFor'](x))
+          .filter(x => x.spec.active)
+          .map(x => x.spec.displayName || x.id)
+          .map(x => this.$store.getters['plugins/credentialDriverFor'](x))
         );
 
         for ( const id of machineTypes ) {
@@ -323,10 +321,9 @@ export default {
       @error="e=>errors = e"
     >
       <NameNsDescription
-        :value="value"
+        v-model:value="value"
         :mode="mode"
         :namespaced="!isCloud"
-        @update:value="$emit('input', $event)"
       />
 
       <div
@@ -393,9 +390,8 @@ export default {
           :weight="-1"
         >
           <Labels
-            :value="value"
+            v-model:value="value"
             :mode="mode"
-            @update:value="$emit('input', $event)"
           />
         </Tab>
       </Tabbed>

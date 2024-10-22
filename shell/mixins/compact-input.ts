@@ -1,5 +1,7 @@
+import { createApp } from 'vue';
+const vueApp = createApp({});
 
-export default {
+export default Vue.extend({
   props: {
     compact: {
       type:    Boolean,
@@ -22,4 +24,4 @@ export default {
       return this.compact !== null ? this.compact : !(this.label || this.labelKey);
     }
   }
-};
+});

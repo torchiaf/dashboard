@@ -5,8 +5,6 @@ import ArrayList from '@shell/components/form/ArrayList';
 const DEFAULT_CERT_VALUE = '__[[DEFAULT_CERT]]__';
 
 export default {
-  emits: ['update:value'],
-
   components: { ArrayList, LabeledSelect },
   props:      {
     value: {
@@ -39,10 +37,10 @@ export default {
   },
   computed: {
     certsWithDefault() {
-      return [this.defaultCert, ...this.certs.map((c) => ({ label: c, value: c }))];
+      return [this.defaultCert, ...this.certs.map(c => ({ label: c, value: c }))];
     },
     certificateStatus() {
-      const isValueAnOption = !this.secretName || this.certsWithDefault.find((cert) => this.secretName === cert.value);
+      const isValueAnOption = !this.secretName || this.certsWithDefault.find(cert => this.secretName === cert.value);
 
       return isValueAnOption ? null : 'warning';
     },
@@ -65,7 +63,7 @@ export default {
         out.secretName = null;
       }
 
-      this.$emit('update:value', out);
+      this.$emit('input', out);
     },
     onSecretInput(e) {
       this.secretName = e && typeof e === 'object' ? e.label : e;

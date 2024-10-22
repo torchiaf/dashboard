@@ -3,26 +3,8 @@ import LabeledSelect from '@shell/components/form/LabeledSelect';
 import Question from './Question';
 
 export default {
-  emits: ['update:value'],
-
   components: { LabeledSelect },
-  mixins:     [Question],
-  computed:   {
-    options() {
-      const options = this.question.options;
-
-      if (Array.isArray(options)) {
-        return options;
-      }
-
-      return Object.entries(options).map(([key, value]) => {
-        return {
-          value: key,
-          label: value,
-        };
-      });
-    }
-  }
+  mixins:     [Question]
 };
 </script>
 
@@ -32,15 +14,12 @@ export default {
       <LabeledSelect
         :mode="mode"
         :label="displayLabel"
-        :options="options"
+        :options="question.options"
         :placeholder="question.description"
         :required="question.required"
-        :multiple="question.multiple"
         :value="value"
         :disabled="disabled"
-        :tooltip="displayTooltip"
-        :searchable="question.searchable"
-        @update:value="$emit('update:value', $event)"
+        @input="$emit('input', $event)"
       />
     </div>
     <div

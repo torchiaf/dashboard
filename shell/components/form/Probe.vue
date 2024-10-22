@@ -16,8 +16,6 @@ const KINDS = [
 ];
 
 export default {
-  emits: ['update:value'],
-
   components: {
     LabeledInput, LabeledSelect, UnitInput, ShellInput, KeyValue,
   },
@@ -113,7 +111,7 @@ export default {
       const probe = this.probe;
 
       if ( this.isNone ) {
-        this.$emit('update:value', null);
+        this.$emit('input', null);
 
         return;
       }
@@ -138,7 +136,7 @@ export default {
         break;
       }
 
-      this.$emit('update:value', probe);
+      this.$emit('input', probe);
     }
   },
 };
@@ -181,7 +179,7 @@ export default {
           data-testid="input-probe-port"
         >
           <LabeledInput
-            v-model:value.number="httpGet.port"
+            v-model.number="httpGet.port"
             type="number"
             min="1"
             max="65535"
@@ -210,7 +208,7 @@ export default {
           data-testid="input-probe-socket"
         >
           <LabeledInput
-            v-model:value.number="tcpSocket.port"
+            v-model.number="tcpSocket.port"
             type="number"
             min="1"
             max="65535"
@@ -305,7 +303,7 @@ export default {
             class="col span-6"
           >
             <LabeledInput
-              v-model:value.number="probe.successThreshold"
+              v-model.number="probe.successThreshold"
               type="number"
               min="1"
               :mode="mode"
@@ -319,7 +317,7 @@ export default {
             class="col span-6"
           >
             <LabeledInput
-              v-model:value.number="probe.failureThreshold"
+              v-model.number="probe.failureThreshold"
               type="number"
               min="1"
               :mode="mode"
@@ -337,7 +335,6 @@ export default {
             <div class="col span-12">
               <KeyValue
                 v-model:value="httpGet.httpHeaders"
-                data-testid="input-probe-http-headers"
                 key-name="name"
                 :mode="mode"
                 :as-map="false"
@@ -346,7 +343,6 @@ export default {
                 :key-label="t('generic.name')"
                 :value-label="t('generic.value')"
                 :add-label="t('generic.add')"
-                @update:value="update"
               >
                 <template #title>
                   <h3>

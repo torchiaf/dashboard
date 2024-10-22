@@ -1,11 +1,12 @@
 <script>
+import { createApp } from 'vue';
+const vueApp = createApp({});
+
 import { _VIEW } from '@shell/config/query-params';
 import { Checkbox } from '@components/Form/Checkbox';
 
 export default {
   name: 'DefaultLinksEditor',
-
-  emits: ['update:value'],
 
   components: { Checkbox },
 
@@ -33,7 +34,7 @@ export default {
       const value = this.value[i];
 
       value['enabled'] = !!value.enabled;
-      this.$emit('update:value', this.value);
+      this.$emit('input', this.value);
     },
   }
 };
@@ -56,11 +57,9 @@ export default {
       </label>
       <label class="text-label" />
 
-      <template
-        v-for="(row,i) in value"
-        :key="i"
-      >
+      <template v-for="(row,i) in value" :key="i">
         <div
+          :key="i+'key'"
           class="kv-item key"
           :class="{'link-hidden': !row.enabled}"
         >
@@ -68,6 +67,7 @@ export default {
         </div>
 
         <div
+          :key="i+'value'"
           class="kv-item value"
           :class="{'link-hidden': !row.enabled}"
         >
@@ -77,18 +77,17 @@ export default {
         <div
           v-if="!row.readonly && !isView"
           :key="i+'show'"
-          class="link-show-hide-checkbox"
         >
           <Checkbox
             v-if="!isView"
             v-model:value="row.enabled"
             label-key="customLinks.settings.showLabel"
-            :data-testid="`custom-links__checkbox-${i}`"
-            @input="showhide(row, i, $event)"
+            @update:value="showhide(row, i, $event)"
           />
         </div>
         <div
           v-else
+          :key="i+'show'"
         />
       </template>
     </div>

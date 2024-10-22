@@ -8,8 +8,6 @@ import { exceptionToErrorsArray } from '@shell/utils/error';
 const DEFAULT_REVISION = 'v1';
 
 export default {
-  emits: ['close'],
-
   components: {
     Card,
     AsyncButton,
@@ -74,57 +72,58 @@ export default {
     class="prompt-restore"
     :show-highlight-border="false"
   >
-    <template #title>
-      <h4
-        v-clean-html="t('promptSaveAsRKETemplate.title', { cluster: cluster.displayName }, true)"
-        class="text-default-text"
-      />
-    </template>
+    <h4
+      slot="title"
+      v-clean-html="t('promptSaveAsRKETemplate.title', { cluster: cluster.displayName }, true)"
+      class="text-default-text"
+    />
 
-    <template #body>
-      <div class="pl-10 pr-10">
-        <form>
-          <p class="pt-10 pb-10">
-            {{ t('promptSaveAsRKETemplate.description') }}
-          </p>
-          <Banner
-            color="warning"
-            label-key="promptSaveAsRKETemplate.warning"
-          />
-
-          <LabeledInput
-            ref="templateName"
-            v-model:value="name"
-            :label="t('promptSaveAsRKETemplate.name')"
-            :required="true"
-          />
-        </form>
-      </div>
-    </template>
-
-    <template #actions>
-      <div class="buttons">
-        <button
-          class="btn role-secondary mr-10"
-          @click="close"
-        >
-          {{ t('generic.cancel') }}
-        </button>
-
-        <AsyncButton
-          mode="create"
-          :disabled="name.length <= 0"
-          @click="apply"
-        />
-
+    <div
+      slot="body"
+      class="pl-10 pr-10"
+    >
+      <form>
+        <p class="pt-10 pb-10">
+          {{ t('promptSaveAsRKETemplate.description') }}
+        </p>
         <Banner
-          v-for="(err, i) in errors"
-          :key="i"
-          color="error"
-          :label="err"
+          color="warning"
+          label-key="promptSaveAsRKETemplate.warning"
         />
-      </div>
-    </template>
+
+        <LabeledInput
+          ref="templateName"
+          v-model:value="name"
+          :label="t('promptSaveAsRKETemplate.name')"
+          :required="true"
+        />
+      </form>
+    </div>
+
+    <div
+      slot="actions"
+      class="buttons"
+    >
+      <button
+        class="btn role-secondary mr-10"
+        @click="close"
+      >
+        {{ t('generic.cancel') }}
+      </button>
+
+      <AsyncButton
+        mode="create"
+        :disabled="name.length <= 0"
+        @click="apply"
+      />
+
+      <Banner
+        v-for="(err, i) in errors"
+        :key="i"
+        color="error"
+        :label="err"
+      />
+    </div>
   </Card>
 </template>
 <style lang='scss' scoped>

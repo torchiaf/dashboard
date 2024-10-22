@@ -2,14 +2,12 @@ import { RBAC } from '@shell/config/types';
 import { HCI } from '@shell/config/labels-annotations';
 import isEmpty from 'lodash/isEmpty';
 import has from 'lodash/has';
-import isUrl from 'is-url';
 // import uniq from 'lodash/uniq';
 import cronstrue from 'cronstrue';
 import { Translation } from '@shell/types/t';
-import { isHttps, isLocalhost, hasTrailingForwardSlash } from '@shell/utils/validators/setting';
 
 // import uniq from 'lodash/uniq';
-export type Validator<T = undefined | string> = (val: any, arg?: any) => T;
+export type Validator = (val: any, arg?: any) => undefined | string;
 
 export type ValidatorFactory = (arg1: any, arg2?: any) => Validator
 
@@ -36,6 +34,10 @@ export class Port {
   }
 }
 
+const httpsKeys = [
+  'server-url'
+];
+
 const runValidators = (val: any, validators: Validator[]) => {
   for (const validator of validators) {
     const message = validator(val);
@@ -51,7 +53,7 @@ export interface ValidationOptions {
 }
 
 // "t" is the function name we use for getting a translated string
-export default function(t: Translation, { key = 'Value' }: ValidationOptions): { [key:string]: Validator<any> | ValidatorFactory } {
+export default function(t: Translation, { key = 'Value' }: ValidationOptions) {
   // utility validators these validators only get used by other validators
   const startDot: ValidatorFactory = (label: string): Validator => (val: string) => val?.slice(0, 1) === '.' ? t(`validation.dns.${ label }.startDot`, { key }) : undefined;
 
@@ -101,7 +103,7 @@ export default function(t: Translation, { key = 'Value' }: ValidationOptions): {
 
     if (matchedChars) {
       return t('validation.chars', {
-        key, count: matchedChars.length, chars: matchedChars.map((char) => char === ' ' ? 'Space' : `"${ char }"`).join(', ')
+        key, count: matchedChars.length, chars: matchedChars.map(char => char === ' ' ? 'Space' : `"${ char }"`).join(', ')
       });
     }
 
@@ -137,15 +139,11 @@ export default function(t: Translation, { key = 'Value' }: ValidationOptions): {
     }
   };
 
-  const https: Validator = (val: string) => val && !isHttps(val) ? t('validation.setting.serverUrl.https') : undefined;
+  const isHttps: ValidatorFactory = (key: string) => {
+    const isHttps: Validator = (val: string) => httpsKeys.includes(key) && !val.toLowerCase().startsWith('https://') ? t('validation.setting.serverUrl.https') : undefined;
 
-  const localhost: Validator = (val: string) => isLocalhost(val) ? t('validation.setting.serverUrl.localhost') : undefined;
-
-  const trailingForwardSlash: Validator = (val: string) => hasTrailingForwardSlash(val) ? t('validation.setting.serverUrl.trailingForwardSlash') : undefined;
-
-  const url: Validator = (val: string) => val && !isUrl(val) ? t('validation.setting.serverUrl.url') : undefined;
-
-  const alphanumeric: Validator = (val: string) => val && !/^[a-zA-Z0-9]+$/.test(val) ? t('validation.alphanumeric', { key }) : undefined;
+    return isHttps;
+  };
 
   const interval: Validator = (val: string) => !/^\d+[hms]$/.test(val) ? t('validation.monitoring.route.interval', { key }) : undefined;
 
@@ -259,7 +257,7 @@ export default function(t: Translation, { key = 'Value' }: ValidationOptions): {
 
   const clusterName: ValidatorFactory = (isRke2: boolean): Validator => (val: string | undefined) => isRke2 && (val || '')?.match(/^(c-.{5}|local)$/i) ? t('validation.cluster.name') : undefined;
 
-  const servicePort: Validator<string | Port | undefined> = (val: ServicePort) => {
+  const servicePort = (val: ServicePort) => {
     const {
       name,
       idx
@@ -372,10 +370,6 @@ export default function(t: Translation, { key = 'Value' }: ValidationOptions): {
       return t('validation.roleTemplate.roleTemplateRules.missingVerb');
     }
 
-    if (val.some((rule: any) => rule.resources?.length && rule.nonResourceURLs?.length)) {
-      return t('validation.roleTemplate.roleTemplateRules.noResourceAndNonResource');
-    }
-
     if (type === RBAC.ROLE) {
       if (val.some((rule: any) => isEmpty(rule.resources))) {
         return t('validation.roleTemplate.roleTemplateRules.missingResource');
@@ -384,7 +378,7 @@ export default function(t: Translation, { key = 'Value' }: ValidationOptions): {
       if (val.some((rule: any) => isEmpty(rule.apiGroups))) {
         return t('validation.roleTemplate.roleTemplateRules.missingApiGroup');
       }
-    } else if (val.some((rule: any) => isEmpty(rule.resources) && isEmpty(rule.nonResourceURLs))) {
+    } else if (val.some((rule: any) => isEmpty(rule.resources) && isEmpty(rule.nonResourceURLs) && isEmpty(rule.apiGroups))) {
       return t('validation.roleTemplate.roleTemplateRules.missingOneResource');
     }
 
@@ -392,7 +386,7 @@ export default function(t: Translation, { key = 'Value' }: ValidationOptions): {
   };
 
   // The existing validator for clusterIp never actually returns an error
-  const clusterIp: Validator = (val) => undefined;
+  const clusterIp: Validator = val => undefined;
 
   const backupTarget: Validator = (val) => {
     const parseValue = JSON.parse(val);
@@ -460,7 +454,6 @@ export default function(t: Translation, { key = 'Value' }: ValidationOptions): {
 
   return {
     absolutePath,
-    alphanumeric,
     backupTarget,
     betweenLengths,
     betweenValues,
@@ -478,10 +471,7 @@ export default function(t: Translation, { key = 'Value' }: ValidationOptions): {
     hostname,
     imageUrl,
     interval,
-    https,
-    localhost,
-    trailingForwardSlash,
-    url,
+    isHttps,
     matching,
     maxLength,
     maxValue,

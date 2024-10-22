@@ -2,19 +2,13 @@ import { mapGetters } from 'vuex';
 import { COUNT, MANAGEMENT } from '@shell/config/types';
 import { SETTING, DEFAULT_PERF_SETTING } from '@shell/config/settings';
 import ResourceFetchNamespaced from '@shell/mixins/resource-fetch-namespaced';
-import ResourceFetchApiPagination from '@shell/mixins/resource-fetch-api-pagination';
 
 // Number of pages to fetch when loading incrementally
 const PAGES = 4;
 
 export default {
 
-  mixins: [
-    ResourceFetchNamespaced,
-    ResourceFetchApiPagination
-  ],
-
-  inheritAttrs: false,
+  mixins: [ResourceFetchNamespaced],
 
   data() {
     // fetching the settings related to manual refresh from global settings
@@ -44,10 +38,8 @@ export default {
       // incremental loading vars
       incremental:                false,
       fetchedResourceType:        [],
-      paginating:                 null,
     };
   },
-
   beforeDestroy() {
     // make sure this only runs once, for the initialized instance
     if (this.init) {
@@ -63,7 +55,7 @@ export default {
   computed: {
     ...mapGetters({ refreshFlag: 'resource-fetch/refreshFlag' }),
     rows() {
-      const currResource = this.fetchedResourceType.find((item) => item.type === this.resource);
+      const currResource = this.fetchedResourceType.find(item => item.type === this.resource);
 
       if (currResource) {
         return this.$store.getters[`${ currResource.currStore }/all`](this.resource);
@@ -72,26 +64,17 @@ export default {
       }
     },
     loading() {
-      if (this.canPaginate) {
-        return this.paginating;
-      }
-
       return this.rows.length ? false : this.$fetchState.pending;
     },
   },
-
   watch: {
-    async refreshFlag(neu) {
+    refreshFlag(neu) {
       // this is where the data assignment will trigger the update of the list view...
       if (this.init && neu) {
-        await this.$fetch();
-        if (this.canPaginate && this.fetchPageSecondaryResources) {
-          this.fetchPageSecondaryResources(true);
-        }
+        this.$fetch();
       }
     }
   },
-
   methods: {
     // this defines all the flags needed for the mechanism
     // to work. They should be defined based on the main list view
@@ -119,36 +102,11 @@ export default {
 
       this.$initializeFetchData(type, multipleResources, currStore);
 
-      if (!this.fetchedResourceType.find((item) => item.type === type)) {
+      if (!this.fetchedResourceType.find(item => item.type === type)) {
         this.fetchedResourceType.push({
           type,
           currStore
         });
-      }
-
-      const schema = this.$store.getters[`${ currStore }/schemaFor`](type);
-
-      if (this.canPaginate) {
-        if (!this.pagination) {
-          // This is the initial fetchType made when resource lists are created...
-          // when pagination is enabled we want to wait for the correct set of initial pagination settings to make the call
-          return;
-        }
-        const opt = {
-          hasManualRefresh: this.hasManualRefresh,
-          pagination:       { ...this.pagination },
-          force:            this.paginating !== null // Fix for manual refresh (before ripped out).
-        };
-
-        this['paginating'] = true;
-
-        const that = this;
-
-        return this.$store.dispatch(`${ currStore }/findPage`, {
-          type,
-          opt
-        })
-          .finally(() => (that['paginating'] = false));
       }
 
       let incremental = 0;
@@ -165,6 +123,8 @@ export default {
         force:            this.force,
         hasManualRefresh: this.hasManualRefresh
       };
+
+      const schema = this.$store.getters[`${ currStore }/schemaFor`](type);
 
       if (schema?.attributes?.namespaced) { // Is this specific resource namespaced (could be primary or secondary resource)?
         opt.namespaced = this.namespaceFilter; // namespaceFilter will only be populated if applicable for primary resource
@@ -220,8 +180,6 @@ export default {
       // manual refresh check
       if (manualDataRefreshEnabled && resourceCount >= manualDataRefreshThreshold) {
         watch = false;
-        isTooManyItemsToAutoUpdate = true;
-      } else if (this.canPaginate) {
         isTooManyItemsToAutoUpdate = true;
       }
 

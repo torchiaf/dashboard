@@ -12,26 +12,20 @@ import Tabbed from '@shell/components/Tabbed';
 import MetricsRow from '@shell/edit/autoscaling.horizontalpodautoscaler/metrics-row';
 import ArrayListGrouped from '@shell/components/form/ArrayListGrouped';
 import { DEFAULT_RESOURCE_METRIC } from '@shell/edit/autoscaling.horizontalpodautoscaler/resource-metric';
-import { Checkbox } from '@components/Form/Checkbox';
 
 import { API_SERVICE, SCALABLE_WORKLOAD_TYPES } from '@shell/config/types';
 import isEmpty from 'lodash/isEmpty';
 import find from 'lodash/find';
 import endsWith from 'lodash/endsWith';
 import { findBy } from '@shell/utils/array';
-import HpaScalingRule from '@shell/edit/autoscaling.horizontalpodautoscaler/hpa-scaling-rule.vue';
 
 const RESOURCE_METRICS_API_GROUP = 'metrics.k8s.io';
 
 export default {
   name: 'CruHPA',
 
-  emits: ['input'],
-
   components: {
-    HpaScalingRule,
     ArrayListGrouped,
-    Checkbox,
     CruResource,
     LabeledInput,
     LabeledSelect,
@@ -74,19 +68,19 @@ export default {
     allWorkloadsFiltered() {
       return (
         Object.values(SCALABLE_WORKLOAD_TYPES)
-          .flatMap((type) => this.$store.getters['cluster/all'](type))
+          .flatMap(type => this.$store.getters['cluster/all'](type))
           .filter(
             // Filter out anything that has an owner, which should probably be the one with the HPA
             // For example ReplicaSets can be associated with a HPA (https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/#replicaset-as-a-horizontal-pod-autoscaler-target)
             // but wouldn't make sense if it's owned by a deployment
-            (wl) => wl.metadata.namespace === this.value.metadata.namespace && !wl.ownedByWorkload
+            wl => wl.metadata.namespace === this.value.metadata.namespace && !wl.ownedByWorkload
           )
       );
     },
     allWorkloadsMapped() {
       return this.allWorkloadsFiltered
       // Update to type OBJECT_REFERENCE which can be stored directly as scaleTargetRef
-        .map((workload) => ({
+        .map(workload => ({
           kind:       workload.kind,
           name:       workload.metadata.name,
           apiVersion: workload.apiVersion,
@@ -101,7 +95,7 @@ export default {
       return !isEmpty(
         find(
           allServices,
-          (api) => api.name.split('.').length === 4 &&
+          api => api.name.split('.').length === 4 &&
             endsWith(api.name, RESOURCE_METRICS_API_GROUP)
         )
       );
@@ -112,40 +106,6 @@ export default {
       const match = findBy(allWorkloadsFiltered, 'metadata.name', name);
 
       return match ?? null;
-    },
-    hasScaleDownRules: {
-      get() {
-        return !!this.value.spec.behavior?.scaleDown;
-      },
-      set(hasScaleDownRules) {
-        if (hasScaleDownRules) {
-          if (!this.value.spec.behavior) {
-            this.value.spec['behavior'] = {};
-          }
-          if (!this.value.spec.behavior?.scaleDown) {
-            this.value.spec.behavior['scaleDown'] = {};
-          }
-        } else {
-          delete this.value.spec.behavior['scaleDown'];
-        }
-      }
-    },
-    hasScaleUpRules: {
-      get() {
-        return !!this.value.spec.behavior?.scaleUp;
-      },
-      set(hasScaleUpRules) {
-        if (hasScaleUpRules) {
-          if (!this.value.spec.behavior) {
-            this.value.spec['behavior'] = {};
-          }
-          if (!this.value.spec.behavior?.scaleUp) {
-            this.value.spec.behavior['scaleUp'] = {};
-          }
-        } else {
-          delete this.value.spec.behavior['scaleUp'];
-        }
-      }
     },
   },
 
@@ -159,8 +119,7 @@ export default {
 
   methods: {
     initSpec() {
-      this.value['spec'] = {
-        type:           'io.k8s.api.autoscaling.v1.horizontalpodautoscalerspec',
+      this.value['spec'] = {type:           'io.k8s.api.autoscaling.v1.horizontalpodautoscalerspec',
         minReplicas:    1,
         maxReplicas:    10,
         scaleTargetRef: {
@@ -168,12 +127,11 @@ export default {
           kind:       '',
           name:       '',
         },
-        metrics: [{ ...this.defaultResourceMetric }]
-      };
+        metrics: [{ ...this.defaultResourceMetric }],};
     },
     async loadWorkloads() {
       await Promise.all(
-        Object.values(SCALABLE_WORKLOAD_TYPES).map((type) => this.$store.dispatch('cluster/findAll', { type })
+        Object.values(SCALABLE_WORKLOAD_TYPES).map(type => this.$store.dispatch('cluster/findAll', { type })
         )
       );
     },
@@ -231,7 +189,7 @@ export default {
           <div class="row">
             <div class="col span-6">
               <LabeledInput
-                v-model:value.number="value.spec.minReplicas"
+                v-model.number="value.spec.minReplicas"
                 :mode="mode"
                 :label="t('hpa.workloadTab.min')"
                 placeholder="1"
@@ -241,7 +199,7 @@ export default {
             </div>
             <div class="col span-6">
               <LabeledInput
-                v-model:value.number="value.spec.maxReplicas"
+                v-model.number="value.spec.maxReplicas"
                 :mode="mode"
                 :label="t('hpa.workloadTab.max')"
                 placeholder="1"
@@ -281,49 +239,6 @@ export default {
               />
             </template>
           </ArrayListGrouped>
-        </Tab>
-        <Tab
-          name="behavior"
-          :label="t('hpa.tabs.behavior')"
-        >
-          <div class="col span-12 mb-10">
-            <h3>
-              {{ t('hpa.scaleDownRules.label') }}
-            </h3>
-            <div class="row mb-10">
-              <Checkbox
-                v-model:value="hasScaleDownRules"
-                :mode="mode"
-                :label="t('hpa.scaleDownRules.enable')"
-              />
-            </div>
-            <HpaScalingRule
-              v-if="hasScaleDownRules"
-              :value="value"
-              type="scaleDown"
-              :mode="mode"
-              @update:value="$emit('input', $event)"
-            />
-          </div>
-          <div class="col span-12">
-            <h3>
-              {{ t('hpa.scaleUpRules.label') }}
-            </h3>
-            <div class="row mb-10">
-              <Checkbox
-                v-model:value="hasScaleUpRules"
-                :mode="mode"
-                :label="t('hpa.scaleUpRules.enable')"
-              />
-            </div>
-            <HpaScalingRule
-              v-if="hasScaleUpRules"
-              :value="value"
-              type="scaleUp"
-              :mode="mode"
-              @update:value="$emit('input', $event)"
-            />
-          </div>
         </Tab>
         <Tab
           name="labels-and-annotations"

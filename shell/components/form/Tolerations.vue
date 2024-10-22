@@ -7,8 +7,6 @@ import { _VIEW } from '@shell/config/query-params';
 import { random32 } from '@shell/utils/string';
 
 export default {
-  emits: ['update:value'],
-
   components: {
     LabeledInput,
     Select,
@@ -161,7 +159,7 @@ export default {
         return newRule;
       });
 
-      this.$emit('update:value', rules);
+      this.$emit('input', rules);
     },
 
     addToleration() {
@@ -194,9 +192,7 @@ export default {
       <span />
     </div>
     <div
-      v-for="(rule, index) in rules"
-      :key="index"
-      class="rule"
+      v-for="(rule, index) in rules" :key="index"class="rule"
     >
       <div class="col">
         <LabeledInput

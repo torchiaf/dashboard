@@ -1,7 +1,10 @@
+import { createApp } from 'vue';
+const vueApp = createApp({});
 import { get } from '@shell/utils/object';
 import { DESCRIPTION } from '@shell/config/labels-annotations';
 import { NORMAN } from '@shell/config/types';
 import SteveDescriptionModel from '@shell/plugins/steve/steve-description-class';
+import Role from './rbac.authorization.k8s.io.role';
 import { AS, MODE, _CLONE, _UNFLAG } from '@shell/config/query-params';
 
 export const CATTLE_API_GROUP = '.cattle.io';
@@ -58,14 +61,7 @@ export const CREATE_VERBS = new Set(['PUT', 'blocked-PUT']);
 
 export default class RoleTemplate extends SteveDescriptionModel {
   get customValidationRules() {
-    return [
-      {
-        path:       'rules',
-        validators: [`roleTemplateRules:${ this.type }`],
-        nullable:   false,
-        type:       'array',
-      },
-    ];
+    return Role.customValidationRules();
   }
 
   get details() {
@@ -170,15 +166,9 @@ export default class RoleTemplate extends SteveDescriptionModel {
   get canCreate() {
     const schema = this.$getters['schemaFor'](this.type);
 
-    return schema?.resourceMethods.find((verb) => CREATE_VERBS.has(verb));
+    return schema?.resourceMethods.find(verb => CREATE_VERBS.has(verb));
   }
 
-  /**
-   * Resource action redirects to the detail page with a query parameter 'clone'
-   * When the query parameter is present, the view will fetch the resource to clone define in the parameter
-   * E.g.: /my-id?mode=clone
-   * @param {*} moreQuery
-   */
   goToClone(moreQuery = {}) {
     const location = this.detailLocation;
 
@@ -195,15 +185,6 @@ export default class RoleTemplate extends SteveDescriptionModel {
 
   async save() {
     const norman = await this.norman;
-
-    for (const rule of norman.rules) {
-      if (rule.nonResourceURLs && rule.nonResourceURLs.length) {
-        delete rule.resources;
-        delete rule.apiGroups;
-      } else {
-        delete rule.nonResourceURLs;
-      }
-    }
 
     return norman.save();
   }

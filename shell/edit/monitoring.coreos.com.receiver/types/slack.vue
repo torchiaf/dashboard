@@ -28,7 +28,11 @@ export default {
     this.value['send_resolved'] = this.value.send_resolved || false;
 
     if (this.mode === _CREATE) {
-      this.value.text = this.value.text || '{{ template "slack.rancher.text" . }}';
+      this.$set(
+        this.value,
+        'text',
+        this.value.text || '{{ template "slack.rancher.text" . }}'
+      );
     }
 
     return {};

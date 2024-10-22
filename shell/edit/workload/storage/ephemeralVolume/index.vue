@@ -6,8 +6,6 @@ import Mount from '@shell/edit/workload/storage/Mount';
 import { mapGetters } from 'vuex';
 
 export default {
-  emits: ['remove'],
-
   components: {
     LabeledSelect, LabeledInput, Checkbox, Mount
   },
@@ -40,7 +38,7 @@ export default {
     },
 
     driverOpts() {
-      return require.context('@shell/edit/workload/storage/ephemeralVolume', true, /^.*\.vue$/).keys().map((path) => path.replace(/(\.\/)|(.vue)/g, '')).filter((file) => file !== 'index');
+      return require.context('@shell/edit/workload/storage/ephemeralVolume', true, /^.*\.vue$/).keys().map(path => path.replace(/(\.\/)|(.vue)/g, '')).filter(file => file !== 'index');
     },
 
     ...mapGetters({ t: 'i18n/t' })

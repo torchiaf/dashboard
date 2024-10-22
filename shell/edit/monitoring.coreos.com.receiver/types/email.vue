@@ -12,7 +12,6 @@ import { Checkbox } from '@components/Form/Checkbox';
 import TLS from '../tls';
 
 export default {
-  emits:      ['input'],
   components: {
     Checkbox, LabeledInput, TLS
   },
@@ -79,7 +78,6 @@ export default {
           v-model:value="value.host"
           :mode="mode"
           label="Host"
-          data-testid="input-email-host"
           placeholder="e.g. 192.168.1.121"
         />
       </div>
@@ -88,7 +86,6 @@ export default {
           v-model:value="value.port"
           :mode="mode"
           label="Port"
-          data-testid="input-email-port"
           placeholder="e.g. 80"
         />
       </div>
@@ -121,10 +118,9 @@ export default {
       </div>
     </div>
     <TLS
-      :value="value"
+      v-model:value="value"
       class="mb-20"
       :mode="mode"
-      @update:value="$emit('input', $event)"
     />
   </div>
 </template>

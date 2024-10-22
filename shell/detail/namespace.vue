@@ -15,8 +15,6 @@ import {
 } from 'lodash';
 
 export default {
-  emits: ['input'],
-
   components: {
     ResourcesSummary,
     ResourceTable,
@@ -158,7 +156,7 @@ export default {
     workloadRows() {
       const params = this.$route.params;
       const { id } = params;
-      const rows = flatten(compact(this.allWorkloads)).filter((row) => !row.ownedByWorkload);
+      const rows = flatten(compact(this.allWorkloads)).filter(row => !row.ownedByWorkload);
       const namespacedRows = filter(rows, ({ metadata: { namespace } }) => namespace === id);
 
       return namespacedRows;
@@ -177,7 +175,7 @@ export default {
         } else {
           const genericStateKey = findKey(
             this.statesByType,
-            (stateNames) => stateNames.includes(state)
+            stateNames => stateNames.includes(state)
           );
 
           if (genericStateKey) {
@@ -197,8 +195,8 @@ export default {
     getAllWorkloads() {
       return Promise.all(values(WORKLOAD_TYPES)
         // You may not have RBAC to see some of the types
-        .filter((type) => Boolean(this.schemaFor(type)))
-        .map((type) => this.$store.dispatch('cluster/findAll', { type }))
+        .filter(type => Boolean(this.schemaFor(type)))
+        .map(type => this.$store.dispatch('cluster/findAll', { type }))
       );
     },
 
@@ -234,9 +232,8 @@ export default {
       />
     </div>
     <ResourceTabs
-      :value="value"
+      v-model:value="value"
       :mode="mode"
-      @input="$emit('input', $event)"
     >
       <Tab :name="t('namespace.resources')">
         <SortableTable
@@ -248,12 +245,12 @@ export default {
         >
           <template #col:type="{row}">
             <td>
-              <router-link
+              <n-link
                 v-if="typeListLocation(row.schema)"
                 :to="typeListLocation(row.schema)"
               >
                 {{ row.schema.pluralName }}
-              </router-link>
+              </n-link>
               <span v-else>{{ row.schema.pluralName }}</span>
             </td>
           </template>

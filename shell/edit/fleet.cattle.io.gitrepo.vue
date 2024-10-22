@@ -21,7 +21,7 @@ import { base64Decode, base64Encode } from '@shell/utils/crypto';
 import SelectOrCreateAuthSecret from '@shell/components/form/SelectOrCreateAuthSecret';
 import { _CREATE } from '@shell/config/query-params';
 import { isHarvesterCluster } from '@shell/utils/cluster';
-import { CAPI, CATALOG, FLEET as FLEET_LABELS } from '@shell/config/labels-annotations';
+import { CAPI, CATALOG } from '@shell/config/labels-annotations';
 import { SECRET_TYPES } from '@shell/config/secret';
 import { checkSchemasForFindAllHash } from '@shell/utils/auth';
 import Checkbox from '@components/Form/Checkbox/Checkbox.vue';
@@ -32,8 +32,6 @@ const _SPECIFY = 'specify';
 
 export default {
   name: 'CruGitRepo',
-
-  emits: ['input'],
 
   components: {
     Checkbox,
@@ -83,10 +81,6 @@ export default {
 
     this.tlsMode = tls;
 
-    if (this.value.spec.correctDrift === undefined) {
-      this.value.spec['correctDrift'] = { enabled: false };
-    }
-
     this.updateTargets();
   },
 
@@ -132,18 +126,18 @@ export default {
     const addRepositorySteps = [stepRepoInfo, stepTargetInfo].sort((a, b) => (b.weight || 0) - (a.weight || 0));
 
     return {
-      allClusters:             [],
-      allClusterGroups:        [],
-      allWorkspaces:           [],
-      tempCachedValues:        {},
-      username:                null,
-      password:                null,
-      publicKey:               null,
-      privateKey:              null,
-      tlsMode:                 null,
-      caBundle:                null,
-      targetAdvancedErrors:    null,
-      matchingClusters:        null,
+      allClusters:          [],
+      allClusterGroups:     [],
+      allWorkspaces:        [],
+      tempCachedValues:     {},
+      username:             null,
+      password:             null,
+      publicKey:            null,
+      privateKey:           null,
+      tlsMode:              null,
+      caBundle:             null,
+      targetAdvancedErrors: null,
+      matchingClusters:     null,
       ref,
       refValue,
       targetMode,
@@ -153,7 +147,6 @@ export default {
       stepRepoInfo,
       stepTargetInfo,
       addRepositorySteps,
-      displayHelmRepoURLRegex: false
     };
   },
 
@@ -192,7 +185,7 @@ export default {
         .filter((x) => {
           return x.metadata.namespace === this.value.metadata.namespace;
         })
-        .filter((x) => !isHarvesterCluster(x))
+        .filter(x => !isHarvesterCluster(x))
         .map((x) => {
           return { label: x.nameDisplay, value: `cluster://${ x.metadata.name }` };
         });
@@ -209,7 +202,7 @@ export default {
       }
 
       const groups = this.allClusterGroups
-        .filter((x) => x.metadata.namespace === this.value.metadata.namespace)
+        .filter(x => x.metadata.namespace === this.value.metadata.namespace)
         .map((x) => {
           return { label: x.nameDisplay, value: `group://${ x.metadata.name }` };
         });
@@ -230,16 +223,16 @@ export default {
 
     clusterNames() {
       const out = this.allClusters
-        .filter((x) => x.metadata.namespace === this.value.metadata.namespace)
-        .map((x) => x.metadata.name);
+        .filter(x => x.metadata.namespace === this.value.metadata.namespace)
+        .map(x => x.metadata.name);
 
       return out;
     },
 
     clusterGroupNames() {
       const out = this.allClusterGroups
-        .filter((x) => x.metadata.namespace === this.value.metadata.namespace)
-        .map((x) => x.metadata.name);
+        .filter(x => x.metadata.namespace === this.value.metadata.namespace)
+        .map(x => x.metadata.name);
 
       return out;
     },
@@ -263,8 +256,9 @@ export default {
     targetCluster:              'updateTargets',
     targetClusterGroup:         'updateTargets',
     targetAdvanced:             'updateTargets',
-    tlsMode:                    'updateTls',
-    caBundle:                   'updateTls',
+
+    tlsMode:  'updateTls',
+    caBundle: 'updateTls',
 
     workspace(neu) {
       if ( this.isCreate ) {
@@ -290,10 +284,6 @@ export default {
 
     updateCachedAuthVal(val, key) {
       this.tempCachedValues[key] = typeof val === 'string' ? { selected: val } : { ...val };
-
-      if (key === 'helmSecretName') {
-        this.toggleHelmRepoURLRegex(val && val.selected !== AUTH_TYPE._NONE);
-      }
     },
 
     updateAuth(val, key) {
@@ -306,14 +296,6 @@ export default {
       }
 
       this.updateCachedAuthVal(val, key);
-    },
-
-    toggleHelmRepoURLRegex(active) {
-      this.displayHelmRepoURLRegex = active;
-
-      if (!active) {
-        delete this.value.spec?.helmRepoURLRegex;
-      }
     },
 
     updateTargets() {
@@ -414,9 +396,8 @@ export default {
           type:     SECRET,
           metadata: {
             namespace:    this.value.metadata.namespace,
-            generateName: 'auth-',
-            labels:       { [FLEET_LABELS.MANAGED]: 'true' }
-          }
+            generateName: 'auth-'
+          },
         });
 
         let type, publicField, privateField;
@@ -524,10 +505,9 @@ export default {
     <template #stepRepoInfo>
       <NameNsDescription
         v-if="!isView"
-        :value="value"
+        v-model:value="value"
         :namespaced="false"
         :mode="mode"
-        @update:value="$emit('input', $event)"
         @change="onUpdateRepoName"
       />
 
@@ -556,7 +536,6 @@ export default {
         </div>
         <div class="col span-6">
           <InputWithSelect
-            :data-testid="`gitrepo-${ref}`"
             :mode="mode"
             :select-label="t('fleet.gitRepo.ref.label')"
             :select-value="ref"
@@ -579,12 +558,11 @@ export default {
         :mode="mode"
         generate-name="gitrepo-auth-"
         label-key="fleet.gitRepo.auth.git"
-        :cache-secrets="true"
         @update:value="updateAuth($event, 'clientSecretName')"
         @inputauthval="updateCachedAuthVal($event, 'clientSecretName')"
       />
+
       <SelectOrCreateAuthSecret
-        data-testid="gitrepo-helm-auth"
         :value="value.spec.helmSecretName"
         :register-before-hook="registerBeforeHook"
         :namespace="value.metadata.namespace"
@@ -594,26 +572,9 @@ export default {
         generate-name="helmrepo-auth-"
         label-key="fleet.gitRepo.auth.helm"
         :pre-select="tempCachedValues.helmSecretName"
-        :cache-secrets="true"
         @update:value="updateAuth($event, 'helmSecretName')"
         @inputauthval="updateCachedAuthVal($event, 'helmSecretName')"
       />
-
-      <div
-        v-if="displayHelmRepoURLRegex"
-        class="row mt-20"
-      >
-        <div
-          class="col span-6"
-          data-testid="gitrepo-helm-repo-url-regex"
-        >
-          <LabeledInput
-            v-model:value="value.spec.helmRepoURLRegex"
-            :mode="mode"
-            label-key="fleet.gitRepo.helmRepoURLRegex"
-          />
-        </div>
-      </div>
 
       <template v-if="isTls">
         <div class="spacer" />
@@ -643,23 +604,6 @@ export default {
       </template>
       <div class="spacer" />
       <h2 v-t="'fleet.gitRepo.resources.label'" />
-      <div>
-        <Checkbox
-          v-model:value="value.spec.correctDrift.enabled"
-          data-testid="GitRepo-correctDrift-checkbox"
-          class="check"
-          type="checkbox"
-          label-key="fleet.gitRepo.resources.correctDrift"
-          :mode="mode"
-        />
-        <Banner
-          data-testid="GitRepo-correctDrift-banner"
-          color="info"
-        >
-          {{ t('fleet.gitRepo.resources.correctDriftBanner') }}
-        </Banner>
-      </div>
-
       <Checkbox
         v-model:value="value.spec.keepResources"
         class="check"
@@ -670,13 +614,12 @@ export default {
       <Banner
         color="info"
       >
-        {{ t('fleet.gitRepo.resources.keepResourcesBanner') }}
+        {{ t('fleet.gitRepo.resources.resourceBanner') }}
       </Banner>
       <div class="spacer" />
       <h2 v-t="'fleet.gitRepo.paths.label'" />
       <ArrayList
         v-model:value="value.spec.paths"
-        data-testid="gitRepo-paths"
         :mode="mode"
         :initial-empty-row="false"
         :value-placeholder="t('fleet.gitRepo.paths.placeholder')"
@@ -700,7 +643,6 @@ export default {
               :mode="mode"
               :selectable="option => !option.disabled"
               :label="t('fleet.gitRepo.target.selectLabel')"
-              data-testid="fleet-gitrepo-target-cluster"
             >
               <template v-slot:option="opt">
                 <hr v-if="opt.kind === 'divider'">
@@ -725,9 +667,7 @@ export default {
         </div>
 
         <Banner
-          v-for="(err, i) in targetAdvancedErrors"
-          :key="i"
-          color="error"
+          v-for="(err, i) in targetAdvancedErrors" :key="i"color="error"
           :label="err"
         />
       </template>

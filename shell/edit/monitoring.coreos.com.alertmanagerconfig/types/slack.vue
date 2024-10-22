@@ -28,7 +28,11 @@ export default {
     this.value['sendResolved'] = this.value.sendResolved || false;
 
     if (this.mode === _CREATE) {
-      this.value.text = this.value.text || '{{ template "slack.rancher.text" . }}';
+      this.$set(
+        this.value,
+        'text',
+        this.value.text || '{{ template "slack.rancher.text" . }}'
+      );
     }
 
     return {
@@ -122,7 +126,7 @@ export default {
       </div>
       <div class="col span-6">
         <LabeledInput
-          v-model:value="value.httpConfig.proxyURL"
+          v-model:value="value.httpConfig.proxyUrl"
           :mode="mode"
           label="Proxy URL"
           placeholder="e.g. http://my-proxy/"
