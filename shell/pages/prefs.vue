@@ -17,7 +17,6 @@ import LabeledSelect from '@shell/components/form/LabeledSelect';
 import { addObject } from '@shell/utils/array';
 import LocaleSelector from '@shell/components/LocaleSelector';
 import TabTitle from '@shell/components/TabTitle';
-import { getVendor } from '@shell/config/private-label';
 
 export default {
   components: {
@@ -47,7 +46,7 @@ export default {
     ...mapGetters({ hasMultipleLocales: 'i18n/hasMultipleLocales' }),
 
     isHarvester() {
-      return this.vendor === 'Harvester';
+      return this.isSingleProduct?.productName === 'harvester';
     },
 
     theme: {

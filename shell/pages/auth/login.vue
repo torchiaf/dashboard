@@ -65,10 +65,11 @@ export default {
   },
 
   computed: {
+    ...mapGetters(['isSingleProduct']),
     ...mapGetters({ t: 'i18n/t', hasMultipleLocales: 'i18n/hasMultipleLocales' }),
 
     isHarvester() {
-      return this.vendor === 'Harvester';
+      return this.isSingleProduct?.productName === 'harvester';
     },
 
     loggedOutSuccessMsg() {
