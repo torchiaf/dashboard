@@ -68,7 +68,7 @@ export default {
     ...mapGetters({ t: 'i18n/t', hasMultipleLocales: 'i18n/hasMultipleLocales' }),
 
     isHarvester() {
-      return this.$store.getters['currentProduct'].inStore === HARVESTER;
+      return this.vendor === 'Harvester';
     },
 
     loggedOutSuccessMsg() {

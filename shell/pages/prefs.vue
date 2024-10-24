@@ -17,7 +17,7 @@ import LabeledSelect from '@shell/components/form/LabeledSelect';
 import { addObject } from '@shell/utils/array';
 import LocaleSelector from '@shell/components/LocaleSelector';
 import TabTitle from '@shell/components/TabTitle';
-import { HARVESTER_NAME as HARVESTER } from '@shell/config/features';
+import { getVendor } from '@shell/config/private-label';
 
 export default {
   components: {
@@ -25,7 +25,10 @@ export default {
   },
   mixins: [BackRoute],
   data() {
-    return { admin: isAdminUser(this.$store.getters) };
+    return {
+      admin: isAdminUser(this.$store.getters),
+      vendor: getVendor()
+    };
   },
   computed: {
     keymap:            mapPref(KEYMAP),
@@ -44,7 +47,7 @@ export default {
     ...mapGetters({ hasMultipleLocales: 'i18n/hasMultipleLocales' }),
 
     isHarvester() {
-      return this.$store.getters['currentProduct'].inStore === HARVESTER;
+      return this.vendor === 'Harvester';
     },
 
     theme: {
