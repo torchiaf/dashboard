@@ -12,6 +12,7 @@ const options = {
   cert: fs.readFileSync(path.resolve(base, 'cert/server.crt'))
 };
 
+// here
 let api = process.env.API || 'http://localhost:8989';
 
 if ( !api.startsWith('http') ) {

@@ -146,7 +146,7 @@ const setupProgress = (axios) => {
 export default (ctx, inject) => {
   // runtimeConfig
   const runtimeConfig = (ctx.$config && ctx.$config.axios) || {};
-  // baseURL
+  // baseURL // here
   const baseURL = process.browser ? (runtimeConfig.browserBaseURL || runtimeConfig.baseURL || '/') : (runtimeConfig.baseURL || process.env._AXIOS_BASE_URL_ || 'https://localhost:8005/');
 
   // Create fresh objects for all default header scopes

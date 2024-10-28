@@ -44,7 +44,7 @@ export const BLANK_CLUSTER = '_';
 export const plugins = [
   Steve({
     namespace:      STORE.MANAGEMENT,
-    baseUrl:        '/v1',
+    baseUrl:        '/k8s/clusters/c-m-nmk49kdj/v1/harvester',
     modelBaseClass: BY_TYPE,
     supportsStream: false, // true, -- Disabled due to report that it's sometimes much slower in Chrome
   }),

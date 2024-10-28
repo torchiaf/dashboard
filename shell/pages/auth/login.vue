@@ -178,6 +178,10 @@ export default {
     this.providerComponents = this.providers.map((name) => {
       return importLogin(configType[name]);
     });
+
+    console.log(process.env)
+
+    window.parent.postMessage({ action: 'ready' }, 'https://localhost:8006');
   },
 
   async fetch() {

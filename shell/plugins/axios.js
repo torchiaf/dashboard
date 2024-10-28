@@ -13,8 +13,10 @@ export default function({
     const csrf = $cookies.get(CSRF, { parseJSON: false });
 
     if ( csrf ) {
-      config.headers['x-api-csrf'] = csrf;
+      config.headers['x-api-csrf'] = '704d947f7620206d9c9fc71460442946';
     }
+
+    config.baseURL = `${ 'https' }://${ 'localhost:8006' }`;
 
     if ( process.server ) {
       config.headers.common['access-control-expose-headers'] = `set-cookie`;
@@ -24,9 +26,9 @@ export default function({
         config.headers.common['cookies'] = req.headers.cookie;
       }
 
-      if ( config.url.startsWith('/') ) {
-        config.baseURL = `${ req.protocol || 'https' }://${ req.headers.host }`;
-      }
+      // if ( config.url.startsWith('/') ) {
+        config.baseURL = `${ 'https' }://${ 'localhost:8006' }`;
+      // }
     }
   });
 

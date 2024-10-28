@@ -20,6 +20,8 @@ export default {
       opt:  { url: `${ MANAGEMENT.CLUSTER }s/${ escape(id) }` }
     }, { root: true });
 
+    // console.log('------LOAD CLUSTER--------')
+
     let virtualBase = `/k8s/clusters/${ escape(id) }/v1/harvester`;
 
     if (id === 'local') {

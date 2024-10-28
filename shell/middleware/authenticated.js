@@ -267,6 +267,11 @@ export default async function({
     store.dispatch('gcStartIntervals');
   }
 
+  // console.log('----------- LOGGED IN -------------------------')
+  // console.log(process.env.REMOTE);
+  // console.log(window);
+  // window.parent.postMessage({ action: 'ready' });
+
   if (!process.server) {
     const backTo = window.localStorage.getItem(BACK_TO);
 
