@@ -26,7 +26,6 @@ export default {
   data() {
     return {
       admin: isAdminUser(this.$store.getters),
-      vendor: getVendor()
     };
   },
   computed: {
