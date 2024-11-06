@@ -4,15 +4,19 @@ import UnitInput from '@shell/components/form/UnitInput';
 import InputOrDisplay from '@shell/components/InputOrDisplay';
 import { LabeledInput } from '@components/Form/LabeledInput';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
-
 import { PVC, STORAGE_CLASS } from '@shell/config/types';
 import { formatSi, parseSi } from '@shell/utils/units';
 import { VOLUME_TYPE, InterfaceOption } from '../../../../config/harvester-map';
+import { _VIEW } from '@shell/config/query-params';
+import LabelValue from '@shell/components/LabelValue';
+import { ucFirst } from '@shell/utils/string';
+import { LVM_DRIVER } from '../../../../models/harvester/storage.k8s.io.storageclass';
+import { DATA_ENGINE_V2 } from '../../../../edit/harvesterhci.io.storage/index.vue';
 
 export default {
   name:       'HarvesterEditVolume',
   components: {
-    InputOrDisplay, Loading, LabeledInput, LabeledSelect, UnitInput,
+    InputOrDisplay, Loading, LabeledInput, LabeledSelect, UnitInput, LabelValue
   },
 
   props: {
@@ -58,6 +62,20 @@ export default {
   },
 
   computed: {
+    encryptionValue() {
+      return ucFirst(String(this.value.isEncrypted));
+    },
+
+    readyToUse() {
+      const val = String(this.value.volumeBackups?.readyToUse || false);
+
+      return ucFirst(val);
+    },
+
+    isView() {
+      return this.mode === _VIEW;
+    },
+
     pvcsResource() {
       const allPVCs = this.$store.getters['harvester/all'](PVC) || [];
 
@@ -68,10 +86,12 @@ export default {
       return !this.value.newCreateId && this.isEdit && this.isVirtualType;
     },
 
-    storageClassOptions() {
-      const storages = this.$store.getters[`harvester/all`](STORAGE_CLASS) || [];
+    storageClasses() {
+      return this.$store.getters[`harvester/all`](STORAGE_CLASS) || [];
+    },
 
-      const out = storages.filter(s => !s.parameters?.backingImage).map((s) => {
+    storageClassOptions() {
+      return this.storageClasses.filter(s => !s.parameters?.backingImage).map((s) => {
         const label = s.isDefault ? `${ s.name } (${ this.t('generic.default') })` : s.name;
 
         return {
@@ -79,12 +99,25 @@ export default {
           value: s.name,
         };
       }) || [];
-
-      return out;
     },
+
+    isLonghornV2() {
+      return this.value.pvc?.storageClass?.isLonghornV2;
+    }
   },
 
   watch: {
+    'value.storageClassName': {
+      immediate: true,
+      handler(neu) {
+        const storageClass = this.storageClasses.find(sc => sc.name === neu);
+        const provisioner = storageClass?.provisioner;
+        const engine = storageClass?.parameters?.dataEngine;
+
+        this.value.accessMode = provisioner === LVM_DRIVER || engine === DATA_ENGINE_V2 ? 'ReadWriteOnce' : 'ReadWriteMany';
+      }
+    },
+
     'value.type'(neu) {
       if (neu === 'cd-rom') {
         this.$set(this.value, 'bus', 'sata');
@@ -203,16 +236,16 @@ export default {
             :mode="mode"
             :required="validateRequired"
             :label="t('harvester.fields.size')"
+            :disabled="isLonghornV2"
             @input="update"
           />
         </InputOrDisplay>
       </div>
     </div>
-
     <div class="row mb-20">
       <div
         data-testid="input-hev-bus"
-        class="col span-3"
+        class="col span-6"
       >
         <InputOrDisplay :name="t('harvester.virtualMachine.volume.bus')" :value="value.bus" :mode="mode">
           <LabeledSelect
@@ -224,6 +257,23 @@ export default {
             @input="update"
           />
         </InputOrDisplay>
+      </div>
+      <div
+        v-if="isView"
+        class="col span-6"
+      >
+        <LabelValue
+          :name="t('harvester.virtualMachine.volume.encryption')"
+          :value="encryptionValue"
+        />
+      </div>
+    </div>
+    <div class="row mb-20">
+      <div v-if="value.volumeBackups && isView" class="col span-3">
+        <LabelValue
+          :name="t('harvester.virtualMachine.volume.readyToUse')"
+          :value="readyToUse"
+        />
       </div>
     </div>
   </div>

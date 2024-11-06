@@ -6,6 +6,7 @@ import { Banner } from '@components/Banner';
 import { Checkbox } from '@components/Form/Checkbox';
 import { exceptionToErrorsArray } from '@shell/utils/error';
 import { BadgeState } from '@components/BadgeState';
+import { ucFirst } from '@shell/utils/string';
 
 export default {
   components: {
@@ -25,9 +26,9 @@ export default {
 
   data() {
     return {
-      errors:      [],
-      unhealthyVM: '',
-      force:       false
+      errors:       [],
+      unhealthyVMs: [],
+      force:        false
     };
   },
 
@@ -40,13 +41,21 @@ export default {
   },
 
   methods: {
+    ucFirst,
+
+    onInputForce(v) {
+      if (v) {
+        this.unhealthyVMs = [];
+      }
+    },
+
     close() {
       this.$emit('close');
     },
 
     async apply(buttonCb) {
       this.errors = [];
-      this.unhealthyVM = '';
+      this.unhealthyVMs = [];
 
       try {
         const res = await this.actionResource.doAction('maintenancePossible');
@@ -62,8 +71,8 @@ export default {
         } else if (res._status === 200 || res._status === 204) {
           const res = await this.actionResource.doAction('listUnhealthyVM');
 
-          if (res.message) {
-            this.unhealthyVM = res;
+          if (res?.length) {
+            this.unhealthyVMs = res;
             buttonCb(false);
           } else {
             await this.actionResource.doAction('enableMaintenanceMode', { force: 'false' });
@@ -95,15 +104,20 @@ export default {
         <Checkbox
           v-model="force"
           label-key="harvester.host.enableMaintenance.force"
+          @input="onInputForce"
         />
       </div>
-      <Banner color="warning" :label="t('harvester.host.enableMaintenance.protip')" class="mb-0" />
-      <Banner v-for="(err, i) in errors" :key="i" color="error" :label="err" />
 
-      <div v-if="unhealthyVM">
-        <Banner color="error mb-5">
+      <Banner color="warning" :label="t('harvester.host.enableMaintenance.protip')" />
+
+      <Banner v-for="(err, i) in errors" :key="i" color="error" :label="ucFirst(err)" />
+
+      <Banner v-if="!force" class="mt-0" color="warning" :labelKey="'harvester.host.enableMaintenance.shutDownVMs'" />
+
+      <div v-for="(unhealthyVM, i) in unhealthyVMs" :key="i">
+        <Banner color="error mt-0 mb-5">
           <p>
-            {{ unhealthyVM.message }}
+            {{ ucFirst(unhealthyVM.message) }}
           </p>
         </Banner>
 

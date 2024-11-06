@@ -4,7 +4,9 @@ import ResourceTable from '@shell/components/ResourceTable';
 import HarvesterVolumeState from '../formatters/HarvesterVolumeState';
 
 import { allSettled } from '../utils/promise';
-import { PV, PVC, SCHEMA, LONGHORN } from '@shell/config/types';
+import {
+  PV, PVC, SCHEMA, LONGHORN, STORAGE_CLASS
+} from '@shell/config/types';
 import { HCI, VOLUME_SNAPSHOT } from '../types';
 import { STATE, AGE, NAME, NAMESPACE } from '@shell/config/table-headers';
 
@@ -30,6 +32,7 @@ export default {
       pvcs: this.$store.dispatch(`${ inStore }/findAll`, { type: PVC }),
       pvs:  this.$store.dispatch(`${ inStore }/findAll`, { type: PV }),
       vms:  this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.VM }),
+      scs:  this.$store.dispatch(`${ inStore }/findAll`, { type: STORAGE_CLASS }),
     };
 
     const volumeSnapshotSchema = this.$store.getters[`${ inStore }/schemaFor`](VOLUME_SNAPSHOT);
@@ -157,6 +160,22 @@ export default {
           {{ getVMName(scope.row) }}
         </n-link>
       </div>
+    </template>
+    <template #col:name="{row}">
+      <td>
+        <span>
+          <n-link
+            v-if="row?.detailLocation"
+            :to="row.detailLocation"
+          >
+            {{ row.nameDisplay }}
+            <i v-if="row.isEncrypted" class="icon icon-lock" />
+          </n-link>
+          <span v-else>
+            {{ row.nameDisplay }}
+          </span>
+        </span>
+      </td>
     </template>
   </ResourceTable>
 </template>

@@ -175,6 +175,9 @@ export default {
           <input
             v-else
             v-model.number="row.backendPort"
+            type="number"
+            min="1"
+            max="65535"
             :placeholder="t('harvester.loadBalancer.listeners.backendPort.placeholder')"
             @input="queueUpdate"
           />

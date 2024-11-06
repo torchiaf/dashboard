@@ -143,10 +143,19 @@ export default {
     },
 
     input(neu) {
-      const pattern = /^([1-9]|[1-9][0-9]{1,2}|[1-3][0-9]{3}|40[0-9][0-4])$/;
+      if (neu === '') {
+        this.config.vlan = '';
 
-      if (!pattern.test(neu) && neu !== '') {
-        this.config.vlan = neu > 4094 ? 4094 : 1;
+        return;
+      }
+      const newValue = Number(neu);
+
+      if (newValue > 4094) {
+        this.config.vlan = 4094;
+      } else if (newValue < 1) {
+        this.config.vlan = 1;
+      } else {
+        this.config.vlan = newValue;
       }
     },
 

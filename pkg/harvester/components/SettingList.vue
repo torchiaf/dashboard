@@ -34,15 +34,7 @@ export default {
   },
 
   data() {
-    const categorySettings = this.settings.filter((s) => {
-      if (this.category !== 'advanced') {
-        return (CATEGORY[this.category] || []).find(item => item === s.id);
-      } else if (this.category === 'advanced') {
-        const allCategory = Object.keys(CATEGORY);
-
-        return !allCategory.some(category => (CATEGORY[category] || []).find(item => item === s.id));
-      }
-    }) || [];
+    const categorySettings = this.filterCategorySettings();
 
     return {
       HCI_SETTING,
@@ -52,7 +44,27 @@ export default {
 
   computed: { ...mapGetters({ t: 'i18n/t' }) },
 
+  watch: {
+    settings: {
+      deep: true,
+      handler() {
+        this.$set(this, 'categorySettings', this.filterCategorySettings());
+      }
+    }
+  },
+
   methods: {
+    filterCategorySettings() {
+      return this.settings.filter((s) => {
+        if (this.category !== 'advanced') {
+          return (CATEGORY[this.category] || []).find(item => item === s.id);
+        } else if (this.category === 'advanced') {
+          const allCategory = Object.keys(CATEGORY);
+
+          return !allCategory.some(category => (CATEGORY[category] || []).find(item => item === s.id));
+        }
+      }) || [];
+    },
     showActionMenu(e, setting) {
       const actionElement = e.srcElement;
 
@@ -111,6 +123,9 @@ export default {
             {{ setting.id }}
             <span v-if="setting.customized" class="modified">
               Modified
+            </span>
+            <span v-if="setting.experimental" v-clean-tooltip="t('advancedSettings.experimental')" class="experimental">
+              Experimental
             </span>
           </h1>
           <h2 v-clean-html="t(setting.description, {}, true)">
@@ -196,6 +211,14 @@ export default {
 .modified {
   margin-left: 10px;
   border: 1px solid var(--primary);
+  border-radius: 5px;
+  padding: 2px 10px;
+  font-size: 12px;
+}
+
+.experimental {
+  margin-left: 10px;
+  border: 1px solid var(--error);
   border-radius: 5px;
   padding: 2px 10px;
   font-size: 12px;

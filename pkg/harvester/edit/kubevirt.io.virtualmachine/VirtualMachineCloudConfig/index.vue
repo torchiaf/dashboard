@@ -11,7 +11,6 @@ import { _VIEW } from '@shell/config/query-params';
 import DataTemplate from './DataTemplate';
 
 const _NEW = '_NEW';
-const _NONE = '_NONE';
 
 export default {
   components: {
@@ -50,7 +49,8 @@ export default {
       configUserId:      '',
       configNetworkId:   '',
       optionUser:        [],
-      optionNetwork:     []
+      optionNetwork:     [],
+      showModal:         false
     };
   },
 
@@ -81,19 +81,9 @@ export default {
       value: _NEW,
     });
 
-    optionUser.unshift({
-      label: this.t('harvester.virtualMachine.cloudConfig.cloudInit.placeholder'),
-      value: _NONE,
-    });
-
     optionNetwork.unshift({
       label: this.t('harvester.virtualMachine.cloudConfig.createNew'),
       value: _NEW,
-    });
-
-    optionNetwork.unshift({
-      label: this.t('harvester.virtualMachine.cloudConfig.cloudInit.placeholder'),
-      value: _NONE,
     });
 
     this.optionUser = optionUser;
@@ -139,7 +129,7 @@ export default {
 
     show(templateType) {
       this.templateType = templateType;
-      this.$modal.show('createCloudTemplate');
+      this.showModal = true;
     },
 
     async save(buttonCb) {
@@ -190,7 +180,7 @@ export default {
       this.cloudTemplate = '';
       this.cloudTemplateName = '';
       this.$set(this, 'errors', []);
-      this.$modal.hide('createCloudTemplate');
+      this.showModal = false;
     },
 
     refresh() {
@@ -237,6 +227,7 @@ export default {
     </div>
 
     <ModalWithCard
+      v-if="showModal"
       ref="createCloudTemplate"
       name="createCloudTemplate"
       width="40%"

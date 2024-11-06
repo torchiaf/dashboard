@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import { load } from 'js-yaml';
 import { omitBy, pickBy } from 'lodash';
-
+import { PRODUCT_NAME as HARVESTER_PRODUCT } from '../config/harvester';
 import { colorForState } from '@shell/plugins/dashboard-store/resource-class';
 import { POD, NODE, PVC } from '@shell/config/types';
 import { HCI } from '../types';
@@ -15,6 +15,7 @@ import { matchesSomeRegex } from '@shell/utils/string';
 import { LABELS_TO_IGNORE_REGEX } from '@shell/config/labels-annotations';
 import { BACKUP_TYPE } from '../config/types';
 import { parseVolumeClaimTemplates } from '@pkg/utils/vm';
+import { LVM_DRIVER } from './harvester/storage.k8s.io.storageclass';
 
 export const OFF = 'Off';
 
@@ -89,12 +90,17 @@ const IgnoreMessages = ['pod has unbound immediate PersistentVolumeClaims'];
 
 export default class VirtVm extends HarvesterResource {
   get availableActions() {
-    const out = super._availableActions;
+    let out = super._availableActions;
 
-    const clone = out.find(action => action.action === 'goToClone');
+    // VM attached with Longhorn V2 volume doesn't support clone feature
+    if (this.longhornV2Volumes.length > 0) {
+      out = out.filter(action => action.action !== 'goToClone');
+    } else {
+      const clone = out.find(action => action.action === 'goToClone');
 
-    if (clone) {
-      clone.action = 'goToCloneVM';
+      if (clone) {
+        clone.action = 'goToCloneVM';
+      }
     }
 
     return [
@@ -134,7 +140,7 @@ export default class VirtVm extends HarvesterResource {
       {
         action:  'softrebootVM',
         enabled: !!this.actions?.softreboot,
-        icon:    'icon icon-refresh',
+        icon:    'icon icon-pipeline',
         label:   this.t('harvester.action.softreboot')
       },
       {
@@ -152,9 +158,21 @@ export default class VirtVm extends HarvesterResource {
       },
       {
         action:  'takeVMSnapshot',
-        enabled: !!this.actions?.backup,
-        icon:    'icon icon-backup',
+        enabled: !!this.actions?.backup && !this.longhornV2Volumes.length,
+        icon:    'icon icon-snapshot',
         label:   this.t('harvester.action.vmSnapshot')
+      },
+      {
+        action:  'editVMQuota',
+        enabled: !!this.actions?.updateResourceQuota && !!this.actions.deleteResourceQuota,
+        icon:    'icon icon-storage',
+        label:   this.t('harvester.action.editVMQuota')
+      },
+      {
+        action:  'createSchedule',
+        enabled: true,
+        icon:    'icon icon-history',
+        label:   this.t('harvester.action.createSchedule')
       },
       {
         action:  'restoreVM',
@@ -249,7 +267,7 @@ export default class VirtVm extends HarvesterResource {
             },
             features: { acpi: { enabled: true } }
           },
-          evictionStrategy: 'LiveMigrate',
+          evictionStrategy: 'LiveMigrateIfPossible',
           hostname:         '',
           networks:         [
             {
@@ -318,6 +336,16 @@ export default class VirtVm extends HarvesterResource {
     );
   }
 
+  createSchedule(resources = this) {
+    const router = this.currentRouter();
+
+    router.push({
+      name:   `${ HARVESTER_PRODUCT }-c-cluster-resource-create`,
+      params: { resource: HCI.SCHEDULE_VM_BACKUP },
+      query:  { vmNamespace: this.metadata.namespace, vmName: this.metadata.name }
+    });
+  }
+
   backupVM(resources = this) {
     this.$dispatch('promptModal', {
       resources,
@@ -329,6 +357,14 @@ export default class VirtVm extends HarvesterResource {
     this.$dispatch('promptModal', {
       resources,
       component: 'HarvesterVMSnapshotDialog'
+    });
+  }
+
+  editVMQuota(resources = this) {
+    this.$dispatch('promptModal', {
+      resources,
+      snapshotSizeQuota: this.snapshotSizeQuota,
+      component:         'HarvesterQuotaDialog'
     });
   }
 
@@ -446,6 +482,10 @@ export default class VirtVm extends HarvesterResource {
     return null;
   }
 
+  get isCpuPinning() {
+    return this.spec?.template?.spec?.domain?.cpu?.dedicatedCpuPlacement === true;
+  }
+
   get isVMExpectedRunning() {
     if (!this?.spec) {
       return false;
@@ -542,12 +582,49 @@ export default class VirtVm extends HarvesterResource {
     return null;
   }
 
+  get nsResourceQuota() {
+    const inStore = this.productInStore;
+    const allResQuotas = this.$rootGetters[`${ inStore }/all`](HCI.RESOURCE_QUOTA);
+
+    return allResQuotas.find( RQ => RQ.namespace === this.metadata.namespace);
+  }
+
+  get snapshotSizeQuota() {
+    return this.nsResourceQuota?.spec?.snapshotLimit?.vmTotalSnapshotSizeQuota?.[this.metadata.name];
+  }
+
   get vmi() {
     const inStore = this.productInStore;
 
     const vmis = this.$rootGetters[`${ inStore }/all`](HCI.VMI);
 
     return vmis.find(VMI => VMI.id === this.id);
+  }
+
+  get volumes() {
+    const pvcs = this.$rootGetters[`${ this.productInStore }/all`](PVC);
+
+    const volumeClaimNames = this.spec.template.spec.volumes?.map(v => v.persistentVolumeClaim?.claimName).filter(v => !!v) || [];
+
+    return pvcs.filter(pvc => volumeClaimNames.includes(pvc.metadata.name));
+  }
+
+  get lvmVolumes() {
+    return this.volumes.filter(volume => volume.storageClass.provisioner === LVM_DRIVER);
+  }
+
+  get longhornV2Volumes() {
+    return this.volumes.filter(volume => volume.storageClass.isLonghornV2);
+  }
+
+  get encryptedVolumeType() {
+    if (this.volumes.every(vol => vol.isEncrypted)) {
+      return 'all';
+    } else if (this.volumes.some(vol => vol.isEncrypted)) {
+      return 'partial';
+    } else {
+      return 'none';
+    }
   }
 
   get isError() {
@@ -647,6 +724,10 @@ export default class VirtVm extends HarvesterResource {
     return null;
   }
 
+  get isTerminating() {
+    return !!this?.metadata?.deletionTimestamp;
+  }
+
   get otherState() {
     const state = (this.vmi &&
       [VMIPhase.Scheduling, VMIPhase.Scheduled].includes(
@@ -686,18 +767,21 @@ export default class VirtVm extends HarvesterResource {
 
     const allRestore = this.$rootGetters[`${ inStore }/all`](HCI.RESTORE);
 
-    return allRestore.find(O => O.id === id);
+    const res = allRestore.find(O => O.id === id);
+
+    if (res) {
+      const allBackups = this.$rootGetters[`${ inStore }/all`](HCI.BACKUP);
+
+      res.fromSnapshot = !!allBackups
+        .filter(b => b.spec?.type !== BACKUP_TYPE.BACKUP)
+        .find(s => s.id === `${ res.spec?.virtualMachineBackupNamespace }/${ res.spec?.virtualMachineBackupName }`);
+    }
+
+    return res;
   }
 
   get restoreProgress() {
-    const inStore = this.productInStore;
-    const allBackups = this.$rootGetters[`${ inStore }/all`](HCI.BACKUP);
-
-    const isSnapshotRestore = !!allBackups
-      .filter(b => b.spec?.type !== BACKUP_TYPE.BACKUP)
-      .find(s => s.id === `${ this.restoreResource?.spec?.virtualMachineBackupNamespace }/${ this.restoreResource?.spec?.virtualMachineBackupName }`);
-
-    if (isSnapshotRestore) {
+    if (this.isVMError || this.isTerminating) {
       return {};
     }
 
@@ -727,7 +811,7 @@ export default class VirtVm extends HarvesterResource {
       return 'Restoring';
     }
 
-    if (this?.metadata?.deletionTimestamp) {
+    if (this.isTerminating) {
       return 'Terminating';
     }
 
@@ -1045,6 +1129,20 @@ export default class VirtVm extends HarvesterResource {
     return omitBy(all, (value, key) => {
       return matchesSomeRegex(key, LABELS_TO_IGNORE_REGEX);
     });
+  }
+
+  get hostDevices() {
+    return this.spec?.template?.spec?.domain?.devices?.hostDevices || [];
+  }
+
+  get provisionedVGpus() {
+    try {
+      const deviceAllocationDetails = JSON.parse(this.metadata?.annotations[HCI_ANNOTATIONS.VM_DEVICE_ALLOCATION_DETAILS] || '{}');
+
+      return deviceAllocationDetails?.gpus || {};
+    } catch (error) {
+      return {};
+    }
   }
 
   setInstanceLabels(val) {

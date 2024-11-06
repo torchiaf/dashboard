@@ -90,6 +90,10 @@ export default {
       }, { root: true }),
     };
 
+    if (getters['schemaFor'](HCI.RESOURCE_QUOTA)) {
+      hash.resourceQuota = dispatch('findAll', { type: HCI.RESOURCE_QUOTA });
+    }
+
     if (getters['schemaFor'](HCI.UPGRADE)) {
       hash.upgrades = dispatch('findAll', { type: HCI.UPGRADE });
     }
@@ -101,6 +105,7 @@ export default {
     commit('updateNamespaces', {
       filters: [],
       all:     getters.filterNamespace(),
+      getters
     }, { root: true });
 
     // Solve compatibility with Rancher v2.6.x, fell remove these codes after not support v2.6.x

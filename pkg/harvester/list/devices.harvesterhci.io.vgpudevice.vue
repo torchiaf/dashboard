@@ -72,7 +72,7 @@ export default {
   },
 
   typeDisplay() {
-    return this.$store.getters['type-map/labelFor'](this.schema, 99);
+    return this.t('harvester.vgpu.label');
   }
 };
 </script>

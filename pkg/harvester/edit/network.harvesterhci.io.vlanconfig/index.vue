@@ -92,7 +92,7 @@ export default {
       const inStore = this.$store.getters['currentProduct'].inStore;
       const nodes = this.$store.getters[`${ inStore }/all`](NODE);
 
-      return nodes.map((node) => {
+      return nodes.filter(n => n.isEtcd !== 'true').map((node) => {
         return {
           label: node.nameDisplay,
           value: node.id
@@ -213,7 +213,7 @@ export default {
       const inStore = this.$store.getters['currentProduct'].inStore;
       const nodes = this.$store.getters[`${ inStore }/all`](NODE);
 
-      return nodes;
+      return nodes.filter(n => n.isEtcd !== 'true');
     },
   },
 
@@ -286,7 +286,6 @@ export default {
         matchNICs = allNICs.filter(n => matchNodes.includes(n.nodeName));
         commonNodes = matchNodes.map(n => n.id);
       }
-
       this.matchNICs = this.intersection(matchNICs, commonNodes) || [];
     }, 250, { leading: true }),
 
@@ -314,12 +313,21 @@ export default {
       } else if (selector[HOSTNAME] && Object.keys(selector).length === 1) {
         const matchNode = allNodes.find(n => n.id === selector[HOSTNAME]);
 
-        this.matchingNodes = {
-          matched: 1,
-          total:   allNodes.length,
-          none:    false,
-          sample:  matchNode ? matchNode.nameDisplay : selector[HOSTNAME],
-        };
+        if (matchNode) {
+          this.matchingNodes = {
+            matched: 1,
+            total:   allNodes.length,
+            none:    false,
+            sample:  matchNode.nameDisplay,
+          };
+        } else {
+          this.matchingNodes = {
+            matched: 0,
+            total:   0,
+            none:    true,
+            sample:  null,
+          };
+        }
       } else {
         const match = matching(allNodes, selector);
 

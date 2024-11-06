@@ -7,10 +7,11 @@ import Banner from '@components/Banner/Banner.vue';
 import VGpuDeviceList from './VGpuDeviceList';
 
 import remove from 'lodash/remove';
-import { get, set } from '@shell/utils/object';
+import { set } from '@shell/utils/object';
+import { uniq } from '@shell/utils/array';
 
 export default {
-  name:       'VirtualMachinedevices',
+  name:       'VirtualMachineVGpuDevices',
   components: {
     Banner,
     LabeledSelect,
@@ -45,7 +46,10 @@ export default {
       this[key] = res[key];
     }
 
-    (this.value?.domain?.devices?.gpus || []).forEach(({ name }) => {
+    uniq([
+      ...(this.value?.domain?.devices?.gpus || []).map(({ name }) => name),
+      ...Object.values(this.vm?.provisionedVGpus).reduce((acc, gpus) => [...acc, ...gpus], [])
+    ]).forEach((name) => {
       if (this.enabledDevices.find(device => device?.metadata?.name === name)) {
         this.selectedDevices.push(name);
       }
@@ -89,9 +93,8 @@ export default {
         if (vm.metadata.name === this.vm?.metadata?.name) {
           return inUse;
         }
-        const devices = get(vm, 'spec.template.spec.domain.devices.hostDevices') || [];
 
-        devices.forEach((device) => {
+        vm.hostDevices.forEach((device) => {
           inUse[device.name] = { usedBy: [vm.metadata.name] };
         });
 
@@ -102,19 +105,19 @@ export default {
     },
 
     devicesByNode() {
-      const out = {};
+      return this.enabledDevices?.reduce((acc, device) => {
+        const nodeName = device.spec?.nodeName;
 
-      this.enabledDevices.forEach((deviceCRD) => {
-        const nodeName = deviceCRD.spec?.nodeName;
-
-        if (!out[nodeName]) {
-          out[nodeName] = [deviceCRD];
-        } else {
-          out[nodeName].push(deviceCRD);
+        if (nodeName) {
+          if (!acc[nodeName]) {
+            acc[nodeName] = [];
+          } else {
+            acc[nodeName].push(device);
+          }
         }
-      });
 
-      return out;
+        return acc;
+      }, {});
     },
 
     compatibleNodes() {

@@ -11,6 +11,7 @@ export const HCI = {
   SETTING:            'harvesterhci.io.setting',
   UPGRADE:            'harvesterhci.io.upgrade',
   UPGRADE_LOG:        'harvesterhci.io.upgradelog',
+  SCHEDULE_VM_BACKUP: 'harvesterhci.io.schedulevmbackup',
   BACKUP:             'harvesterhci.io.virtualmachinebackup',
   RESTORE:            'harvesterhci.io.virtualmachinerestore',
   NODE_NETWORK:       'network.harvesterhci.io.nodenetwork',
@@ -31,12 +32,15 @@ export const HCI = {
   FLOW:               'harvesterhci.io.logging.flow',
   OUTPUT:             'harvesterhci.io.logging.output',
   STORAGE:            'harvesterhci.io.storage',
+  RESOURCE_QUOTA:     'harvesterhci.io.resourcequota',
   KSTUNED:            'node.harvesterhci.io.ksmtuned',
   PCI_DEVICE:         'devices.harvesterhci.io.pcidevice',
   PCI_CLAIM:          'devices.harvesterhci.io.pcideviceclaim',
   SR_IOV:             'devices.harvesterhci.io.sriovnetworkdevice',
   VGPU_DEVICE:        'devices.harvesterhci.io.vgpudevice',
   SR_IOVGPU_DEVICE:   'devices.harvesterhci.io.sriovgpudevice',
+  USB_DEVICE:         'devices.harvesterhci.io.usbdevice',
+  USB_CLAIM:          'devices.harvesterhci.io.usbdeviceclaim',
   VLAN_CONFIG:        'network.harvesterhci.io.vlanconfig',
   VLAN_STATUS:        'network.harvesterhci.io.vlanstatus',
   ADD_ONS:            'harvesterhci.io.addon',
@@ -46,6 +50,7 @@ export const HCI = {
   LB:                 'loadbalancer.harvesterhci.io.loadbalancer',
   IP_POOL:            'loadbalancer.harvesterhci.io.ippool',
   HARVESTER_CONFIG:   'rke-machine-config.cattle.io.harvesterconfig',
+  LVM_VOLUME_GROUP:   'harvesterhci.io.lvmvolumegroup'
 };
 
 export const VOLUME_SNAPSHOT = 'snapshot.storage.k8s.io.volumesnapshot';

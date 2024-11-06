@@ -44,15 +44,17 @@ export default {
 
   watch: {
     publicKey(neu) {
-      this.value.spec.publicKey = neu;
+      const trimNeu = neu.trim();
 
-      const splitSSH = neu.split(/\s+/);
+      this.value.spec.publicKey = trimNeu;
 
-      if (splitSSH.length === 3) {
-        if (splitSSH[2].includes('@') && !this.value.metadata.name) {
-          this.value.metadata.name = splitSSH[2].split('@')[0];
-          this.randomString = randomStr(10).toLowerCase();
-        }
+      const splitSSH = trimNeu.split(/\s+/);
+
+      if (splitSSH.length === 3 && !this.value.metadata.name) {
+        const keyComment = splitSSH[2];
+
+        this.randomString = randomStr(10).toLowerCase();
+        this.value.metadata.name = keyComment.includes('@') ? keyComment.split('@')[0] : keyComment;
       }
     }
   },

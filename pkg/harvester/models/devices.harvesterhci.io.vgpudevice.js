@@ -100,12 +100,17 @@ export default class VGpuDevice extends SteveModel {
   }
 
   async disableVGpu() {
+    const { vGPUTypeName, enabled } = this.spec;
+
     try {
       this.spec.vGPUTypeName = undefined;
       this.spec.enabled = false;
       await this.save();
     } catch (err) {
-      this.$store.dispatch('growl/fromError', {
+      this.spec.vGPUTypeName = vGPUTypeName;
+      this.spec.enabled = enabled;
+
+      this.$dispatch('growl/fromError', {
         title: this.t('generic.notification.title.error', { name: escapeHtml(this.metadata.name) }),
         err,
       }, { root: true });

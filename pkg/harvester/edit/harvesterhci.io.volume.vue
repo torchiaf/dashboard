@@ -7,7 +7,7 @@ import ResourceTabs from '@shell/components/form/ResourceTabs';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import { LabeledInput } from '@components/Form/LabeledInput';
 import NameNsDescription from '@shell/components/form/NameNsDescription';
-
+import { Banner } from '@components/Banner';
 import { allHash } from '@shell/utils/promise';
 import { get } from '@shell/utils/object';
 import { HCI, VOLUME_SNAPSHOT } from '../types';
@@ -15,15 +15,18 @@ import { STORAGE_CLASS, LONGHORN, PV } from '@shell/config/types';
 import { sortBy } from '@shell/utils/sort';
 import { saferDump } from '@shell/utils/create-yaml';
 import { InterfaceOption, VOLUME_DATA_SOURCE_KIND } from '../config/harvester-map';
-import { _CREATE } from '@shell/config/query-params';
+import { _CREATE, _EDIT } from '@shell/config/query-params';
 import CreateEditView from '@shell/mixins/create-edit-view';
 import { HCI as HCI_ANNOTATIONS } from '@pkg/harvester/config/labels-annotations';
 import { STATE, NAME, AGE, NAMESPACE } from '@shell/config/table-headers';
+import { LVM_DRIVER } from '../models/harvester/storage.k8s.io.storageclass';
+import { DATA_ENGINE_V2 } from './harvesterhci.io.storage/index.vue';
 
 export default {
   name: 'HarvesterVolume',
 
   components: {
+    Banner,
     Tab,
     UnitInput,
     CruResource,
@@ -56,6 +59,7 @@ export default {
     const hash = await allHash(_hash);
 
     this.snapshots = hash.snapshots;
+    this.images = hash.images;
 
     const defaultStorage = this.$store.getters[`harvester/all`](STORAGE_CLASS).find( O => O.isDefault);
 
@@ -77,6 +81,7 @@ export default {
       storage,
       imageId,
       snapshots: [],
+      images:    [],
     };
   },
 
@@ -87,6 +92,10 @@ export default {
   computed: {
     isBlank() {
       return this.source === 'blank';
+    },
+
+    isEdit() {
+      return this.mode === _EDIT;
     },
 
     isVMImage() {
@@ -108,10 +117,8 @@ export default {
     },
 
     imageOption() {
-      const choices = this.$store.getters['harvester/all'](HCI.IMAGE);
-
       return sortBy(
-        choices
+        this.images
           .filter(obj => obj.isReady)
           .map((obj) => {
             return {
@@ -156,11 +163,14 @@ export default {
       return VOLUME_DATA_SOURCE_KIND[this.value.spec?.dataSource?.kind];
     },
 
-    storageClassOptions() {
+    storageClasses() {
       const inStore = this.$store.getters['currentProduct'].inStore;
-      const storages = this.$store.getters[`${ inStore }/all`](STORAGE_CLASS);
 
-      const out = storages.filter(s => !s.parameters?.backingImage).map((s) => {
+      return this.$store.getters[`${ inStore }/all`](STORAGE_CLASS);
+    },
+
+    storageClassOptions() {
+      return this.storageClasses.filter(s => !s.parameters?.backingImage).map((s) => {
         const label = s.isDefault ? `${ s.name } (${ this.t('generic.default') })` : s.name;
 
         return {
@@ -168,8 +178,6 @@ export default {
           value: s.name,
         };
       }) || [];
-
-      return out;
     },
 
     frontend() {
@@ -216,6 +224,10 @@ export default {
 
     rebuildStatus() {
       return this.value.longhornEngine?.status?.rebuildStatus;
+    },
+
+    isLonghornV2() {
+      return this.value.storageClass?.isLonghornV2;
     }
   },
 
@@ -227,27 +239,44 @@ export default {
       let imageAnnotations = '';
       let storageClassName = this.value.spec.storageClassName;
 
+      const storageClass = this.storageClasses.find(sc => sc.name === storageClassName);
+      const storageClassProvisioner = storageClass?.provisioner;
+      const storageClassDataEngine = storageClass?.parameters?.dataEngine;
+
       if (this.isVMImage && this.imageId) {
+        const images = this.$store.getters['harvester/all'](HCI.IMAGE);
+
         imageAnnotations = {
           ...this.value.metadata.annotations,
           [HCI_ANNOTATIONS.IMAGE_ID]: this.imageId
         };
-        storageClassName = `longhorn-${ this.imageId.split('/')[1] }`;
+        storageClassName = images?.find(image => this.imageId === image.id)?.storageClassName;
       } else {
         imageAnnotations = { ...this.value.metadata.annotations };
       }
 
       const spec = {
         ...this.value.spec,
-        resources: { requests: { storage: this.storage } },
-        storageClassName
+        resources:   { requests: { storage: this.storage } },
+        storageClassName,
+        accessModes: storageClassProvisioner === LVM_DRIVER || storageClassDataEngine === DATA_ENGINE_V2 ? ['ReadWriteOnce'] : ['ReadWriteMany'],
       };
 
       this.value.setAnnotations(imageAnnotations);
 
       this.$set(this.value, 'spec', spec);
     },
+    updateImage() {
+      if (this.isVMImage && this.imageId) {
+        const imageResource = this.images?.find(image => this.imageId === image.id);
+        const imageSize = Math.max(imageResource?.status?.size, imageResource?.status?.virtualSize);
 
+        if (imageSize) {
+          this.storage = `${ Math.ceil(imageSize / 1024 / 1024 / 1024) }Gi`;
+        }
+      }
+      this.update();
+    },
     generateYaml() {
       const out = saferDump(this.value);
 
@@ -298,7 +327,7 @@ export default {
           required
           :mode="mode"
           class="mb-20"
-          @input="update"
+          @input="updateImage"
         />
 
         <LabeledSelect
@@ -320,10 +349,15 @@ export default {
           :output-modifier="true"
           :increment="1024"
           :mode="mode"
+          :disabled="isLonghornV2 && isEdit"
           required
           class="mb-20"
           @input="update"
         />
+
+        <Banner v-if="isLonghornV2 && isEdit" color="warning">
+          <span>{{ t('harvester.volume.longhorn.disableResize') }}</span>
+        </Banner>
       </Tab>
       <Tab v-if="!isCreate" name="details" :label="t('harvester.volume.tabs.details')" :weight="2.5" class="bordered-table">
         <LabeledInput v-model="frontendDisplay" class="mb-20" :mode="mode" :disabled="true" :label="t('harvester.volume.frontend')" />

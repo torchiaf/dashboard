@@ -23,7 +23,7 @@ export const InterfaceOption = [{
 
 export const SOURCE_TYPE = {
   NEW:           'New',
-  IMAGE:         'VM Image',
+  IMAGE:         'Virtual Machine Image',
   ATTACH_VOLUME: 'Existing Volume',
   CONTAINER:     'Container'
 };
@@ -41,7 +41,14 @@ export const ACCESS_CREDENTIALS = {
   INJECT_SSH: 'sshPublicKey'
 };
 
-export const RunStrategys = ['Always', 'RerunOnFailure', 'Manual', 'Halted'];
+export const runStrategies = ['Always', 'RerunOnFailure', 'Manual', 'Halted'];
+
+export const maintenanceStrategies = [
+  'Migrate',
+  'ShutdownAndRestartAfterEnable',
+  'ShutdownAndRestartAfterDisable',
+  'Shutdown'
+];
 
 export const VOLUME_DATA_SOURCE_KIND = {
   VolumeSnapshot:        'VolumeSnapshot',
@@ -61,4 +68,14 @@ export const ADD_ONS = {
   RANCHER_LOGGING:                  'rancher-logging',
   RANCHER_MONITORING:               'rancher-monitoring',
   VM_IMPORT_CONTROLLER:             'vm-import-controller',
+  LVM_DRIVER:                       'lvm.driver.harvesterhci.io'
+};
+
+export const CSI_SECRETS = {
+  CSI_PROVISIONER_SECRET_NAME:       'csi.storage.k8s.io/provisioner-secret-name',
+  CSI_PROVISIONER_SECRET_NAMESPACE:  'csi.storage.k8s.io/provisioner-secret-namespace',
+  CSI_NODE_PUBLISH_SECRET_NAME:      'csi.storage.k8s.io/node-publish-secret-name',
+  CSI_NODE_PUBLISH_SECRET_NAMESPACE: 'csi.storage.k8s.io/node-publish-secret-namespace',
+  CSI_NODE_STAGE_SECRET_NAME:        'csi.storage.k8s.io/node-stage-secret-name',
+  CSI_NODE_STAGE_SECRET_NAMESPACE:   'csi.storage.k8s.io/node-stage-secret-namespace',
 };

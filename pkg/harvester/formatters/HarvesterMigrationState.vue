@@ -25,13 +25,16 @@ export default {
 
       return vmi;
     },
-    state() {
+    migrationState() {
       return this.vmiResource?.migrationState?.status || '';
+    },
+    migrationBackground() {
+      return this.vmiResource?.migrationStateBackground || '';
     }
   },
 
   watch: {
-    state(neu) {
+    migrationState(neu) {
       this.$emit('state-changed', neu);
     }
   },
@@ -39,9 +42,9 @@ export default {
 </script>
 
 <template>
-  <div v-if="state">
+  <div v-if="migrationState">
     <span v-if="!showSuccess">/</span>
-    <BadgeState :label="vmiResource.migrationState.status" :color="vmiResource.migrationStateBackground" />
+    <BadgeState :label="migrationState" :color="migrationBackground" />
   </div>
 </template>
 

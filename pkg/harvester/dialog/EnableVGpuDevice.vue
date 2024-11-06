@@ -85,7 +85,7 @@ export default {
           {{ t('generic.cancel') }}
         </button>
 
-        <AsyncButton mode="edit" @click="save" />
+        <AsyncButton mode="edit" :disabled="!type" @click="save" />
       </div>
     </template>
   </Card>

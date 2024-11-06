@@ -29,8 +29,13 @@ import HarvesterDisk from './HarvesterDisk';
 import HarvesterKsmtuned from './HarvesterKsmtuned';
 import HarvesterSeeder from './HarvesterSeeder';
 import Tags from '../../components/DiskTags';
+import { LONGHORN_DRIVER, LONGHORN_VERSION_V1, LONGHORN_VERSION_V2 } from '@shell/models/persistentvolume';
+import { LVM_DRIVER } from '../../models/harvester/storage.k8s.io.storageclass';
+import isEqual from 'lodash/isEqual';
 
 export const LONGHORN_SYSTEM = 'longhorn-system';
+
+export const LONGHORN_V2_DATA_ENGINE = 'longhorn-system/v2-data-engine';
 
 export default {
   name:       'HarvesterEditNode',
@@ -62,10 +67,11 @@ export default {
     const inStore = this.$store.getters['currentProduct'].inStore;
 
     const hash = {
-      longhornNodes: this.$store.dispatch(`${ inStore }/findAll`, { type: LONGHORN.NODES }),
-      blockDevices:  this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.BLOCK_DEVICE }),
-      addons:        this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.ADD_ONS }),
-      secrets:       this.$store.dispatch(`${ inStore }/findAll`, { type: SECRET }),
+      longhornNodes:        this.$store.dispatch(`${ inStore }/findAll`, { type: LONGHORN.NODES }),
+      blockDevices:         this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.BLOCK_DEVICE }),
+      addons:               this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.ADD_ONS }),
+      secrets:              this.$store.dispatch(`${ inStore }/findAll`, { type: SECRET }),
+      longhornV2DataEngine: this.$store.dispatch(`${ inStore }/find`, { type: LONGHORN.SETTINGS, id: LONGHORN_V2_DATA_ENGINE }),
     };
 
     if (this.$store.getters[`${ inStore }/schemaFor`](HCI.INVENTORY)) {
@@ -76,23 +82,25 @@ export default {
 
     const blockDevices = this.$store.getters[`${ inStore }/all`](HCI.BLOCK_DEVICE);
     const provisionedBlockDevices = blockDevices.filter((d) => {
-      const provisioned = d?.spec?.fileSystem?.provisioned;
       const isCurrentNode = d?.spec?.nodeName === this.value.id;
       const isLonghornMounted = findBy(this.longhornDisks, 'name', d.metadata.name);
 
-      return provisioned && isCurrentNode && !isLonghornMounted;
+      return d?.isProvisioned && isCurrentNode && !isLonghornMounted;
     })
       .map((d) => {
         const corrupted = d?.status?.deviceStatus?.fileSystem?.corrupted;
 
         return {
-          isNew:          true,
-          name:           d?.metadata?.name,
-          originPath:     d?.spec?.fileSystem?.mountPoint,
-          path:           d?.spec?.fileSystem?.mountPoint,
-          blockDevice:    d,
-          displayName:    d?.displayName,
-          forceFormatted: corrupted ? true : d?.spec?.fileSystem?.forceFormatted || false,
+          isNew:              true,
+          name:               d?.metadata?.name,
+          originPath:         d?.spec?.fileSystem?.mountPoint,
+          path:               d?.spec?.fileSystem?.mountPoint,
+          blockDevice:        d,
+          displayName:        d?.displayName,
+          forceFormatted:     corrupted ? true : d?.spec?.fileSystem?.forceFormatted || false,
+          provisioner:        d?.spec?.provisioner?.lvm ? LVM_DRIVER : LONGHORN_DRIVER,
+          provisionerVersion: d?.spec?.provisioner?.longhorn?.engineVersion || LONGHORN_VERSION_V1,
+          lvmVolumeGroup:     d?.spec?.provisioner?.lvm?.vgName,
         };
       });
 
@@ -156,6 +164,13 @@ export default {
       return out;
     },
 
+    longhornSystemVersion() {
+      const inStore = this.$store.getters['currentProduct'].inStore;
+      const v2DataEngine = this.$store.getters[`${ inStore }/byId`](LONGHORN.SETTINGS, LONGHORN_V2_DATA_ENGINE) || {};
+
+      return v2DataEngine.value === 'true' ? LONGHORN_VERSION_V2 : LONGHORN_VERSION_V1;
+    },
+
     longhornDisks() {
       const inStore = this.$store.getters['currentProduct'].inStore;
       const longhornNode = this.$store.getters[`${ inStore }/byId`](LONGHORN.NODES, `${ LONGHORN_SYSTEM }/${ this.value.id }`);
@@ -176,16 +191,19 @@ export default {
         return {
           ...diskStatus[key],
           ...diskSpec?.[key],
-          name:             key,
-          isNew:            false,
-          storageReserved:  formatSi(diskSpec[key]?.storageReserved, formatOptions),
-          storageAvailable: formatSi(diskStatus[key]?.storageAvailable, formatOptions),
-          storageMaximum:   formatSi(diskStatus[key]?.storageMaximum, formatOptions),
-          storageScheduled: formatSi(diskStatus[key]?.storageScheduled, formatOptions),
+          name:               key,
+          isNew:              false,
+          storageReserved:    formatSi(diskSpec[key]?.storageReserved, formatOptions),
+          storageAvailable:   formatSi(diskStatus[key]?.storageAvailable, formatOptions),
+          storageMaximum:     formatSi(diskStatus[key]?.storageMaximum, formatOptions),
+          storageScheduled:   formatSi(diskStatus[key]?.storageScheduled, formatOptions),
           blockDevice,
-          displayName:      blockDevice?.displayName || key,
-          forceFormatted:   blockDevice?.spec?.fileSystem?.forceFormatted || false,
-          tags:             diskSpec?.[key]?.tags || [],
+          displayName:        blockDevice?.displayName || key,
+          forceFormatted:     blockDevice?.spec?.fileSystem?.forceFormatted || false,
+          tags:               diskSpec?.[key]?.tags || [],
+          provisioner:        blockDevice?.spec?.provisioner?.lvm ? LVM_DRIVER : LONGHORN_DRIVER,
+          provisionerVersion: blockDevice?.spec?.provisioner?.longhorn?.engineVersion || LONGHORN_VERSION_V1,
+          lvmVolumeGroup:     blockDevice?.spec?.provisioner?.lvm?.vgName,
         };
       });
 
@@ -193,7 +211,7 @@ export default {
     },
 
     showFormattedWarning() {
-      const out = this.newDisks.filter(d => d.forceFormatted && d.isNew) || [];
+      const out = this.newDisks.filter(d => d.forceFormatted && d.isNew && d.provisionerVersion === LONGHORN_VERSION_V1) || [];
 
       return out.length > 0;
     },
@@ -312,15 +330,18 @@ export default {
 
       this.newDisks.push({
         name,
-        path:              mountPoint,
-        allowScheduling:   false,
-        evictionRequested: false,
-        storageReserved:   0,
-        isNew:             true,
-        originPath:        disk?.spec?.fileSystem?.mountPoint,
-        blockDevice:       disk,
-        displayName:       disk?.displayName,
+        path:               mountPoint,
+        allowScheduling:    false,
+        evictionRequested:  false,
+        storageReserved:    0,
+        isNew:              true,
+        originPath:         disk?.spec?.fileSystem?.mountPoint,
+        blockDevice:        disk,
+        displayName:        disk?.displayName,
         forceFormatted,
+        provisioner:        LONGHORN_DRIVER,
+        provisionerVersion: LONGHORN_VERSION_V1,
+        lvmVolumeGroup:     null,
       });
     },
 
@@ -334,13 +355,10 @@ export default {
       } else if (addDisks.length !== 0 && removeDisks.length === 0) {
         const updatedDisks = addDisks.filter((d) => {
           const blockDevice = this.$store.getters[`${ inStore }/byId`](HCI.BLOCK_DEVICE, `${ LONGHORN_SYSTEM }/${ d.name }`);
-          const { provisioned, forceFormatted } = blockDevice.spec.fileSystem;
+          const { forceFormatted } = blockDevice.spec.fileSystem;
+          const { provisioner } = blockDevice.spec;
 
-          if (provisioned && forceFormatted === d.forceFormatted) {
-            return false;
-          } else {
-            return true;
-          }
+          return !(blockDevice.isProvisioned && forceFormatted === d.forceFormatted && isEqual(provisioner, d.provisioner));
         });
 
         if (updatedDisks.length === 0) {
@@ -352,8 +370,17 @@ export default {
         await Promise.all(addDisks.map((d) => {
           const blockDevice = this.$store.getters[`${ inStore }/byId`](HCI.BLOCK_DEVICE, `${ LONGHORN_SYSTEM }/${ d.name }`);
 
-          blockDevice.spec.fileSystem.provisioned = true;
+          blockDevice.spec.provision = true;
           blockDevice.spec.fileSystem.forceFormatted = d.forceFormatted;
+
+          switch (d.provisioner) {
+          case LONGHORN_DRIVER:
+            blockDevice.spec.provisioner = { longhorn: { engineVersion: d.provisionerVersion } };
+            break;
+          case LVM_DRIVER:
+            blockDevice.spec.provisioner = { lvm: { vgName: d.lvmVolumeGroup } };
+            break;
+          }
 
           return blockDevice.save();
         }));
@@ -361,7 +388,7 @@ export default {
         await Promise.all(removeDisks.map((d) => {
           const blockDevice = this.$store.getters[`${ inStore }/byId`](HCI.BLOCK_DEVICE, `${ LONGHORN_SYSTEM }/${ d.name }`);
 
-          blockDevice.spec.fileSystem.provisioned = false;
+          blockDevice.spec.provision = false;
 
           return blockDevice.save();
         }));
@@ -414,7 +441,7 @@ export default {
           if ((!findBy(this.disks || [], 'name', d.metadata.name) &&
                 d?.spec?.nodeName === this.value.id &&
                 (!addedToNodeCondition || addedToNodeCondition?.status === 'False') &&
-                !d.spec?.fileSystem?.provisioned &&
+                !d?.isProvisioned &&
                 !isAdded) ||
                 isRemoved
           ) {
@@ -478,10 +505,11 @@ export default {
 
       const disks = this.longhornNode?.spec?.disks || {};
 
+      // update each disk tags and scheduling
       this.newDisks.map((disk) => {
         (disks[disk.name] || {}).tags = disk.tags;
+        (disks[disk.name] || {}).allowScheduling = disk.allowScheduling;
       });
-
       let count = 0;
 
       const retrySave = async() => {
@@ -505,7 +533,9 @@ export default {
         }
       };
 
-      await retrySave();
+      if (this.longhornNode) {
+        await retrySave();
+      }
     },
   },
 };
@@ -565,6 +595,7 @@ export default {
                 class="mb-20"
                 :mode="mode"
                 :disks="disks"
+                :node="value"
               />
             </template>
             <template #add>
@@ -649,7 +680,6 @@ export default {
             :value="filteredLabels"
             :add-label="t('labels.addLabel')"
             :mode="mode"
-            :title="t('labels.labels.title')"
             :read-allowed="false"
             :value-can-be-empty="true"
             @input="updateHostLabels"

@@ -6,6 +6,7 @@ import {
   CAPI, METRIC, NODE, SCHEMA, LONGHORN, POD
 } from '@shell/config/types';
 import { HCI } from '../types';
+import { DOC_LINKS } from '../config/doc-links';
 import { allHash } from '@shell/utils/promise';
 import metricPoller from '@shell/mixins/metric-poller';
 
@@ -90,6 +91,8 @@ export default {
           search:    ['internalIp'],
           value:     'internalIp',
           formatter: 'CopyToClipboard',
+          sort:      ['internalIp'],
+          align:     'center',
         },
       ];
 
@@ -120,11 +123,22 @@ export default {
           labelKey:      'tableHeaders.storage',
           value:         'id',
           formatter:     'HarvesterStorageUsed',
-          formatterOpts: { showReserved: true },
+          formatterOpts: { showAllocated: true },
         };
 
         out.splice(-1, 0, storageHeader);
       }
+
+      out.push({
+        name:          'cpuManager',
+        labelKey:      'harvester.tableHeaders.cpuManager',
+        value:         'id',
+        formatter:     'HarvesterCPUPinning',
+        formatterOpts: { rows: this.rows },
+        width:         150,
+        align:         'center',
+
+      });
 
       if (this.hasLonghornSchema) {
         out.push({
@@ -142,7 +156,7 @@ export default {
         name:  'console',
         label: ' ',
         align: 'right',
-        width: 65,
+        width: 80,
       });
 
       return out;
@@ -150,6 +164,10 @@ export default {
 
     schema() {
       return schema;
+    },
+
+    consoleDocLink() {
+      return DOC_LINKS.CONSOLE_URL;
     }
   },
   methods: {
@@ -168,7 +186,15 @@ export default {
 
     goto(row) {
       window.open(row.consoleUrl, '_blank');
-    }
+    },
+
+    consoleTooltip(row) {
+      if (!row.consoleUrl) {
+        return this.t('harvester.host.noConsoleUrl');
+      }
+
+      return '';
+    },
   },
 
   typeDisplay() {
@@ -198,10 +224,19 @@ export default {
       v-on="$listeners"
     >
       <template #cell:console="{row}">
-        <button type="button" class="btn btn-sm role-primary" :disabled="!row.consoleUrl" @click="goto(row)">
-          {{ t('harvester.host.console') }}
-        </button>
+        <div class="console-button">
+          <button v-clean-tooltip="consoleTooltip(row)" type="button" class="mr-5 btn btn-sm role-primary" :disabled="!row.consoleUrl" @click="goto(row)">
+            {{ t('harvester.host.console') }}
+          </button>
+          <a v-if="!row.consoleUrl" :href="consoleDocLink" target="_blank"><i class="icon icon-info" /></a>
+        </div>
       </template>
     </ResourceTable>
   </div>
 </template>
+
+<style lang="scss" scoped>
+  .console-button {
+    display: flex;
+  }
+</style>

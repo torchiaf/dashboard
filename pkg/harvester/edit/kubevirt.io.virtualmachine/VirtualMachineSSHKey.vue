@@ -10,6 +10,8 @@ import { HCI } from '../../types';
 import { clone } from '@shell/utils/object';
 import { _VIEW } from '@shell/config/query-params';
 
+import { NAMESPACE } from '@shell/config/types';
+
 const _NEW = '_NEW';
 
 export default {
@@ -42,6 +44,11 @@ export default {
       default: ''
     },
 
+    createNamespace: {
+      type:    Boolean,
+      default: false,
+    },
+
     searchable: {
       type:    Boolean,
       default: true,
@@ -61,7 +68,8 @@ export default {
       randomStr:  randomStr(5).toLowerCase(),
       errors:     [],
       isAll:      false,
-      checkAll:   false
+      checkAll:   false,
+      showModal:  false
     };
   },
 
@@ -101,16 +109,14 @@ export default {
 
   watch: {
     publicKey(neu) {
-      const splitSSH = neu.split(/\s+/);
+      const trimNeu = neu.trim();
+      const splitSSH = trimNeu.split(/\s+/);
 
-      if (splitSSH.length === 3) {
-        if (splitSSH[2].includes('@')) {
-          if (splitSSH[2].split('@')) {
-            if (!this.sshName) {
-              this.sshName = splitSSH[2].split('@')[0];
-            }
-          }
-        }
+      if (splitSSH.length === 3 && !this.sshName) {
+        const keyComment = splitSSH[2];
+
+        this.randomStr = randomStr(10).toLowerCase();
+        this.sshName = keyComment.includes('@') ? keyComment.split('@')[0] : keyComment;
       }
     },
 
@@ -129,11 +135,45 @@ export default {
 
   methods: {
     show() {
-      this.$modal.show(this.randomStr);
+      this.showModal = true;
     },
 
     hide() {
-      this.$modal.hide(this.randomStr);
+      this.showModal = false;
+    },
+
+    async createNamespaceIfNeeded() {
+      if (!this.createNamespace || this.disableCreate) {
+        return;
+      }
+
+      const namespaces = await this.$store.dispatch('harvester/findAll', { type: NAMESPACE });
+
+      const exists = namespaces?.find(n => n.name === this.namespace);
+
+      if (!exists) {
+        const ns = await this.$store.dispatch('harvester/createNamespace', { name: this.namespace }, { root: true });
+
+        ns.applyDefaults();
+        await ns.save();
+      }
+    },
+
+    async createSSHKey() {
+      const sshValue = await this.$store.dispatch('harvester/create', {
+        metadata: {
+          name:      this.sshName,
+          namespace: this.namespace
+        },
+        spec: { publicKey: this.publicKey },
+        type: HCI.SSH
+      });
+
+      const res = await sshValue.save();
+
+      if (res.id) {
+        this.checkedSsh.push(`${ this.namespace }/${ this.sshName }`);
+      }
     },
 
     async save(buttonCb) {
@@ -166,20 +206,9 @@ export default {
       }
 
       try {
-        const sshValue = await this.$store.dispatch('harvester/create', {
-          metadata: {
-            name:      this.sshName,
-            namespace: this.namespace
-          },
-          spec: { publicKey: this.publicKey },
-          type: HCI.SSH
-        });
+        await this.createNamespaceIfNeeded();
 
-        const res = await sshValue.save();
-
-        if (res.id) {
-          this.checkedSsh.push(`${ this.namespace }/${ this.sshName }`);
-        }
+        await this.createSSHKey();
 
         buttonCb(true);
         this.cancel();
@@ -222,6 +251,7 @@ export default {
     />
 
     <ModalWithCard
+      v-if="showModal"
       :ref="randomStr"
       :name="randomStr"
       width="40%"

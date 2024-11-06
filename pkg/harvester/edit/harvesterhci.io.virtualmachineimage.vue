@@ -8,7 +8,6 @@ import NameNsDescription from '@shell/components/form/NameNsDescription';
 import { RadioGroup } from '@components/Form/Radio';
 import Select from '@shell/components/form/Select';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
-
 import CreateEditView from '@shell/mixins/create-edit-view';
 import { OS } from '../mixins/harvester-vm';
 import { VM_IMAGE_FILE_FORMAT } from '../validators/vm-image';
@@ -17,7 +16,11 @@ import { exceptionToErrorsArray } from '@shell/utils/error';
 import { allHash } from '@shell/utils/promise';
 import { STORAGE_CLASS } from '@shell/config/types';
 import { HCI } from '../types';
+import { LVM_DRIVER } from '../models/harvester/storage.k8s.io.storageclass';
 
+const ENCRYPT = 'encrypt';
+const DECRYPT = 'decrypt';
+const CLONE = 'clone';
 const DOWNLOAD = 'download';
 const UPLOAD = 'upload';
 const rawORqcow2 = 'raw_qcow2';
@@ -57,11 +60,33 @@ export default {
     const defaultStorage = this.$store.getters[`${ inStore }/all`](STORAGE_CLASS).find(s => s.isDefault);
 
     this.$set(this, 'storageClassName', this.storageClassName || defaultStorage?.metadata?.name || 'longhorn');
+    this.images = this.$store.getters[`${ inStore }/all`](HCI.IMAGE);
+
+    const { securityParameters } = this.value.spec;
+
+    // edit and view mode should show the source image
+    if (securityParameters) {
+      // image ns/name = image.id
+      const sourceImage = `${ securityParameters.sourceImageNamespace }/${ securityParameters.sourceImageName }`;
+
+      this.selectedImage = this.images.find(image => image.id === sourceImage);
+    }
   },
 
   data() {
+    // pass from Encrypt Image / Decrypt Image actions
+    const { image, sourceType, cryptoOperation } = this.$route.query || {};
+
     if ( !this.value.spec ) {
-      this.$set(this.value, 'spec', { sourceType: DOWNLOAD });
+      this.$set(this.value, 'spec', { sourceType: sourceType || DOWNLOAD });
+    }
+
+    if (image && cryptoOperation) {
+      this.$set(this.value.spec, 'securityParameters', {
+        cryptoOperation,
+        sourceImageName:      image.metadata.name,
+        sourceImageNamespace: image.metadata.namespace
+      });
     }
 
     if (!this.value.metadata.name) {
@@ -69,12 +94,14 @@ export default {
     }
 
     return {
-      url:      this.value.spec.url,
-      files:    [],
-      resource: '',
-      headers:  {},
-      fileUrl:  '',
-      file:     '',
+      selectedImage: image || null,
+      images:        [],
+      url:           this.value.spec.url,
+      files:         [],
+      resource:      '',
+      headers:       {},
+      fileUrl:       '',
+      file:          '',
     };
   },
 
@@ -92,23 +119,30 @@ export default {
     },
 
     showEditAsYaml() {
-      return this.value.spec.sourceType === DOWNLOAD;
+      return this.value.spec.sourceType === DOWNLOAD || this.value.spec.sourceType === CLONE;
     },
-
+    radioGroupOptions() {
+      return [
+        DOWNLOAD,
+        UPLOAD,
+        ENCRYPT,
+        DECRYPT
+      ];
+    },
     storageClassOptions() {
       const inStore = this.$store.getters['currentProduct'].inStore;
       const storages = this.$store.getters[`${ inStore }/all`](STORAGE_CLASS);
 
-      const out = storages.filter(s => !s.parameters?.backingImage).map((s) => {
-        const label = s.isDefault ? `${ s.name } (${ this.t('generic.default') })` : s.name;
+      return storages
+        .filter(s => !s.parameters?.backingImage && s.provisioner !== LVM_DRIVER) // Lvm storage is not supported.
+        .map((s) => {
+          const label = s.isDefault ? `${ s.name } (${ this.t('generic.default') })` : s.name;
 
-        return {
-          label,
-          value: s.name,
-        };
-      }) || [];
-
-      return out;
+          return {
+            label,
+            value: s.name,
+          };
+        }) || [];
     },
 
     storageClassName: {
@@ -120,6 +154,59 @@ export default {
         this.value.metadata.annotations[HCI_ANNOTATIONS.STORAGE_CLASS] = nue;
       }
     },
+    sourceImageOptions() {
+      let options = [];
+
+      if (this.value.spec.sourceType !== CLONE) {
+        return options;
+      }
+      if (this.value.spec.securityParameters.cryptoOperation === ENCRYPT) {
+        options = this.images.filter(image => !image.isEncrypted);
+      } else {
+        options = this.images.filter(image => image.isEncrypted);
+      }
+
+      return options.map(image => image.displayNameWithNamespace);
+    },
+    sourceImage: {
+      get() {
+        if (this.selectedImage) {
+          return this.selectedImage.displayNameWithNamespace;
+        }
+
+        return '';
+      },
+      set(neu) {
+        this.selectedImage = this.images.find(i => i.displayNameWithNamespace === neu);
+        // sourceImageName should bring the name of the image
+        this.value.spec.securityParameters.sourceImageName = this.selectedImage?.metadata.name || '';
+        this.value.spec.securityParameters.sourceImageNamespace = this.selectedImage?.metadata.namespace || '';
+      }
+    },
+    sourceType: {
+      get() {
+        if (this.value.spec.sourceType === CLONE) {
+          return this.value.spec?.securityParameters?.cryptoOperation;
+        } else {
+          return this.value.spec.sourceType;
+        }
+      },
+
+      set(neu) {
+        if (neu === DECRYPT || neu === ENCRYPT) {
+          this.value.spec.sourceType = CLONE;
+          this.$set(this.value.spec, 'securityParameters', {
+            cryptoOperation:      neu,
+            sourceImageName:      '',
+            sourceImageNamespace: this.value.metadata.namespace
+          });
+          this.selectedImage = null;
+        } else {
+          this.$delete(this.value.spec, 'securityParameters');
+          this.value.spec.sourceType = neu;
+        }
+      }
+    }
   },
 
   watch: {
@@ -162,6 +249,7 @@ export default {
           buttonCb(false);
         }
       } else {
+        this.value.spec.url = this.value.spec.url?.trim() || '';
         this.save(buttonCb);
       }
     },
@@ -277,6 +365,7 @@ export default {
     :can-yaml="showEditAsYaml ? true : false"
     :apply-hooks="applyHooks"
     @finish="saveImage"
+    @error="e=>errors=e"
   >
     <NameNsDescription
       ref="nd"
@@ -295,15 +384,14 @@ export default {
       >
         <RadioGroup
           v-if="isCreate"
-          v-model="value.spec.sourceType"
+          v-model="sourceType"
           name="model"
-          :options="[
-            'download',
-            'upload',
-          ]"
+          :options="radioGroupOptions"
           :labels="[
             t('harvester.image.sourceType.download'),
             t('harvester.image.sourceType.upload'),
+            t('harvester.image.sourceType.encrypt'),
+            t('harvester.image.sourceType.decrypt'),
           ]"
           :mode="mode"
         />
@@ -329,7 +417,7 @@ export default {
               :tooltip="t('harvester.image.urlTip', {}, true)"
             />
 
-            <div v-else>
+            <div v-else-if="value.spec.sourceType === 'upload'">
               <LabeledInput
                 v-if="isView"
                 v-model="imageName"
@@ -374,6 +462,16 @@ export default {
               label-key="harvester.image.checksum"
               :tooltip="t('harvester.image.checksumTip')"
             />
+
+            <LabeledSelect
+              v-if="value.spec.sourceType === 'clone'"
+              v-model="sourceImage"
+              :options="sourceImageOptions"
+              :label="t('harvester.image.sourceImage')"
+              :mode="mode"
+              :disabled="isEdit"
+              class="mb-20"
+            />
           </div>
         </div>
       </Tab>
@@ -410,19 +508,11 @@ export default {
           @focusKey="focusKey"
           @input="value.setLabels($event)"
         >
-          <template #key="{ row, keyName, queueUpdate}">
-            <input
-              ref="key"
-              v-model="row[keyName]"
-              :placeholder="t('keyValue.keyPlaceholder')"
-              @input="queueUpdate"
-            />
-          </template>
-
           <template #value="{row, keyName, valueName, queueUpdate}">
             <Select
               v-if="internalAnnotations(row)"
               v-model="row[valueName]"
+              :mode="mode"
               :searchable="true"
               :clearable="false"
               :options="calculateOptions(row[keyName])"

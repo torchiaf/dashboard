@@ -12,6 +12,12 @@ import { stateDisplay, colorForState } from '@shell/plugins/dashboard-store/reso
 import { _CLONE } from '@shell/config/query-params';
 import HarvesterResource from './harvester';
 import { PRODUCT_NAME as HARVESTER_PRODUCT } from '../config/harvester';
+import { CSI_SECRETS } from '@pkg/harvester/config/harvester-map';
+
+const {
+  CSI_PROVISIONER_SECRET_NAME,
+  CSI_PROVISIONER_SECRET_NAMESPACE,
+} = CSI_SECRETS;
 
 function isReady() {
   function getStatusConditionOfType(type, defaultValue = []) {
@@ -48,8 +54,22 @@ export default class HciVmImage extends HarvesterResource {
       {
         action:   'createFromImage',
         enabled:  canCreateVM,
-        icon:     'icon icon-fw icon-spinner',
+        icon:     'icon icon-circle-plus',
         label:    this.t('harvester.action.createVM'),
+        disabled: !this.isReady,
+      },
+      {
+        action:   'encryptImage',
+        enabled:  !this.isEncrypted,
+        icon:     'icon icon-lock',
+        label:    this.t('harvester.action.encryptImage'),
+        disabled: !this.isReady,
+      },
+      {
+        action:   'decryptImage',
+        enabled:  this.isEncrypted,
+        icon:     'icon icon-unlock',
+        label:    this.t('harvester.action.decryptImage'),
         disabled: !this.isReady,
       },
       {
@@ -60,6 +80,36 @@ export default class HciVmImage extends HarvesterResource {
       },
       ...out
     ];
+  }
+
+  encryptImage() {
+    const router = this.currentRouter();
+
+    router.push({
+      name:   `${ HARVESTER_PRODUCT }-c-cluster-resource-create`,
+      params: { resource: HCI.IMAGE },
+      query:  {
+        image:           this,
+        fromPage:        HCI.IMAGE,
+        sourceType:      'clone',
+        cryptoOperation: 'encrypt'
+      }
+    });
+  }
+
+  decryptImage() {
+    const router = this.currentRouter();
+
+    router.push({
+      name:   `${ HARVESTER_PRODUCT }-c-cluster-resource-create`,
+      params: { resource: HCI.IMAGE },
+      query:  {
+        image:           this,
+        fromPage:        HCI.IMAGE,
+        sourceType:      'clone',
+        cryptoOperation: 'decrypt'
+      }
+    });
   }
 
   applyDefaults(resources = this, realMode) {
@@ -75,7 +125,7 @@ export default class HciVmImage extends HarvesterResource {
     router.push({
       name:   `${ HARVESTER_PRODUCT }-c-cluster-resource-create`,
       params: { resource: HCI.VM },
-      query:  { image: this.id }
+      query:  { image: this.id, fromPage: HCI.IMAGE }
     });
   }
 
@@ -102,6 +152,10 @@ export default class HciVmImage extends HarvesterResource {
     const imported = this.getStatusConditionOfType('Imported');
 
     if (imported?.status === 'Unknown') {
+      if (this.spec.sourceType === 'restore') {
+        return 'Restoring';
+      }
+
       if (this.spec.sourceType === 'download') {
         return 'Downloading';
       }
@@ -124,6 +178,28 @@ export default class HciVmImage extends HarvesterResource {
     return stateDisplay(this.metadata.state.name);
   }
 
+  get encryptionSecret() {
+    const secretNS = this.spec.storageClassParameters[CSI_PROVISIONER_SECRET_NAMESPACE];
+    const secretName = this.spec.storageClassParameters[CSI_PROVISIONER_SECRET_NAME];
+
+    if (secretNS && secretName) {
+      return `${ secretNS }/${ secretName }`;
+    }
+
+    return '';
+  }
+
+  get isEncrypted() {
+    return this.spec.sourceType === 'clone' &&
+    this.spec.securityParameters?.cryptoOperation === 'encrypt' &&
+    !!this.spec.securityParameters?.sourceImageName &&
+    !!this.spec.securityParameters?.sourceImageNamespace;
+  }
+
+  get displayNameWithNamespace() {
+    return `${ this.metadata.namespace }/${ this.spec.displayName }`;
+  }
+
   get imageMessage() {
     if (this.uploadError) {
       return ucFirst(this.uploadError);
@@ -132,7 +208,8 @@ export default class HciVmImage extends HarvesterResource {
     const conditions = this?.status?.conditions || [];
     const initialized = conditions.find( cond => cond.type === 'Initialized');
     const imported = conditions.find( cond => cond.type === 'Imported');
-    const message = initialized?.message || imported?.message;
+    const retryLimitExceeded = conditions.find( cond => cond.type === 'RetryLimitExceeded');
+    const message = initialized?.message || imported?.message || retryLimitExceeded?.message;
 
     return ucFirst(message);
   }
@@ -168,6 +245,21 @@ export default class HciVmImage extends HarvesterResource {
     });
   }
 
+  get virtualSize() {
+    const virtualSize = this.status?.virtualSize;
+
+    if (!virtualSize) {
+      return '-';
+    }
+
+    return formatSi(virtualSize, {
+      increment:    1024,
+      maxPrecision: 2,
+      suffix:       'B',
+      firstSuffix:  'B',
+    });
+  }
+
   getStatusConditionOfType(type, defaultValue = []) {
     const conditions = Array.isArray(get(this, 'status.conditions')) ? this.status.conditions : defaultValue;
 
@@ -192,6 +284,10 @@ export default class HciVmImage extends HarvesterResource {
 
   get displayName() {
     return this.spec?.displayName;
+  }
+
+  get storageClassName() {
+    return this.status?.storageClassName || '';
   }
 
   get uploadImage() {

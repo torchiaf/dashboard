@@ -1,13 +1,12 @@
 <script>
 import ConsoleBar from '../components/VMConsoleBar';
 import ResourceTable from '@shell/components/ResourceTable';
-import LinkDetail from '@shell/components/formatter/LinkDetail';
 import HarvesterVmState from '../formatters/HarvesterVmState';
-
+import {
+  PVC, PV, NODE, POD, STORAGE_CLASS
+} from '@shell/config/types';
 import { STATE, AGE, NAME, NAMESPACE } from '@shell/config/table-headers';
-import { NODE, POD } from '@shell/config/types';
 import { HCI } from '../types';
-
 import { allHash } from '@shell/utils/promise';
 import Loading from '@shell/components/Loading';
 import { clone } from '@shell/utils/object';
@@ -46,7 +45,8 @@ export const VM_HEADERS = [
     label:     'IP Address',
     value:     'id',
     formatter: 'HarvesterIpAddress',
-    labelKey:  'tableHeaders.ipAddress'
+    labelKey:  'tableHeaders.ipAddress',
+    sort:      ['id'],
   },
   {
     ...AGE,
@@ -59,7 +59,6 @@ export default {
   components: {
     Loading,
     HarvesterVmState,
-    LinkDetail,
     ConsoleBar,
     ResourceTable
   },
@@ -76,9 +75,17 @@ export default {
     const _hash = {
       vms:     this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.VM }),
       pod:     this.$store.dispatch(`${ inStore }/findAll`, { type: POD }),
+      pvcs:    this.$store.dispatch(`${ inStore }/findAll`, { type: PVC }),
+      pvs:     this.$store.dispatch(`${ inStore }/findAll`, { type: PV }),
+      images:  this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.IMAGE }),
       restore: this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.RESTORE }),
       backups: this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.BACKUP }),
+      storage: this.$store.dispatch(`${ inStore }/findAll`, { type: STORAGE_CLASS }),
     };
+
+    if (this.$store.getters[`${ inStore }/schemaFor`](HCI.RESOURCE_QUOTA)) {
+      _hash.resourceQuotas = this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.RESOURCE_QUOTA });
+    }
 
     if (this.$store.getters[`${ inStore }/schemaFor`](NODE)) {
       _hash.nodes = this.$store.dispatch(`${ inStore }/findAll`, { type: NODE });
@@ -115,7 +122,7 @@ export default {
     headers() {
       const restoreCol = {
         name:      'restoreProgress',
-        labelKey:  'tableHeaders.restore',
+        labelKey:  'harvester.tableHeaders.restore',
         value:     'restoreProgress',
         align:     'left',
         formatter: 'HarvesterBackupProgressBar',
@@ -127,7 +134,7 @@ export default {
         value:     'nodeName',
         sort:      ['realAttachNodeName'],
         formatter: 'HarvesterHost',
-        labelKey:  'tableHeaders.node'
+        labelKey:  'harvester.tableHeaders.vm.node'
       };
 
       const cols = clone(VM_HEADERS);
@@ -136,7 +143,7 @@ export default {
         cols.splice(-1, 0, nodeCol);
       }
 
-      if (this.hasRestoredVMs) {
+      if (this.hasBackUpRestoreInProgress) {
         cols.splice(-1, 0, restoreCol);
       }
 
@@ -149,8 +156,11 @@ export default {
       return [...this.allVMs, ...matchVMIs];
     },
 
-    hasRestoredVMs() {
-      return !!this.rows.find(r => !!r.restoreResource);
+    /**
+     * We want to show the progress bar only for Backup's restore; snapshot's restore is immediate.
+     */
+    hasBackUpRestoreInProgress() {
+      return !!this.rows.find(r => r.restoreResource && !r.restoreResource.fromSnapshot && !r.restoreResource.isComplete);
     }
   },
 
@@ -161,6 +171,20 @@ export default {
     await this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.VMIM });
 
     this.$set(this, 'allVMIs', vmis);
+  },
+
+  methods: {
+    lockIconTooltipMessage(row) {
+      const message = '';
+
+      if (row.encryptedVolumeType === 'all') {
+        return this.t('harvester.virtualMachine.volume.lockTooltip.all');
+      } else if (row.encryptedVolumeType === 'partial') {
+        return this.t('harvester.virtualMachine.volume.lockTooltip.partial');
+      }
+
+      return message;
+    }
   }
 };
 </script>
@@ -186,11 +210,21 @@ export default {
 
       <template slot="cell:name" slot-scope="scope">
         <div class="name-console">
-          <LinkDetail v-if="scope.row.type !== HCI.VMI" v-model="scope.row.metadata.name" :row="scope.row" />
+          <n-link
+            v-if="scope.row.type !== HCI.VMI"
+            :to="scope.row.detailLocation"
+          >
+            {{ scope.row.metadata.name }}
+            <i
+              v-if="lockIconTooltipMessage(scope.row)"
+              v-tooltip="lockIconTooltipMessage(scope.row)"
+              class="icon icon-lock"
+              :class="{'green-icon': scope.row.encryptedVolumeType === 'all', 'yellow-icon': scope.row.encryptedVolumeType === 'partial'}"
+            />
+          </n-link>
           <span v-else>
             {{ scope.row.metadata.name }}
           </span>
-
           <ConsoleBar :resource="scope.row" class="console mr-10 ml-10" />
         </div>
       </template>
@@ -205,6 +239,14 @@ export default {
   .vmstate {
     margin-right: 6px;
   }
+}
+
+.green-icon {
+  color: var(--success);
+}
+
+.yellow-icon {
+  color: var(--warning);
 }
 
 .name-console {

@@ -59,6 +59,22 @@ export default class HciNode extends HarvesterResource {
       total:   1
     };
 
+    const enableCPUManager = {
+      action:  'enableCPUManager',
+      enabled: this.hasAction('enableCPUManager') && !this.isCPUManagerEnableInProgress && !this.isCPUManagerEnabled && !this.isEtcd, // witness node doesn't have CPU manager
+      icon:    'icon icon-fw icon-os-management',
+      label:   this.t('harvester.action.enableCPUManager'),
+      total:   1
+    };
+
+    const disableCPUManager = {
+      action:  'disableCPUManager',
+      enabled: this.hasAction('disableCPUManager') && !this.isCPUManagerEnableInProgress && this.isCPUManagerEnabled && !this.isEtcd,
+      icon:    'icon icon-fw icon-os-management',
+      label:   this.t('harvester.action.disableCPUManager'),
+      total:   1
+    };
+
     const shutDown = {
       action:  'shutDown',
       enabled: this.hasAction('powerActionPossible') && this.hasAction('powerAction') && !this.isStopped && !!this.inventory,
@@ -88,6 +104,8 @@ export default class HciNode extends HarvesterResource {
       uncordon,
       enableMaintenance,
       disableMaintenance,
+      enableCPUManager,
+      disableCPUManager,
       shutDown,
       powerOn,
       reboot,
@@ -134,13 +152,10 @@ export default class HciNode extends HarvesterResource {
 
   get consoleUrl() {
     const url = this.metadata?.annotations?.[HCI_ANNOTATIONS.HOST_CONSOLE_URL];
+    const validator = /^[a-z]+:\/\//;
 
-    if (!url) {
+    if (!url?.match(validator)) {
       return false;
-    }
-
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return `http://${ url }`;
     }
 
     return url;
@@ -308,6 +323,14 @@ export default class HciNode extends HarvesterResource {
     this.doAction('disableMaintenanceMode', {});
   }
 
+  enableCPUManager() {
+    this.doActionGrowl('enableCPUManager', {});
+  }
+
+  disableCPUManager() {
+    this.doActionGrowl('disableCPUManager', {});
+  }
+
   get isUnSchedulable() {
     return (
       this.metadata?.labels?.[HCI_ANNOTATIONS.NODE_SCHEDULABLE] === 'false' ||
@@ -345,6 +368,28 @@ export default class HciNode extends HarvesterResource {
       this.metadata?.annotations?.[HCI_ANNOTATIONS.MAINTENANCE_STATUS] ===
       'completed'
     );
+  }
+
+  get isCPUManagerEnabled() {
+    return this.metadata?.labels?.[HCI_ANNOTATIONS.CPU_MANAGER] === 'true';
+  }
+
+  get isCPUManagerEnableInProgress() {
+    return this.cpuManagerUpdateStatus === 'requested' || this.cpuManagerUpdateStatus === 'running';
+  }
+
+  get isCPUManagerEnableFailed() {
+    return this.cpuManagerUpdateStatus === 'failed';
+  }
+
+  get cpuManagerUpdateStatus() {
+    try {
+      const cpuManagerUpdate = JSON.parse(this.metadata.annotations[HCI_ANNOTATIONS.NODE_CPU_MANAGER_UPDATE_STATUS] || '{}');
+
+      return cpuManagerUpdate.status || '';
+    } catch {
+      return '';
+    }
   }
 
   get longhornDisks() {
@@ -444,7 +489,7 @@ export default class HciNode extends HarvesterResource {
   get unProvisionedDisks() {
     const blockDevices = this.blockDevices || [];
 
-    return blockDevices.filter(d => d?.spec?.fileSystem?.provisioned && d?.status?.provisionPhase !== 'Provisioned');
+    return blockDevices.filter(d => d?.isProvisioned && d?.status?.provisionPhase !== 'Provisioned');
   }
 
   get diskStatusCount() {

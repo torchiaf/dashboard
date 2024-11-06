@@ -2,18 +2,22 @@
 import { findBy } from '@shell/utils/array';
 import UnitInput from '@shell/components/form/UnitInput';
 import { LabeledInput } from '@components/Form/LabeledInput';
+import LabelValue from '@shell/components/LabelValue';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import InputOrDisplay from '@shell/components/InputOrDisplay';
+import { Banner } from '@components/Banner';
 import { PVC } from '@shell/config/types';
 import { HCI } from '../../../../types';
 import { formatSi, parseSi } from '@shell/utils/units';
 import { VOLUME_TYPE, InterfaceOption } from '../../../../config/harvester-map';
+import { _VIEW } from '@shell/config/query-params';
+import { ucFirst } from '@shell/utils/string';
 
 export default {
   name: 'HarvesterEditVMImage',
 
   components: {
-    UnitInput, LabeledInput, LabeledSelect, InputOrDisplay
+    UnitInput, LabeledInput, LabeledSelect, InputOrDisplay, LabelValue, Banner
   },
 
   props: {
@@ -73,6 +77,14 @@ export default {
   },
 
   computed: {
+    encryptionValue() {
+      return ucFirst(String(this.value.isEncrypted));
+    },
+
+    isView() {
+      return this.mode === _VIEW;
+    },
+
     imagesOption() {
       return this.images.filter(c => c.isReady).sort((a, b) => a.creationTimestamp > b.creationTimestamp ? -1 : 1).map( (I) => {
         return {
@@ -88,12 +100,22 @@ export default {
       return image ? image.label : '-';
     },
 
+    readyToUse() {
+      const val = String(this.value.volumeBackups?.readyToUse || false);
+
+      return ucFirst(val);
+    },
+
     pvcsResource() {
       const allPVCs = this.$store.getters['harvester/all'](PVC) || [];
 
       return allPVCs.find((P) => {
         return this.namespace ? P.id === `${ this.namespace }/${ this.value.volumeName }` : true;
       });
+    },
+
+    isLonghornV2() {
+      return this.value.pvc?.storageClass?.isLonghornV2;
     }
   },
 
@@ -140,15 +162,24 @@ export default {
 
     onImageChange() {
       const imageResource = this.$store.getters['harvester/all'](HCI.IMAGE)?.find( I => this.value.image === I.id);
+      const isIsoImage = /iso$/i.test(imageResource?.imageSuffix);
+      const imageSize = Math.max(imageResource?.status?.size, imageResource?.status?.virtualSize);
 
-      if (this.idx === 0) {
-        if (/iso$/i.test(imageResource?.imageSuffix)) {
-          this.$set(this.value, 'type', 'cd-rom');
-          this.$set(this.value, 'bus', 'sata');
-        } else {
-          this.$set(this.value, 'type', 'disk');
-          this.$set(this.value, 'bus', 'virtio');
+      if (isIsoImage) {
+        this.$set(this.value, 'type', 'cd-rom');
+        this.$set(this.value, 'bus', 'sata');
+      } else {
+        this.$set(this.value, 'type', 'disk');
+        this.$set(this.value, 'bus', 'virtio');
+      }
+
+      if (imageSize) {
+        let imageSizeGiB = Math.ceil(imageSize / 1024 / 1024 / 1024);
+
+        if (!isIsoImage) {
+          imageSizeGiB = Math.max(imageSizeGiB, 10);
         }
+        this.$set(this.value, 'size', `${ imageSizeGiB }Gi`);
       }
 
       this.update();
@@ -251,6 +282,7 @@ export default {
             :label="t('harvester.fields.size')"
             :mode="mode"
             :required="validateRequired"
+            :disable="isLonghornV2"
             suffix="GiB"
             @input="update"
           />
@@ -261,7 +293,7 @@ export default {
     <div class="row mb-20">
       <div
         data-testid="input-hevi-bus"
-        class="col span-3"
+        class="col span-6"
       >
         <InputOrDisplay
           :name="t('harvester.virtualMachine.volume.bus')"
@@ -277,6 +309,29 @@ export default {
           />
         </InputOrDisplay>
       </div>
+      <div
+        v-if="isView"
+        class="col span-3"
+      >
+        <LabelValue
+          :name="t('harvester.virtualMachine.volume.encryption')"
+          :value="encryptionValue"
+        />
+      </div>
     </div>
+    <div class="row mb-20">
+      <div v-if="value.volumeBackups && isView" class="col span-3">
+        <LabelValue
+          :name="t('harvester.virtualMachine.volume.readyToUse')"
+          :value="readyToUse"
+        />
+      </div>
+    </div>
+    <Banner
+      v-if="value.volumeBackups && value.volumeBackups.error && value.volumeBackups.error.message"
+      color="error"
+      class="mb-20"
+      :label="value.volumeBackups.error.message"
+    />
   </div>
 </template>

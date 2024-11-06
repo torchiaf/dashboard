@@ -2,6 +2,7 @@
 import { mapGetters } from 'vuex';
 import Tabbed from '@shell/components/Tabbed';
 import Tab from '@shell/components/Tabbed/Tab';
+import LabelValue from '@shell/components/LabelValue';
 import { EVENT, SERVICE, POD } from '@shell/config/types';
 import { HCI } from '../../types';
 import CreateEditView from '@shell/mixins/create-edit-view';
@@ -9,7 +10,6 @@ import VM_MIXIN from '../../mixins/harvester-vm';
 import DashboardMetrics from '@shell/components/DashboardMetrics';
 import { allHash, setPromiseResult } from '@shell/utils/promise';
 import { allDashboardsExist } from '@shell/utils/grafana';
-
 import CloudConfig from '../../edit/kubevirt.io.virtualmachine/VirtualMachineCloudConfig';
 import Volume from '../../edit/kubevirt.io.virtualmachine/VirtualMachineVolume';
 import Network from '../../edit/kubevirt.io.virtualmachine/VirtualMachineNetwork';
@@ -22,6 +22,7 @@ import OverviewBasics from './VirtualMachineTabs/VirtualMachineBasics';
 import OverviewKeypairs from './VirtualMachineTabs/VirtualMachineKeypairs';
 import KeyValue from '@shell/components/form/KeyValue';
 import Labels from '@shell/components/form/Labels';
+import { formatSi } from '@shell/utils/units';
 
 const VM_METRICS_DETAIL_URL = '/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy/d/harvester-vm-detail-1/vm-info-detail?orgId=1';
 
@@ -33,6 +34,7 @@ export default {
     Tabbed,
     Events,
     OverviewBasics,
+    LabelValue,
     Volume,
     Network,
     OverviewKeypairs,
@@ -57,14 +59,17 @@ export default {
 
   data() {
     return {
-      switchToCloud: false,
+      hasResourceQuotaSchema: false,
+      switchToCloud:          false,
       VM_METRICS_DETAIL_URL,
-      showVmMetrics: false,
+      showVmMetrics:          false,
     };
   },
 
   async created() {
     const inStore = this.$store.getters['currentProduct'].inStore;
+
+    this.hasResourceQuotaSchema = !!this.$store.getters[`${ inStore }/schemaFor`](HCI.RESOURCE_QUOTA);
 
     const hash = {
       pods:     this.$store.dispatch(`${ inStore }/findAll`, { type: POD }),
@@ -74,6 +79,10 @@ export default {
       vmis:     this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.VMI }),
       restore:  this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.RESTORE }),
     };
+
+    if (this.hasResourceQuotaSchema) {
+      hash.resourceQuotas = this.$store.dispatch(`${ inStore }/findAll`, { type: HCI.RESOURCE_QUOTA });
+    }
 
     await allHash(hash);
 
@@ -87,6 +96,22 @@ export default {
 
   computed: {
     ...mapGetters(['currentCluster']),
+
+    totalSnapshotSize() {
+      if (this.value.snapshotSizeQuota === undefined || this.value.snapshotSizeQuota === null) {
+        return ' - ';
+      }
+
+      if (this.value.snapshotSizeQuota === 0) {
+        return '0';
+      }
+
+      return formatSi(this.value.snapshotSizeQuota, {
+        increment: 1024,
+        addSuffix: true,
+        suffix:    'i',
+      });
+    },
 
     vmi() {
       const inStore = this.$store.getters['currentProduct'].inStore;
@@ -175,8 +200,15 @@ export default {
         <Network v-model="networkRows" mode="view" />
       </Tab>
 
-      <Tab name="keypairs" :label="t('harvester.virtualMachine.detail.tabs.keypairs')" class="bordered-table" :weight="3">
+      <Tab name="keypairs" :label="t('harvester.virtualMachine.detail.tabs.keypairs')" class="bordered-table" :weight="4">
         <OverviewKeypairs v-model="value" />
+      </Tab>
+
+      <Tab v-if="hasResourceQuotaSchema" name="quotas" :label="t('harvester.tab.quotas')" :weight="3">
+        <LabelValue
+          :name="t('harvester.snapshot.totalSnapshotSize')"
+          :value="totalSnapshotSize"
+        />
       </Tab>
 
       <Tab
