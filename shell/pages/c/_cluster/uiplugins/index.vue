@@ -71,6 +71,7 @@ export default {
 
   data() {
     return {
+      installationVerified: false,
       TABS_VALUES,
       kubeVersion:                    null,
       view:                           '',
@@ -543,6 +544,18 @@ export default {
       ev.stopPropagation();
 
       this.$refs.installDialog.showDialog(plugin, mode);
+
+      this.interval = setInterval(async () => {
+        if (this.installationVerified) {
+          return;
+        }
+        try {
+          const res = await this.$store.dispatch('cluster/request', { url: 'https://localhost:8005/v1/uiplugins/harvester/1.0.0/plugin/harvester-1.0.0.umd.min.js' });
+          this.installationVerified = res._status === 200;
+        } catch (error) {
+          console.log('--- NOT LOADED ---');
+        }
+      }, 1000);
     },
 
     showUninstallDialog(plugin, ev) {
@@ -581,6 +594,9 @@ export default {
     },
 
     updatePluginInstallStatus(name, status) {
+      if (this.installationVerified && status === false) {
+        clearInterval(this.interval);
+      }
       this.installing[name] = status;
     },
 
@@ -659,7 +675,7 @@ export default {
       </template>
       <div class="actions-container">
         <div
-          v-if="reloadRequired"
+          v-if="reloadRequired && installationVerified"
           class="plugin-reload-banner mr-20"
           data-testid="extension-reload-banner"
         >
@@ -903,7 +919,7 @@ export default {
                     class="plugin-installing"
                   >
                     <i class="version-busy icon icon-spin icon-spinner" />
-                    <div v-if="plugin.installing ==='install'">
+                    <div v-if="plugin.installing ==='install' || !installationVerified">
                       {{ t('plugins.labels.installing') }}
                     </div>
                     <div v-else>
@@ -916,7 +932,7 @@ export default {
                     class="plugin-buttons"
                   >
                     <button
-                      v-if="!plugin.builtin"
+                      v-if="!plugin.builtin && installationVerified"
                       class="btn role-secondary"
                       :data-testid="`extension-card-uninstall-btn-${plugin.name}`"
                       @click="showUninstallDialog(plugin, $event)"
