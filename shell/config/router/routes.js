@@ -126,7 +126,12 @@ export default [
         path:      '/c/:cluster/settings',
         component: () => interopDefault(import('@shell/pages/c/_cluster/settings/index.vue')),
         name:      'c-cluster-settings'
-      }
+      },
+      {
+        name:      `c-cluster-resource-remote`,
+        path:      `/c/:cluster/:product/remote`,
+        component: () => interopDefault(import('@shell/pages/remote.vue')),
+      },
     ]
   },
   {

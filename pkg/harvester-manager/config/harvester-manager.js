@@ -11,6 +11,9 @@ export const PRODUCT_NAME = 'harvester-manager';
 // Load a harvester plugin when navigating into a harvester cluster
 dynamicPluginLoader.register({
   load: async({ route, store }) => {
+
+    console.log('LOAD-CLUSTER')
+
     // Check that we've either got here either
     // - directly (page refresh/load -> have path but no name)
     // - via router name (have name but no path)

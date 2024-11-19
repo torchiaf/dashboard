@@ -82,7 +82,7 @@ export default {
     },
 
     typeDisplay() {
-      return this.t(`typeLabel."${ HCI.CLUSTER }"`, { count: this.row?.length || 0 });
+      return ''
     },
   },
 
@@ -103,8 +103,20 @@ export default {
         clearTimeout(timeout);
         this.navigating = false;
       }
+    },
+
+    goToRemote() {
+      console.log('GO TO CLUSTER')
+    
+      this.$router.push({
+        name: 'c-cluster-resource-remote',
+        params: {
+          product: 'harvesterManager',
+          cluster: '_',
+        }
+      });
     }
-  }
+  },
 };
 </script>
 
@@ -149,7 +161,7 @@ export default {
               v-if="row.isReady"
               class="link"
               :disabled="navigating ? true : null"
-              @click="goToCluster(row)"
+              @click="goToRemote(row)"
             >{{ row.nameDisplay }}</a>
             <span v-else>
               {{ row.nameDisplay }}
