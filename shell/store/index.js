@@ -761,6 +761,7 @@ export const actions = {
     }
 
     console.log('Loading management...'); // eslint-disable-line no-console
+    console.log('---- PIPPO ---------'); // eslint-disable-line no-console
 
     try {
       await dispatch('rancher/findAll', { type: NORMAN.PRINCIPAL, opt: { url: 'principals' } });

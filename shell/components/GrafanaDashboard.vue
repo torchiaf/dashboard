@@ -251,6 +251,7 @@ export default {
         >{{ t('grafanaDashboard.reload') }}</a>
       </div>
     </Banner>
+    <!-- HERE -->
     <iframe
       v-show="!error"
       ref="frame"

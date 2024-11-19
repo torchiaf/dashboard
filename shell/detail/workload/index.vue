@@ -18,6 +18,7 @@ import { matches } from '@shell/utils/selector';
 import { PROJECT } from '@shell/config/labels-annotations';
 
 const SCALABLE_TYPES = Object.values(SCALABLE_WORKLOAD_TYPES);
+// here
 const WORKLOAD_METRICS_DETAIL_URL = '/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy/d/rancher-workload-pods-1/rancher-workload-pods?orgId=1';
 const WORKLOAD_METRICS_SUMMARY_URL = '/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy/d/rancher-workload-1/rancher-workload?orgId=1';
 
@@ -68,6 +69,9 @@ export default {
     const isMetricsSupportedKind = METRICS_SUPPORTED_KINDS.includes(this.value.type);
 
     this.showMetrics = isMetricsSupportedKind && await allDashboardsExist(this.$store, this.currentCluster.id, [WORKLOAD_METRICS_DETAIL_URL, WORKLOAD_METRICS_SUMMARY_URL]);
+    
+    console.log(isMetricsSupportedKind)
+
     if (!this.showMetrics) {
       const namespace = await this.$store.dispatch('cluster/find', { type: NAMESPACE, id: this.value.metadata.namespace });
 

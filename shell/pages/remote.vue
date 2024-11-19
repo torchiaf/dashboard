@@ -11,7 +11,7 @@ export default {
 
   data() {
     return {
-      src: 'https://localhost:8005/auth/login',
+      src: 'https://localhost:8005/api/v1/namespaces/default/services/http:microfrontend:80/proxy/remote/harvester/c/c-m-hl6w427t/harvesterhci.io.dashboard#vm',
       iframe: null,
     };
   },
@@ -48,10 +48,15 @@ export default {
 
       const msg = event.data;
 
+      if (msg.origin !== 'remote') {
+        return;
+      }
+
+
       switch (msg.action) {
         case 'ready':
           console.log('--- REMOTE msg ---', msg)
-          this.iframe.contentWindow.postMessage({ action: 'echo-back' });
+          this.iframe?.contentWindow?.postMessage({ action: 'show-header', value: false, origin: 'host' });
           break;
       
         default:
@@ -61,7 +66,7 @@ export default {
   },
 
   beforeUnmount() {
-    this.$store.dispatch('side-nav/show');
+    // this.$store.dispatch('side-nav/show');
   },
 };
 </script>
