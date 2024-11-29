@@ -68,6 +68,7 @@ export default {
       this.errors = [];
       const promises = [];
 
+      //here
       for (const key in this.addRepos) {
         if (this.addRepos[key]) {
           const pluginCR = await this.$store.dispatch('management/create', {

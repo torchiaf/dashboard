@@ -1,6 +1,7 @@
 <script>
 import { mapGetters } from 'vuex';
 import { isAdminUser } from '@shell/store/type-map';
+import AsyncButton from '@shell/components/AsyncButton';
 import BrandImage from '@shell/components/BrandImage';
 import TypeDescription from '@shell/components/TypeDescription';
 import ResourceTable from '@shell/components/ResourceTable';
@@ -12,10 +13,13 @@ import { isHarvesterCluster } from '@shell/utils/cluster';
 import { allHash } from '@shell/utils/promise';
 import { NAME as APP_PRODUCT } from '@shell/config/product/apps';
 import { BLANK_CLUSTER } from '@shell/store/store-types.js';
+import { UI_PLUGIN_NAMESPACE } from '@shell/config/uiplugins';
 import { HARVESTER_EXTENSION, HARVESTER_REPO } from '../types';
+import { CATALOG as CATALOG_ANNOTATIONS } from '@shell/config/labels-annotations';
 
 export default {
   components: {
+    AsyncButton,
     BrandImage,
     ResourceTable,
     Masthead,
@@ -51,7 +55,6 @@ export default {
 
     this.hciClusters = hash.hciClusters;
     this.mgmtClusters = hash.mgmtClusters;
-    this.clusterrepos = hash.clusterrepos;
   },
 
   data() {
@@ -67,7 +70,6 @@ export default {
       realSchema:      this.$store.getters['management/schemaFor'](CAPI.RANCHER_CLUSTER),
       hciClusters:     [],
       mgmtClusters:    [],
-      clusterrepos:    [],
       clusterRepoLink: {
         name:   'c-cluster-product-resource',
         params: {
@@ -86,8 +88,24 @@ export default {
   computed: {
     ...mapGetters({ uiplugins: 'uiplugins/plugins' }),
 
+    clusterrepos() {
+      const inStore = this.$store.getters['currentProduct'].inStore;
+
+      return this.$store.getters[`${ inStore }/all`](CATALOG.CLUSTER_REPO);
+    },
+
     harvesterRepo() {
-      return this.clusterrepos?.find((c) => c.spec?.gitRepo?.includes(HARVESTER_REPO));
+      const repository = this.clusterrepos?.find((c) => c.spec?.gitRepo === HARVESTER_REPO.spec.gitRepo && c.spec?.gitBranch === HARVESTER_REPO.spec.gitBranch);
+    
+      if (repository?.state === 'active') {
+        return repository;
+      }
+
+      return null;
+    },
+
+    charts() {
+      return this.$store.getters['catalog/rawCharts'];
     },
 
     harvesterExtension() {
@@ -124,6 +142,77 @@ export default {
   },
 
   methods: {
+    async installHarvesterExtension(btnCb) {
+
+      // Create repo
+      try {
+        if (!this.harvesterRepo) {
+          const repository = await this.$store.dispatch('management/create', HARVESTER_REPO, { root: true });
+
+          await repository.save();
+        } else {
+          await this.harvesterRepo.refresh();
+        }
+      } catch (error) {
+        btnCb(false);
+      }
+
+      const harvesterChart = {
+        chartName:   'harvester',
+        version:     '1.0.0',
+        releaseName: 'harvester',
+        annotations: {
+          [CATALOG_ANNOTATIONS.SOURCE_REPO_TYPE]: 'cluster',
+          [CATALOG_ANNOTATIONS.SOURCE_REPO_NAME]: 'harvester'
+        },
+        values: {}
+      };
+
+      if (!this.harvesterExtension) {
+        const input = {
+          charts:    [harvesterChart],
+          namespace: UI_PLUGIN_NAMESPACE,
+        };
+
+        const action = 'install';
+
+        try {
+          console.log('--- intall ---', action, input)
+
+          const res = await repository.doAction(action, input);
+          const operationId = `${ res.operationNamespace }/${ res.operationName }`;
+
+          await repository.waitForOperation(operationId);
+
+          await this.$store.dispatch(`management/find`, {
+            type: CATALOG.OPERATION,
+            id:   operationId
+          });
+        } catch (e) {
+          this.$store.dispatch('growl/error', {
+            title:   this.t('plugins.error.generic'),
+            message: e.message ? e.message : e,
+            timeout: 10000
+          }, { root: true });
+        }
+      }
+
+
+      // // Create extension
+      // const app = await this.$store.dispatch('management/findAll', {
+      //   type: CATALOG.APP,
+      //   // id:   `${ UI_PLUGIN_NAMESPACE }/${ 'harvester' }`,
+      //   // opt:  { force: true },
+      // });
+
+
+      
+
+      console.log(this.harvesterRepo, app, this.uiplugins,  this.charts) // should wait until not in progress
+
+      btnCb(true);
+    },
+
     async goToCluster(row) {
       const timeout = setTimeout(() => {
         // Don't show loading indicator for quickly fetched plugins
@@ -246,22 +335,10 @@ export default {
           v-if="isAdmin"
           class="extension-info"
         >
-          <ol class="steps">
-            <li v-if="!harvesterRepo">
-              {{ t('harvesterManager.extension.install.steps.repo.1') }}
-              <router-link :to="clusterRepoLink">
-                {{ t('harvesterManager.extension.install.steps.repo.2') }}
-              </router-link>
-              <span v-clean-html="t('harvesterManager.extension.install.steps.repo.3', {}, true)"></span>
-            </li>
-            <li>
-              {{ t('harvesterManager.extension.install.steps.ui.1') }}
-              <router-link :to="extensionsLink">
-                {{ t('harvesterManager.extension.install.steps.ui.2') }}
-              </router-link>
-              {{ t('harvesterManager.extension.install.steps.ui.3') }}
-            </li>
-          </ol>
+          <AsyncButton
+            mode="apply"
+            @click="installHarvesterExtension"
+          />
         </div>
         <div
           v-else

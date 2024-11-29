@@ -31,7 +31,7 @@ export default class ClusterRepo extends SteveModel {
   async refresh() {
     const now = (new Date()).toISOString().replace(/\.\d+Z$/, 'Z');
 
-    this.spec.forceUpdate = now;
+    this.spec.forceUpdate = now;// 
     await this.save();
 
     await this.waitForState('active', 10000, 1000);

@@ -146,7 +146,9 @@ export default {
       this.$emit('closed', result);
     },
 
+    // here
     async install() {
+
       this.busy = true;
 
       const plugin = this.plugin;
@@ -214,6 +216,9 @@ export default {
       const action = (exists || this.update) ? 'upgrade' : 'install';
 
       try {
+
+        console.log('--- intall ---', action, input)
+
         const res = await repo.doAction(action, input);
         const operationId = `${ res.operationNamespace }/${ res.operationName }`;
 
