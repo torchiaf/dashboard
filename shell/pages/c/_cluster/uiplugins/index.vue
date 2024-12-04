@@ -273,6 +273,7 @@ export default {
           version, rancherVersion: this.rancherVersion, kubeVersion: this.kubeVersion
         }, true));
 
+        // here latest version
         const latestCompatible = item.installableVersions?.[0];
         const latestNotCompatible = item.versions.find((version) => !version.isVersionCompatible);
 

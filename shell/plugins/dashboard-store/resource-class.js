@@ -784,6 +784,7 @@ export default class Resource {
 
   // ------------------------------------------------------------------
 
+  // here
   waitForTestFn(fn, msg, timeoutMs, intervalMs) {
     return waitFor(() => fn.apply(this), msg, timeoutMs || DEFAULT_WAIT_TMIMEOUT, intervalMs || DEFAULT_WAIT_INTERVAL, true);
   }

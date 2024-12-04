@@ -16,7 +16,7 @@ export const UI_PLUGIN_ANNOTATION = {
 };
 
 // Info for the Helm Chart Repositories
-export const UI_PLUGINS_REPOS = {
+export const UI_PLUGINS_REPOS = { // here for prime
   OFFICIAL: {
     NAME:   'rancher-ui-plugins',
     URL:    'https://github.com/rancher/ui-plugin-charts',
