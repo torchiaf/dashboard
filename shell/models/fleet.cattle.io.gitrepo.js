@@ -157,7 +157,7 @@ export default class GitRepo extends SteveModel {
   }
 
   get github() {
-    const match = this.spec.repo.match(/^https?:\/\/github\.com\/(.*?)(\.git)?\/*$/);
+    const match = (this.spec.repo || '').match(/^https?:\/\/github\.com\/(.*?)(\.git)?\/*$/);
 
     if (match) {
       return match[1];
@@ -175,7 +175,7 @@ export default class GitRepo extends SteveModel {
   }
 
   get repoDisplay() {
-    let repo = this.spec.repo;
+    let repo = this.spec.repo || '';
 
     if (!repo) {
       return null;
