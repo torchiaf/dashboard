@@ -585,6 +585,10 @@ export default {
           />
         </div>
       </div>
+
+      <div class="spacer" />
+      <h2 v-t="'fleet.gitRepo.auth.title'" />
+
       <SelectOrCreateAuthSecret
         :value="value.spec.clientSecretName"
         :register-before-hook="registerBeforeHook"

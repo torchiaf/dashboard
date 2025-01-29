@@ -1,12 +1,30 @@
 <script>
+import CodeMirror from '@shell/components/CodeMirror';
 import AppModal from '@shell/components/AppModal.vue';
 
 export default {
   emits: ['closed'],
 
-  components: { AppModal },
+  components: { AppModal, CodeMirror },
 
   data() {
+
+    console.log(this);
+
+    const mode = 'edit';
+
+    const codeMirrorOptions = {
+      readOnly: mode === 'view',
+      gutters: ['CodeMirror-foldgutter'],
+      mode:            'shell',
+      lint:            false,
+      lineNumbers:     mode !== 'view',
+      styleActiveLine: false,
+      tabSize:         2,
+      indentWithTabs:  false,
+      cursorBlinkRate: 530,
+    };
+
     return {
       data:                   '',
       currentVersion:         '',
@@ -17,7 +35,8 @@ export default {
       update:                 false,
       mode:                   '',
       showModal:              false,
-      chartVersionInfo:       null
+      chartVersionInfo:       null,
+      codeMirrorOptions,
     };
   },
 
@@ -30,11 +49,9 @@ export default {
     closeDialog(result) {
       this.showModal = false;
 
-      const value = (this.$refs.textbox)?.value;
-
       this.$emit('closed', {
         success: result,
-        value,
+        value: this.data,
       });
     },
   }
@@ -57,10 +74,12 @@ export default {
       </h4>
       <div class="custom mt-10">
         <div class="dialog-panel">
-          <textarea
-            ref="textbox"
+          <CodeMirror
             :value="data"
-            class="edit-box"
+            class="editor"
+            :options="codeMirrorOptions"
+            :showKeyMapBox="true"
+            @onInput="data=$event"
           />
         </div>
         <div class="dialog-buttons">
@@ -87,24 +106,52 @@ export default {
 
 <style lang="scss" scoped>
   .ssh-known-hosts-dialog {
-    padding: 10px;
+    padding: 15px;
 
     h4 {
       font-weight: bold;
+      margin-bottom: 20px;
     }
 
     .dialog-panel {
+      border: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       min-height: 100px;
 
-      .edit-box {
-        font-family: monospace;
-        font-size: 12px;
+      :deep() .editor {
+
+        display: flex;
+        flex-direction: column;
         resize: none;
         max-height: 400px;
         height: 50vh;
-        padding: 10px;
+
+
+
+
+          .CodeMirror {
+            position: initial;
+            background-color: var(--yaml-editor-bg);
+          }
+
+          .CodeMirror,
+          .CodeMirror-scroll,
+          .CodeMirror-gutters {
+            min-height: 400px;
+            max-height: 400px;
+          }
+
+          .CodeMirror-gutters {
+            background-color: var(--yaml-editor-bg);
+            width: 25px;
+          }
+
+          .CodeMirror-linenumber {
+            padding-left: 0;
+          }
+        
+
       }
 
       p {

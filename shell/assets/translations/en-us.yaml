@@ -2416,6 +2416,7 @@ fleet:
       resources: Resources
       unready: Non-Ready
     auth:
+      title: Authentication
       label: Authentication
       git: Git Authentication
       helm: Helm Authentication
