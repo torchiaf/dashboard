@@ -3010,6 +3010,39 @@
   resolved "https://registry.npmjs.org/@jsep-plugin/regex/-/regex-1.0.3.tgz#3aeaa2e5fa45d89de116aeafbfa41c95935b7f6d"
   integrity sha512-XfZgry4DwEZvSFtS/6Y+R48D7qJYJK6R9/yJFyUFHCIUMEEHuJ4X95TDgJp5QkmzfLYvapMPzskV5HpIDrREug==
 
+"@jsplumb/browser-ui@5.4.1":
+  version "5.4.1"
+  resolved "https://registry.yarnpkg.com/@jsplumb/browser-ui/-/browser-ui-5.4.1.tgz#8ebe40fc238e4e4b47151b2ff337fde71263bca8"
+  integrity sha512-xOnICK3VFe3+A/egjWBpfjauNi0h0RpB8QClahhs6hdCyhw3lqWuHNWky7UaTT8F3Rg/R+BA4QFSCF1iYhqvVA==
+  dependencies:
+    "@jsplumb/core" "5.4.1"
+
+"@jsplumb/common@5.4.1":
+  version "5.4.1"
+  resolved "https://registry.yarnpkg.com/@jsplumb/common/-/common-5.4.1.tgz#c56e6b76d1ef7a2a487ff4911be3a0728d59aebd"
+  integrity sha512-IC+RQm23TWn/iuocWB3AzjBYacE9V1CYMuEOH3ULerCFaXnta61s/juHg+4etET5d+siI9IXB3yXEYEAANxHfQ==
+  dependencies:
+    "@jsplumb/util" "5.4.1"
+
+"@jsplumb/connector-flowchart@5.4.1":
+  version "5.4.1"
+  resolved "https://registry.yarnpkg.com/@jsplumb/connector-flowchart/-/connector-flowchart-5.4.1.tgz#ea852831aba3af52fcf03644ce3df8e03179d0e3"
+  integrity sha512-ZY7zeqjgUbtaKTwuSFqCfGqpwAP2lNC95ZgzFCcyLWsHxGT/N7CTmFcmZvPYGaMTE7lZMCykGOSk0zQy0H6e1A==
+  dependencies:
+    "@jsplumb/core" "5.4.1"
+
+"@jsplumb/core@5.4.1":
+  version "5.4.1"
+  resolved "https://registry.yarnpkg.com/@jsplumb/core/-/core-5.4.1.tgz#46ae917af56c39d14ebed0d87b6cd5cf07d01ac6"
+  integrity sha512-YvVRutk90G91G1aoHk6XMfMgAEj63CvGFVUKutalliFjwoAPbFP3FRMyc8cChp6lcFKZ6ZcBoDdwPx13QK2H4w==
+  dependencies:
+    "@jsplumb/common" "5.4.1"
+
+"@jsplumb/util@5.4.1":
+  version "5.4.1"
+  resolved "https://registry.yarnpkg.com/@jsplumb/util/-/util-5.4.1.tgz#0fc857cd3de8f6733f6f4bf170e68d6a76aa1e3d"
+  integrity sha512-DijsnLzMsHWxQbaoqcGbaAFXwt1S4iGofZEe9jwJQn1tlThsLQGRCDyBPTFIUiLMPTtis/GRG2hpM2dbUoB6rA==
+
 "@leichtgewicht/ip-codec@^2.0.1":
   version "2.0.5"
   resolved "https://registry.npmjs.org/@leichtgewicht/ip-codec/-/ip-codec-2.0.5.tgz#4fc56c15c580b9adb7dc3c333a134e540b44bfb1"
@@ -7924,6 +7957,7 @@ eslint-plugin-jest@24.4.0:
 
 "eslint-plugin-local-rules@link:./eslint-plugin-local-rules":
   version "0.0.0"
+  uid ""
 
 "eslint-plugin-local-rules@link:eslint-plugin-local-rules":
   version "0.0.0"

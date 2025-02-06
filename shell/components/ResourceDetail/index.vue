@@ -13,6 +13,7 @@ import DetailTop from '@shell/components/DetailTop';
 import { clone, diff } from '@shell/utils/object';
 import IconMessage from '@shell/components/IconMessage';
 import ForceDirectedTreeChart from '@shell/components/fleet/ForceDirectedTreeChart';
+import Board from '@shell/components/Board';
 import { checkSchemasForFindAllHash } from '@shell/utils/auth';
 import { stringify } from '@shell/utils/error';
 import { Banner } from '@components/Banner';
@@ -47,6 +48,7 @@ export default {
     Loading,
     DetailTop,
     ForceDirectedTreeChart,
+    Board,
     ResourceYaml,
     Masthead,
     IconMessage,
@@ -271,6 +273,8 @@ export default {
     if ( this.mode === _CREATE ) {
       this.value.applyDefaults(this, realMode);
     }
+
+    // console.log(this.chartData)
   },
   data() {
     return {
@@ -298,6 +302,50 @@ export default {
   },
 
   computed: {
+    machines() {
+      const data = [
+        {
+          label: 'GitRepo',
+          name: this.chartData.id,
+          top: 100,
+          left: 20,
+          out: 'Right',
+          details: this.getGraphConfig.infoDetails(this.chartData)[2].valueObj
+        },
+      ];
+
+      this.chartData.bundles.forEach((bundle) => {
+        data.push({
+          label: 'Bundle',
+          name: bundle.name,
+          top: 100,
+          left: 450,
+          in: 'Left',
+          out: 'Right',
+          details: this.getGraphConfig.infoDetails(this.chartData.bundles[0])[2].valueObj
+        });
+      });
+
+      this.chartData.bundleDeployments.forEach((deployment, i) => {
+        const cluster = this.chartData.clustersList.find((cluster) => {
+          const clusterString = `${ cluster.namespace }-${ cluster.name }`;
+
+          return deployment.id.includes(clusterString);
+        });
+
+        data.push({
+          label: 'BundleDeployment',
+          name: `Cluster: ${ cluster.name }`,
+          top: (i * 150),
+          left: 850,
+          in: 'Left',
+          details: this.getGraphConfig.infoDetails(deployment)[2].valueObj
+        });
+      });
+
+      return data;
+    },
+
     realMode() {
       // There are 5 "real" modes that you can start in: view, edit, create, stage, clone
       const realMode = modeFor(this.$route);
@@ -453,11 +501,17 @@ export default {
       />
     </div>
 
-    <ForceDirectedTreeChart
+    <!-- <ForceDirectedTreeChart
       v-if="isGraph && canViewChart"
       :data="chartData"
       :fdc-config="getGraphConfig"
-    />
+    /> -->
+
+    <Board
+      v-if="isGraph && canViewChart && machines"
+      :machines="machines"
+    >
+    </Board>
 
     <ResourceYaml
       v-else-if="isYaml"
