@@ -20,7 +20,13 @@ export default {
 
   computed: {
     computedResources() {
-      return this.value.resourcesStatuses;
+      const resources = this.value.resourcesStatuses;
+
+      if (this.clusterId) {
+        return resources.filter((r) => r.clusterId === this.clusterId);
+      }
+
+      return resources;
     },
 
     resourceHeaders() {
@@ -76,6 +82,7 @@ export default {
     :headers="resourceHeaders"
     :table-actions="false"
     :row-actions="false"
+    :search="false"
     key-field="tableKey"
     default-sort-by="state"
     :paged="true"
