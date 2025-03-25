@@ -65,6 +65,7 @@ export default {
   computed: {
     ...mapState(['managementReady', 'clusterReady']),
     ...mapGetters(['clusterId', 'currentProduct', 'rootProduct', 'isRancherInHarvester', 'showTopLevelMenu']),
+    ...mapGetters({ showSideNav: 'side-nav/active' }),
 
     afterLoginRoute: mapPref(AFTER_LOGIN_ROUTE),
 
@@ -192,7 +193,7 @@ export default {
     >
       <Header />
       <SideNav
-        v-if="clusterReady"
+        v-if="clusterReady && showSideNav"
         class="default-side-nav"
       />
       <main
