@@ -26,6 +26,7 @@ import replaceAll from '@shell/plugins/replaceall';
 import steveCreateWorker from '@shell/plugins/steve-create-worker';
 import emberCookie from '@shell/plugins/ember-cookie';
 import ShortKey from '@shell/plugins/shortkey';
+import VeeValidate from '@shell/plugins/vee-validate';
 
 import 'floating-vue/dist/style.css';
 import { floatingVueOptions } from '@shell/plugins/floating-vue';
@@ -34,6 +35,7 @@ export async function installPlugins(vueApp) {
   vueApp.use(globalFormatters);
   vueApp.use(PortalVue);
   vueApp.use(Vue3Resize);
+  vueApp.use(VeeValidate);
   vueApp.use(FloatingVue, floatingVueOptions);
   vueApp.use(
     ShortKey,
