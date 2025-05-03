@@ -65,6 +65,7 @@ export default defineComponent({
       class="icon"
       :class="{[icon]: true, 'mr-5': !!msg}"
     />{{ msg }}
+    <slot name="content-right" />
   </span>
 </template>
 

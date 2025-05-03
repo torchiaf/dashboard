@@ -18,6 +18,11 @@ export default {
       type:     String,
       required: false,
       default:  null,
+    },
+
+    showCount: {
+      type: Boolean,
+      default: true
     }
   },
 
@@ -63,16 +68,20 @@ export default {
     class="text-center hand"
     placement="top"
     :show-group="row.id"
-    :triggers="show ? ['click'] : []"
+    :triggers="show ? ['hover'] : []"
     offset="1"
   >
     <ProgressBarMulti
       :values="stateParts"
-      class="mb-5"
     />
-    <span v-if="summary.desiredReady === summary.ready">{{ summary.ready }}</span>
-    <span v-else>{{ summary.ready }} of {{ summary.desiredReady }}</span>
-
+    <div
+      v-if="showCount"
+      class="mt-5"
+    >
+      <span v-if="summary.desiredReady === summary.ready">{{ summary.ready }}</span>
+      <span v-else>{{ summary.ready }} of {{ summary.desiredReady }}</span>
+    </div>
+  
     <template #popper>
       <table
         v-if="show"
