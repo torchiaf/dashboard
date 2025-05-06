@@ -19,8 +19,6 @@ import FleetRepos from '@shell/components/fleet/FleetRepos';
 import FleetUtils from '@shell/utils/fleet';
 import Preset from '@shell/mixins/preset';
 
-const IS_HELM_OPS_ENABLED = false;
-
 export default {
   name:       'FleetDashboard',
   components: {
@@ -82,14 +80,11 @@ export default {
           type:            FLEET.GIT_REPO,
           schemaValidator: (schema) => schema.resourceMethods.includes('PUT')
         },
-      };
-
-      if (IS_HELM_OPS_ENABLED) {
-        permissionsSchemas.helmOps = {
+        helmOps: {
           type:            FLEET.HELM_OP,
           schemaValidator: (schema) => schema.resourceMethods.includes('PUT')
-        };
-      }
+        },
+      };
 
       const permissions = await checkPermissions(permissionsSchemas, this.$store.getters);
 
@@ -101,7 +96,6 @@ export default {
 
   data() {
     return {
-      IS_HELM_OPS_ENABLED,
       repoSchema:      this.$store.getters['management/schemaFor'](FLEET.GIT_REPO),
       permissions:     {},
       FLEET,
@@ -173,10 +167,7 @@ export default {
     },
 
     applicationStates() {
-      return this._groupByWorkspace((ws) => this._resourceStates([
-        ...ws.repos,
-        ...(IS_HELM_OPS_ENABLED ? ws.helmOps : [])
-      ]));
+      return this._groupByWorkspace((ws) => this._resourceStates([ ...ws.repos, ...ws.helmOps ]));
     },
 
     clusterStates() {
@@ -502,7 +493,7 @@ export default {
             </div>
             <div class="body">
               <ResourcePanel
-                v-if="workspace.repos?.length || (IS_HELM_OPS_ENABLED && workspace.helmOps?.length)"
+                v-if="workspace.repos?.length || workspace.helmOps?.length"
                 :data-testid="'resource-panel-applications'"
                 :states="applicationStates[workspace.id]"
                 :workspace="workspace.id"
@@ -531,7 +522,7 @@ export default {
           </div>
           <div class="card-panel-main-actions">
             <div
-              v-if="workspace.repos?.length || (IS_HELM_OPS_ENABLED && workspace.helmOps?.length)"
+              v-if="workspace.repos?.length || workspace.helmOps?.length"
               class="expand-button"
               :data-testid="'expand-button'"
             >
@@ -554,10 +545,7 @@ export default {
           class="card-panel-expand mt-10"
           :data-testid="`fleet-dashboard-expanded-panel-${ workspace.id }`"
         >
-          <div
-            v-if="IS_HELM_OPS_ENABLED"
-            class="cards-panel-actions"
-          >
+          <div class="cards-panel-actions">
             <div
               v-if="viewMode === 'cards'"
               class="cards-panel-filters"
@@ -622,7 +610,7 @@ export default {
                     <span class="partial">
                       {{ state.stateDisplay }}&nbsp;&nbsp;{{ cardResources[workspace.id]?.[state.stateDisplay]?.length }}
                     </span>
-                    <span class="total label-secondary">/{{ [ ...workspace.repos, ...(IS_HELM_OPS_ENABLED ? workspace.helmOps : []) ].length }}</span>
+                    <span class="total label-secondary">/{{ [ ...workspace.repos, ...workspace.helmOps ].length }}</span>
                   </div>
                 </div>
                 <div
