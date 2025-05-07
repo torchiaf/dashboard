@@ -2476,6 +2476,7 @@ fleet:
     collapse: Collapse
     expandAll: Expand All
     collapseAll: Collapse All
+    state: State
     viewMode:
       table: Show table
       cards: Show cards
