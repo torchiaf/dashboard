@@ -2,14 +2,14 @@
 import { FLEET } from '@shell/config/types';
 import LabeledSelect from '@shell/components/form/LabeledSelect.vue';
 import FleetResources from '@shell/components/fleet/FleetResources';
-import FleetRepo from '@shell/components/formatter/FleetRepo.vue';
+import FleetApplicationSource from '@shell/components/formatter/FleetApplicationSource.vue';
 
 export default {
   name: 'FleetDashboardResourceDetails',
 
   components: {
     LabeledSelect,
-    FleetRepo,
+    FleetApplicationSource,
     FleetResources
   },
 
@@ -93,14 +93,21 @@ export default {
       />
     </div>
 
-    <template v-if="value.type === FLEET.GIT_REPO">
-      <h3>
-        {{ t('fleet.dashboard.source') }}
-      </h3>
-      <div class="mb-15">
-        <FleetRepo :row="value" />
+    <h3>
+      {{ t('fleet.dashboard.source') }}
+    </h3>
+    <div class="mb-15">
+      <FleetApplicationSource
+        v-if="value.source.value"
+        :row="value"
+      />
+      <div
+        v-else
+        class="text-muted"
+      >
+        &mdash;
       </div>
-    </template>
+    </div>
 
     <h3>
       {{ t('fleet.dashboard.resources') }}
