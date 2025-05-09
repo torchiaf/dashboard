@@ -13,7 +13,10 @@ import ResourceDetails from '@shell/components/fleet/dashboard/ResourceDetails.v
 import EmptyDashboard from '@shell/components/fleet/dashboard/Empty.vue';
 import ButtonGroup from '@shell/components/ButtonGroup';
 import Checkbox from '@components/Form/Checkbox/Checkbox.vue';
+import FleetRepos from '@shell/components/fleet/FleetRepos';
 import FleetUtils from '@shell/utils/fleet';
+
+const IS_HELM_OPS_ENABLED = false;
 
 export default {
   name:       'FleetDashboard',
@@ -21,6 +24,7 @@ export default {
     ButtonGroup,
     Checkbox,
     EmptyDashboard,
+    FleetRepos,
     Loading,
     NoWorkspaces,
     ResourceCard,
@@ -91,6 +95,8 @@ export default {
 
   data() {
     return {
+      IS_HELM_OPS_ENABLED,
+      repoSchema: this.$store.getters['management/schemaFor'](FLEET.GIT_REPO),
       permissions:           {},
       FLEET,
       [FLEET.REPO]:          [],
@@ -100,10 +106,9 @@ export default {
       fleetWorkspaces:       [],
       viewModeOptions:       [
         {
-          // tooltipKey: 'fleet.dashboard.viewMode.table',
+          tooltipKey: 'fleet.dashboard.viewMode.table',
           icon:     'icon-list-flat',
           value:    'flat',
-          disabled: true
         },
         {
           tooltipKey: 'fleet.dashboard.viewMode.cards',
@@ -111,7 +116,7 @@ export default {
           value:      'cards',
         },
       ],
-      viewMode:             {},
+      viewMode:             'cards',
       isWorkspaceCollapsed: {},
       isStateCollapsed:     {},
       typeFilter:           {},
@@ -146,15 +151,18 @@ export default {
       });
     },
 
-    cardStates() {
-      const states = [
+    resourceStates() {
+      const resources = [
         FLEET.GIT_REPO,
-        FLEET.HELM_OP,
       ];
+
+      if (IS_HELM_OPS_ENABLED) {
+        resources.push(FLEET.HELM_OP)
+      }
 
       const out = [];
 
-      states.forEach((type) => {
+      resources.forEach((type) => {
         this[type].forEach((obj) => {
           const {
             stateDisplay,
@@ -178,10 +186,24 @@ export default {
 
     cardResources() {
       return this.workspaces.reduce((acc, ws) => {
-        const filtered = this.cardStates.reduce((acc, state) => ({
+        const filtered = this.resourceStates.reduce((acc, state) => ({
           ...acc,
           [state.stateDisplay]: this.filterByState(ws, state),
         }), {});
+
+        return {
+          ...acc,
+          [ws.id]: filtered
+        };
+      }, {});
+    },
+
+    tableResources() {
+      return this.workspaces.reduce((acc, ws) => {
+        const filtered = this.resourceStates.reduce((acc, state) => ([
+          ...acc,
+          ...this.filterByState(ws, state).filter((r) => !IS_HELM_OPS_ENABLED || r.type === FLEET.GIT_REPO)
+        ]), []);
 
         return {
           ...acc,
@@ -203,13 +225,13 @@ export default {
     filterByType(workspace) {
       return [
         ...(this.typeFilter[workspace.id]?.[FLEET.GIT_REPO] ? workspace.repos : []),
-        ...(this.typeFilter[workspace.id]?.[FLEET.HELM_OP] ? workspace.helmOps : []),
+        ...(IS_HELM_OPS_ENABLED && this.typeFilter[workspace.id]?.[FLEET.HELM_OP] ? workspace.helmOps : []),
       ];
     },
 
     filterByState(workspace, state) {
       return this.filterByType(workspace).filter((item) => {
-        const filterStates = this.stateFilter[workspace.id][item.type];
+        const filterStates = this.stateFilter[workspace.id];
         const id = FleetUtils.getDashboardStateId(item);
 
         const toShow = !filterStates?.length || !!filterStates.find((f) => f === id);
@@ -218,21 +240,22 @@ export default {
       });
     },
 
-    selectStates(workspace, type, states) {
-      this.stateFilter[workspace][type] = states;
+    selectStates(workspace, states) {
+      this.stateFilter[workspace] = states;
 
-      this.toggleStateAll(workspace, 'expand');
+      if (this.isWorkspaceCollapsed[workspace]) {
+        this.toggleCard(workspace);
+      }
+
+      this.$nextTick(() => {
+        this.toggleStateAll(workspace, 'expand');
+      });
     },
 
     selectType(workspace, type, value) {
       this.typeFilter[workspace][type] = value;
 
       this.toggleStateAll(workspace, 'expand');
-    },
-
-    showPanelSpacer(workspace) {
-      return (workspace.clusters?.length !== 0 || workspace.clusterGroups?.length !== 0) &&
-        (workspace.repos?.length !== 0 || workspace.helmOps?.length !== 0);
     },
 
     partialStateCount(workspace, state) {
@@ -308,10 +331,7 @@ export default {
           [FLEET.HELM_OP]:  true,
         };
 
-        this.stateFilter[ws.id] = {
-          [FLEET.GIT_REPO]: [],
-          [FLEET.HELM_OP]:  [],
-        };
+        this.stateFilter[ws.id] = [];
       });
     }
   }
@@ -338,19 +358,28 @@ export default {
         <h1>
           <t k="fleet.dashboard.pageTitle" />
         </h1>
-        <div :data-testid="'fleet-dashboard-expand-all'">
-          <p
-            v-if="allCardsExpanded"
-            @click="toggleCardAll('collapse')"
-          >
-            {{ t('fleet.dashboard.collapseAll') }}
-          </p>
-          <p
-            v-else
-            @click="toggleCardAll('expand')"
-          >
-            {{ t('fleet.dashboard.expandAll') }}
-          </p>
+
+        <div class="dashboard-main-actions">
+          <div :data-testid="'fleet-dashboard-expand-all'">
+            <p
+              v-if="allCardsExpanded"
+              @click="toggleCardAll('collapse')"
+            >
+              {{ t('fleet.dashboard.collapseAll') }}
+            </p>
+            <p
+              v-else
+              @click="toggleCardAll('expand')"
+            >
+              {{ t('fleet.dashboard.expandAll') }}
+            </p>
+          </div>
+          <ButtonGroup
+            :data-testid="'view-button'"
+            :value="viewMode"
+            :options="viewModeOptions"
+            @update:value="viewMode = $event"
+          />
         </div>
       </div>
       <div
@@ -384,26 +413,12 @@ export default {
             </div>
             <div class="body">
               <ResourcePanel
-                v-if="workspace.repos?.length"
+                v-if="workspace.repos?.length || (IS_HELM_OPS_ENABLED && workspace.helmOps?.length)"
                 :data-testid="'resource-panel-git-repos'"
-                :resources="workspace.repos"
+                :resources="[ ...workspace.repos, ...(IS_HELM_OPS_ENABLED ? workspace.helmOps : []) ]"
                 :workspace="workspace.id"
                 :type="FLEET.GIT_REPO"
-                :selectable="!isWorkspaceCollapsed[workspace.id]"
-                @select:states="selectStates(workspace.id, FLEET.GIT_REPO, $event)"
-              />
-              <ResourcePanel
-                v-if="workspace.helmOps?.length"
-                :data-testid="'resource-panel-helm-ops'"
-                :resources="workspace.helmOps"
-                :workspace="workspace.id"
-                :type="FLEET.HELM_OP"
-                :selectable="!isWorkspaceCollapsed[workspace.id]"
-                @select:states="selectStates(workspace.id, FLEET.HELM_OP, $event)"
-              />
-              <div
-                v-if="showPanelSpacer(workspace)"
-                class="spacer"
+                @select:states="selectStates(workspace.id, $event)"
               />
               <ResourcePanel
                 v-if="workspace.clusters?.length"
@@ -411,9 +426,11 @@ export default {
                 :resources="workspace.clusters"
                 :workspace="workspace.id"
                 :type="FLEET.CLUSTER"
-                :clickable-states="false"
-                :show-chart="false"
                 :selectable="false"
+              />
+              <div
+                v-if="workspace.clusterGroups?.length"
+                class="spacer"
               />
               <ResourcePanel
                 v-if="workspace.clusterGroups?.length"
@@ -421,7 +438,6 @@ export default {
                 :resources="workspace.clusterGroups"
                 :workspace="workspace.id"
                 :type="FLEET.CLUSTER_GROUP"
-                :clickable-states="false"
                 :show-chart="false"
                 :selectable="false"
               />
@@ -449,47 +465,43 @@ export default {
         </div>
         <div
           v-if="!isWorkspaceCollapsed[workspace.id]"
-          class="card-panel-expand mt-20"
+          class="card-panel-expand mt-10"
           :data-testid="`fleet-dashboard-expanded-panel-${ workspace.id }`"
         >
+          <div v-if="IS_HELM_OPS_ENABLED" class="cards-panel-actions">
+            <div
+              v-if="viewMode === 'cards'"
+              class="cards-panel-filters"
+            >
+              <Checkbox
+                :data-testid="'fleet-dashboard-filter-git-repos'"
+                :value="typeFilter[workspace.id]?.[FLEET.GIT_REPO]"
+                @update:value="selectType(workspace.id, FLEET.GIT_REPO, $event)"
+              >
+                <template #label>
+                  <i class="icon icon-lg icon-git mr-5" />
+                  <span class="label">{{ t('fleet.dashboard.cards.filters.gitRepos') }}</span>
+                </template>
+              </Checkbox>
+              <Checkbox
+                :data-testid="'fleet-dashboard-filter-helm-ops'"
+                :value="typeFilter[workspace.id]?.[FLEET.HELM_OP]"
+                @update:value="selectType(workspace.id, FLEET.HELM_OP, $event)"
+              >
+                <template #label>
+                  <i class="icon icon-lg icon-helm mr-5" />
+                  <span class="label">{{ t('fleet.dashboard.cards.filters.helmOps') }}</span>
+                </template>
+              </Checkbox>
+            </div>
+          </div>
+
           <div
-            v-if="!viewMode[workspace.id] || viewMode[workspace.id] === 'cards'"
+            v-if="viewMode === 'cards'"
             class="cards-panel"
           >
-            <div class="cards-panel-actions">
-              <div class="cards-panel-filters">
-                <Checkbox
-                  :data-testid="'fleet-dashboard-filter-git-repos'"
-                  :value="typeFilter[workspace.id]?.[FLEET.GIT_REPO]"
-                  @update:value="selectType(workspace.id, FLEET.GIT_REPO, $event)"
-                >
-                  <template #label>
-                    <i class="icon icon-lg icon-git mr-5" />
-                    <span class="label">{{ t('fleet.dashboard.cards.filters.gitRepos') }}</span>
-                  </template>
-                </Checkbox>
-                <Checkbox
-                  :data-testid="'fleet-dashboard-filter-helm-ops'"
-                  :value="typeFilter[workspace.id]?.[FLEET.HELM_OP]"
-                  @update:value="selectType(workspace.id, FLEET.HELM_OP, $event)"
-                >
-                  <template #label>
-                    <i class="icon icon-lg icon-helm mr-5" />
-                    <span class="label">{{ t('fleet.dashboard.cards.filters.helmOps') }}</span>
-                  </template>
-                </Checkbox>
-              </div>
-              <div class="cards-panel-view-buttons">
-                <ButtonGroup
-                  :data-testid="'view-button'"
-                  :value="viewMode[workspace.id] || 'cards'"
-                  :options="viewModeOptions"
-                  @update:value="viewMode[workspace.id] = $event"
-                />
-              </div>
-            </div>
             <div
-              v-for="(state, j) in cardStates"
+              v-for="(state, j) in resourceStates"
               :key="j"
               :data-testid="`state-panel-${ state.stateDisplay }`"
               class="card-panel mt-20"
@@ -542,9 +554,17 @@ export default {
           </div>
 
           <div
-            v-if="viewMode[workspace.id] === 'flat'"
+            v-if="viewMode === 'flat'"
             class="table-panel"
-          />
+          >
+            <FleetRepos
+              :workspace="workspace.id"
+              :rows="tableResources[workspace.id]"
+              :schema="repoSchema"
+              :loading="$fetchState.pending"
+              :use-query-params-for-simple-filtering="true"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -553,10 +573,21 @@ export default {
 
 <style lang="scss" scoped>
 
+.dashboard-main-actions {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 15px;
+}
+
 .dashboard-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
+  h1 {
+    margin: 0;
+  }
 
   > div {
     display: flex;
@@ -627,18 +658,6 @@ export default {
           border-left: 1px solid var(--border);
         }
       }
-
-      // &.expand {
-      //   display: block;
-
-      //   .title {
-      //     display: flex;
-      //   }
-
-      //   .body {
-      //     margin-top: 10px;
-      //   }
-      // }
     }
 
     .card-panel-main-actions {
@@ -660,29 +679,29 @@ export default {
   .card-panel-expand {
     animation: slideInOut 0.5s ease-in-out;
 
-    .cards-panel {
-      .cards-panel-actions {
+    .cards-panel-actions {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+
+      .cards-panel-filters {
         display: flex;
-        flex-direction: row;
-        align-items: center;
+        flex-direction: column;
+        margin-top: 5px;
 
-        .cards-panel-filters {
-          display: flex;
-          flex-direction: column;
-          margin-right: 30px;
+        .label {
+          margin-top: 2px;
+          line-height: 20px;
+        }
 
-          .label {
-            margin-top: 2px;
-            line-height: 20px;
-          }
-
-          .icon {
-            padding: 2px;
-            font-size: 25px;
-          }
+        .icon {
+          padding: 2px;
+          font-size: 25px;
         }
       }
+    }
 
+    .cards-panel {
       .card-panel {
         .title {
           display: flex;
@@ -729,6 +748,10 @@ export default {
           }
         }
       }
+    }
+
+    .table-panel {
+      margin-top: 20px;
     }
   }
 }

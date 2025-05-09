@@ -58,8 +58,22 @@ export default {
           title:  { display: false },
         },
         cutout: 13,
-        // onClick: (_, value) => {
-        // }
+        onHover: (event) => {
+          if (this.selectable) {
+            event.native.target.style.cursor = 'pointer';
+          }
+        },
+        onClick: (_, element) => {
+          const idx = element[0]?.index;
+          
+          if (idx === undefined) {
+            return;
+          }
+
+          const state = this.states.find(({ index }) => idx === index);
+
+          this.selectState(state);
+        }
       },
       selectedStates: {},
     };
@@ -163,7 +177,7 @@ export default {
       return FleetUtils.dashboardStates.map(({ id }) => states.find((s) => s.id === id)?.count || 0);
     },
 
-    onClickBadge(state) {
+    selectState(state) {
       if (!this.selectable) {
         return;
       }
@@ -173,6 +187,10 @@ export default {
       const selected = Object.keys(this.selectedStates).filter((k) => this.selectedStates[k]);
 
       this.$emit('select:states', selected);
+    },
+
+    onClickBadge(state) {
+      this.selectState(state);
     }
   }
 };
