@@ -268,10 +268,13 @@ const gitRepos = [
   }
 ];
 
+const mockedPresetMixin = { methods: { preset: jest.fn() } };
+
 const requiredSetup = (computed = {}, dataProps = {}) => {
   return {
     global: {
-      mocks: {
+      mixins: [mockedPresetMixin],
+      mocks:  {
         $store: {
           getters: {
             currentProduct:         { inStore: 'cluster' },
@@ -292,6 +295,7 @@ const requiredSetup = (computed = {}, dataProps = {}) => {
       ...computed
     },
     data: () => ({
+      presetVersion:         '',
       permissions:           {},
       FLEET,
       [FLEET.GIT_REPO]:      [],
