@@ -125,6 +125,10 @@ export const getters = {
         deprecated: !!showDeprecated,
       });
 
+      // console.log(       getters.charts, repoType,
+      //   repoName,
+      //   chartName,)
+
       if ( includeHidden === false ) {
         matchingCharts = matchingCharts.filter((x) => !x.hidden);
       }
@@ -381,6 +385,10 @@ export const actions = {
 
       loaded.push(repo);
     }
+
+    // console.log(      charts,
+    //   errors,
+    //   loaded,)
 
     commit('setCharts', {
       charts,

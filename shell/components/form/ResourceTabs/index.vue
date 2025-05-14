@@ -174,6 +174,8 @@ export default {
         await this.schema.fetchResourceFields();
 
         this.showConditions = this.$store.getters[`${ this.inStore }/pathExistsInSchema`](this.value.type, 'status.conditions');
+
+        console.log(' this.showConditions', this.showConditions, this.value, this.value.type);
       }
     },
 

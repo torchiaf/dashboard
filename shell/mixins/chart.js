@@ -272,12 +272,15 @@ export default {
         });
       }
 
+      // console.log('fetch chart -------',   this.query.repoType, this.query.repoName, this.query.chartName,this.chart)
+
       return this.chart;
     },
 
     async fetchChart() {
       this.versionInfoError = null;
 
+      // here
       await this.$store.dispatch('catalog/load'); // not the problem
 
       this.fetchStoreChart();
@@ -289,6 +292,7 @@ export default {
         // form to create mode.
 
         try {
+          // here
           this.existing = await this.$store.dispatch('cluster/find', {
             type: CATALOG.APP,
             id:   `${ this.query.appNamespace }/${ this.query.appName }`,

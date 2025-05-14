@@ -65,7 +65,7 @@ export default class SteveSchema extends Schema {
       };
     }
 
-    this.requiresResourceFields = this._resourceFields === null; // This is set pre ctor via `set'er, but TS complains that it's not initialised
+    this.requiresResourceFields = this._resourceFields === null || !!this._resourceFields?.resourcePermissions; // This is set pre ctor via `set'er, but TS complains that it's not initialised
   }
 
   // Notes on Schemas, resourceFields and schemaDefinitions
@@ -118,7 +118,7 @@ export default class SteveSchema extends Schema {
    */
   set resourceFields(resourceFields: ResourceFields) {
     this._resourceFields = resourceFields;
-    this.requiresResourceFields = this._resourceFields === null;
+    this.requiresResourceFields = this._resourceFields === null || !!this._resourceFields.resourcePermissions;
   }
 
   /**

@@ -268,6 +268,8 @@ export default {
     const parts = splitObjectPath(path);
     let schemaOrSchemaDefinition = schema;
 
+    console.log(parts, schema);
+
     // Iterate down the parts (properties) until there are no parts left (success) or the path cannot be found (failure)
     while ( parts.length ) {
       const key = parts.shift();
@@ -277,6 +279,8 @@ export default {
       type = field?.type;
 
       if ( !type ) {
+        console.log('type false', schemaOrSchemaDefinition.resourceFields, key);
+
         return false;
       }
 
@@ -286,6 +290,8 @@ export default {
         schemaOrSchemaDefinition = schemaDefinitions ? schemaDefinitions?.[type] : getters.schemaFor(type);
 
         if ( !schema ) {
+          console.log('schema false');
+
           return false;
         }
       }
