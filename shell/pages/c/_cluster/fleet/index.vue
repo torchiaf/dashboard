@@ -103,11 +103,11 @@ export default {
     return {
       permissions:     {},
       FLEET,
-      [FLEET.REPO]:          [],
-      [FLEET.HELM_OP]:       [],
-      fleetWorkspaces:       [],
+      [FLEET.REPO]:    [],
+      [FLEET.HELM_OP]: [],
+      fleetWorkspaces: [],
       VIEW_MODE,
-      viewModeOptions:       [
+      viewModeOptions: [
         {
           tooltipKey: 'fleet.dashboard.viewMode.table',
           icon:       'icon-list-flat',
@@ -172,7 +172,7 @@ export default {
     },
 
     applicationStates() {
-      return this._groupByWorkspace((ws) => this._resourceStates([ ...ws.repos, ...ws.helmOps ]));
+      return this._groupByWorkspace((ws) => this._resourceStates([...ws.repos, ...ws.helmOps]));
     },
 
     clusterStates() {
@@ -373,7 +373,7 @@ export default {
     },
 
     _decodeTypeFilter(workspace, type) {
-      const disabledFilter = isEmpty(this.typeFilter) || !this.viewMode || this.viewMode === 'flat';
+      const disabledFilter = isEmpty(this.typeFilter) || !this.viewMode || this.viewMode === VIEW_MODE.TABLE;
 
       return disabledFilter || this.typeFilter[workspace]?.[type];
     },
