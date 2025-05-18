@@ -2550,6 +2550,8 @@ fleet:
       notReady: Not Ready
       waitApplied: Wait Applied
   gitRepo:
+    intro:
+      add: Add Repository
     actions:
       forceUpdate:
         label: Force Update
