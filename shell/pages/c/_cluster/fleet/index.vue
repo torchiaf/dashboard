@@ -101,6 +101,8 @@ export default {
 
   data() {
     return {
+      createRoute:     { name: 'c-cluster-fleet-application-create' },
+      canCreate:       true,
       permissions:     {},
       FLEET,
       [FLEET.REPO]:    [],
@@ -373,9 +375,9 @@ export default {
     },
 
     _decodeTypeFilter(workspace, type) {
-      const disabledFilter = isEmpty(this.typeFilter) || !this.viewMode || this.viewMode === VIEW_MODE.TABLE;
+      const emptyFilter = isEmpty(this.typeFilter) || !this.viewMode;
 
-      return disabledFilter || this.typeFilter[workspace]?.[type];
+      return emptyFilter || this.typeFilter[workspace]?.[type];
     },
 
     _cleanStateFilter(workspace) {
@@ -550,11 +552,8 @@ export default {
           class="panel-expand mt-10"
           :data-testid="`fleet-dashboard-expanded-panel-${ workspace.id }`"
         >
-          <div
-            v-if="viewMode === VIEW_MODE.CARDS"
-            class="cards-panel"
-          >
-            <div class="cards-panel-filters">
+          <div class="actions">
+            <div class="type-filters">
               <Checkbox
                 :data-testid="'fleet-dashboard-filter-git-repos'"
                 :value="typeFilter[workspace.id]?.[FLEET.GIT_REPO]"
@@ -576,6 +575,22 @@ export default {
                 </template>
               </Checkbox>
             </div>
+            <div
+              v-if="canCreate"
+              class="create-button"
+            >
+              <router-link
+                :to="createRoute"
+                class="btn role-primary"
+              >
+                {{ t(`fleet.application.intro.add`) }}
+              </router-link>
+            </div>
+          </div>
+          <div
+            v-if="viewMode === VIEW_MODE.CARDS"
+            class="cards-panel"
+          >
             <div
               v-for="(state, j) in applicationStates[workspace.id]"
               :key="j"
@@ -666,6 +681,7 @@ export default {
               }"
               :loading="$fetchState.pending"
               :use-query-params-for-simple-filtering="true"
+              :show-intro="false"
             />
           </div>
         </div>
@@ -773,8 +789,12 @@ export default {
   .panel-expand {
     animation: slideInOut 0.5s ease-in-out;
 
-    .cards-panel {
-      .cards-panel-filters {
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .type-filters {
         display: flex;
         flex-direction: column;
         margin-top: 5px;
@@ -793,6 +813,9 @@ export default {
           font-size: 25px;
         }
       }
+    }
+
+    .cards-panel {
       .card-panel {
         margin-top: 32px;
 
