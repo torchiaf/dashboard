@@ -4,6 +4,8 @@ import { SUB_TYPE } from '@shell/config/query-params';
 import FleetUtils from '@shell/utils/fleet';
 import Masthead from '@shell/components/ResourceDetail/Masthead';
 
+const APPCO = 'appco.chart';
+
 export default {
   name: 'FleetApplicationCreatePage',
 
@@ -11,6 +13,7 @@ export default {
 
   data() {
     return {
+      APPCO,
       resource:    FLEET.APPLICATION,
       application: { parentNameOverride: this.$store.getters['i18n/t'](`typeLabel."${ FLEET.APPLICATION }"`, { count: 1 })?.trim() },
       abbrSizes:   {
@@ -24,7 +27,7 @@ export default {
 
   computed: {
     types() {
-      return [
+      const out = [
         FLEET.GIT_REPO,
         FLEET.HELM_OP
       ].map((type) => {
@@ -39,6 +42,14 @@ export default {
           icon:        FleetUtils.resourceIcons[type],
         };
       });
+
+      out.push({
+        id:          APPCO,
+        label:       'Appication Collection',
+        description: `fleet.application.subTypes.'${ APPCO }'.description`,
+      });
+
+      return out;
     },
 
     selectedSubtype() {
@@ -50,6 +61,19 @@ export default {
     selectType(resource, event) {
       // TODO keyboard shortcuts
       if (event?.srcElement?.tagName === 'A') {
+        return;
+      }
+
+      if (resource === APPCO) {
+        this.$router.push({
+          name:   'c-cluster-fleet-application-resource-create-appco',
+          params: {
+            cluster:  this.$route.params.cluster,
+            product:  this.$store.getters['productId'],
+            resource: FLEET.HELM_OP,
+          },
+        });
+
         return;
       }
 
@@ -114,6 +138,38 @@ export default {
                   class="icon icon-image"
                   :class="subtype.icon"
                 />
+              </div>
+              <div v-else-if="subtype.id === APPCO">
+                <svg
+                  data-v-053d0174=""
+                  class="appco-logo"
+                  version="1.1"
+                  xmlns="http://www.w3.org/2000/svg"
+                  xmlns:xlink="http://www.w3.org/1999/xlink"
+                  x="0px"
+                  y="0px"
+                  viewBox="0 0 100 100"
+                  xml:space="preserve"
+                ><title data-v-053d0174="">Local Cluster icon</title> <g data-v-053d0174=""><g data-v-053d0174=""><path
+                  data-v-053d0174=""
+                  class="appco-fill"
+                  d="M26.0862026,44.4953918H8.6165142c-5.5818157,0-9.3979139-4.6252708-8.4802637-10.1311035l2.858391-17.210701
+            C3.912292,11.6477556,6.1382647,7.1128125,7.8419709,7.1128125s3.1788611,4.5368752,3.1788611,10.1186218v4.4837742
+            c0,5.5817471,4.4044495,9.5409164,9.9862652,9.5409164h5.0791054V44.4953918z"
+                /></g> <path
+                  data-v-053d0174=""
+                  class="appco-fill"
+                  d="M63.0214729,92.8871841H37.0862045c-6.0751343,0-11.0000019-4.9248657-11.0000019-11V30.3864384
+          c0-6.0751324,4.9248676-11,11.0000019-11h25.9352684c6.0751305,0,11.0000038,4.9248676,11.0000038,11v51.5007477
+          C74.0214767,87.9623184,69.0966034,92.8871841,63.0214729,92.8871841z"
+                /> <g data-v-053d0174=""><path
+                  data-v-053d0174=""
+                  class="appco-fill"
+                  d="M73.9137955,44.4953918h17.4696884c5.5818176,0,9.3979187-4.6252708,8.4802628-10.1311035
+            l-2.8583908-17.210701c-0.9176483-5.5058317-3.1436234-10.0407753-4.8473282-10.0407753
+            s-3.1788635,4.5368752-3.1788635,10.1186218v4.4837742c0,5.5817471-4.4044418,9.5409164-9.9862595,9.5409164h-5.0791092
+            V44.4953918z"
+                /></g></g></svg>
               </div>
               <div
                 v-else
@@ -327,5 +383,13 @@ export default {
     justify-content: flex-end;
     margin: 20px 10px 0 10px;
     z-index: 19;
+  }
+
+  .appco-logo {
+    width: 50px;
+  }
+
+  .appco-fill {
+    fill: white
   }
 </style>

@@ -1,39 +1,26 @@
 <script>
-import AsyncButton from '@shell/components/AsyncButton';
 import Loading from '@shell/components/Loading';
 import { Banner } from '@components/Banner';
-import Carousel from '@shell/components/Carousel';
-import ButtonGroup from '@shell/components/ButtonGroup';
-import TypeDescription from '@shell/components/TypeDescription';
 import {
   REPO_TYPE, REPO, CHART, VERSION, SEARCH_QUERY, _FLAGGED, CATEGORY, DEPRECATED as DEPRECATED_QUERY, HIDDEN, OPERATING_SYSTEM
 } from '@shell/config/query-params';
 import { lcFirst } from '@shell/utils/string';
 import { sortBy } from '@shell/utils/sort';
 import { mapGetters } from 'vuex';
-import { Checkbox } from '@components/Form/Checkbox';
-import Select from '@shell/components/form/Select';
-import { mapPref, HIDE_REPOS, SHOW_PRE_RELEASE, SHOW_CHART_MODE } from '@shell/store/prefs';
+import { mapPref, HIDE_REPOS, SHOW_PRE_RELEASE } from '@shell/store/prefs';
 import { removeObject, addObject } from '@shell/utils/array';
-import { compatibleVersionsFor, filterAndArrangeCharts } from '@shell/store/catalog';
-import { CATALOG as CATALOG_ANNOTATIONS } from '@shell/config/labels-annotations';
+import { compatibleVersionsFor } from '@shell/store/catalog';
 import { isUIPlugin } from '@shell/config/uiplugins';
 import TabTitle from '@shell/components/TabTitle';
 import ItemCard from '@shell/components/cards/ItemCard';
 import { get } from '@shell/utils/object';
-import { CATALOG } from '@shell/config/types';
+import { CATALOG, MANAGEMENT } from '@shell/config/types';
 
 export default {
-  name:       'Charts',
+  name:       'AppCoCharts',
   components: {
-    AsyncButton,
     Banner,
-    Carousel,
-    ButtonGroup,
     Loading,
-    Checkbox,
-    Select,
-    TypeDescription,
     TabTitle,
     ItemCard
   },
@@ -49,7 +36,7 @@ export default {
     this.category = query[CATEGORY] || '';
     this.allRepos = this.areAllEnabled();
 
-    this.installedApps = await this.$store.dispatch('cluster/findAll', { type: CATALOG.APP });
+    this.installedApps = await this.$store.dispatch('management/findAll', { type: CATALOG.APP });
   },
 
   data() {
@@ -77,10 +64,13 @@ export default {
   },
 
   computed: {
-    ...mapGetters(['currentCluster']),
+    currentCluster() {
+      return this.$store.getters['management/all'](MANAGEMENT.CLUSTER).find((x) => x.isLocal);
+    },
+
     ...mapGetters({ allCharts: 'catalog/charts', loadingErrors: 'catalog/errors' }),
 
-    chartMode: mapPref(SHOW_CHART_MODE),
+    chartMode: 'featured',
 
     hideRepos: mapPref(HIDE_REPOS),
 
@@ -177,8 +167,6 @@ export default {
       const featuredCharts = filteredCharts.filter((value) => value.featured).sort((a, b) => a.featured - b.featured);
 
       const out = featuredCharts.slice(0, 5);
-
-      // console.log(out);
 
       return out;
     },
@@ -309,7 +297,7 @@ export default {
       }
 
       this.$router.push({
-        name:   'c-cluster-apps-charts-chart',
+        name:   'c-cluster-fleet-application-resource-create-appco-chart',
         params: {
           cluster: this.$route.params.cluster,
           product: this.$store.getters['productId'],
@@ -354,20 +342,8 @@ export default {
 
     filterCharts({ category, searchQuery, hideRepos }) {
       const enabledCharts = (this.enabledCharts || []);
-      const clusterProvider = this.currentCluster.status.provider || 'other';
 
-      // console.log('enabledCharts', enabledCharts, hideRepos);
-
-      return filterAndArrangeCharts(enabledCharts, {
-        clusterProvider,
-        category,
-        searchQuery,
-        showDeprecated: this.showDeprecated,
-        showHidden:     this.showHidden,
-        hideRepos,
-        hideTypes:      [CATALOG_ANNOTATIONS._CLUSTER_TPL],
-        showPrerelease: this.$store.getters['prefs/get'](SHOW_PRE_RELEASE),
-      });
+      return enabledCharts.filter((chart) => chart.repoName === 'application-collection');
     }
   },
 };
@@ -382,106 +358,10 @@ export default {
           data-testid="charts-header-title"
           class="m-0"
         >
-          <TabTitle>{{ t('catalog.charts.header') }}</TabTitle>
+          <TabTitle>{{ 'SUSE Application Collection' }}</TabTitle>
         </h1>
       </div>
-      <div
-        v-if="featuredCharts.length > 0"
-        class="actions-container"
-      >
-        <ButtonGroup
-          v-model:value="chartMode"
-          :options="chartOptions"
-        />
-      </div>
     </header>
-    <div v-if="showCarousel">
-      <h3>{{ t('catalog.charts.featuredCharts') }}</h3>
-      <Carousel
-        :sliders="featuredCharts"
-        data-testid="charts-carousel"
-        @clicked="(row) => selectChart(row)"
-      />
-    </div>
-
-    <TypeDescription resource="chart" />
-    <div class="left-right-split">
-      <Select
-        :searchable="false"
-        :options="repoOptionsForDropdown"
-        :value="flattenedRepoNames"
-        class="checkbox-select"
-        :close-on-select="false"
-        data-testid="charts-filter-repos"
-        @option:selecting="$event.all ? toggleAll(!$event.enabled) : toggleRepo($event, !$event.enabled) "
-      >
-        <template #selected-option="selected">
-          {{ selected.label }}
-        </template>
-        <template #option="repo">
-          <Checkbox
-            :value="repo.enabled"
-            :label="repo.label"
-            class="pull-left repo in-select"
-          >
-            <template #label>
-              <span>{{ repo.label }}</span>
-            </template>
-          </Checkbox>
-        </template>
-      </Select>
-
-      <Select
-        v-model:value="category"
-        :clearable="false"
-        :searchable="false"
-        :options="categories"
-        placement="bottom"
-        label="label"
-        style="min-width: 200px;"
-        :reduce="opt => opt.value"
-        data-testid="charts-filter-category"
-      >
-        <template #option="opt">
-          {{ opt.label }} ({{ opt.count }})
-        </template>
-      </Select>
-
-      <div class="filter-block">
-        <input
-          ref="searchQuery"
-          v-model="searchQuery"
-          type="search"
-          class="input-sm"
-          :placeholder="t('catalog.charts.search')"
-          data-testid="charts-filter-input"
-          :aria-label="t('catalog.charts.search')"
-          role="textbox"
-        >
-
-        <button
-          v-shortkey.once="['/']"
-          class="hide"
-          @shortkey="focusSearch()"
-        />
-        <AsyncButton
-          role="button"
-          :aria-label="t('catalog.charts.refresh')"
-          class="refresh-btn"
-          mode="refresh"
-          size="sm"
-          @click="refresh"
-        />
-      </div>
-
-      <div class="mt-10">
-        <Checkbox
-          v-model:value="showDeprecated"
-          :label="t('catalog.charts.deprecatedChartsFilter.label')"
-          data-testid="charts-show-deprecated-filter"
-        />
-      </div>
-    </div>
 
     <Banner
       v-for="(err, i) in loadingErrors"
@@ -490,7 +370,10 @@ export default {
       :label="err"
     />
 
-    <div v-if="allCharts.length">
+    <div
+      v-if="allCharts.length"
+      class="mt-25"
+    >
       <div
         v-if="filteredCharts.length === 0"
         style="width: 100%;"

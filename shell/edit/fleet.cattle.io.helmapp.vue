@@ -1,11 +1,13 @@
 <script>
+import {
+  CHART, REPO, REPO_TYPE, VERSION, _CREATE
+} from '@shell/config/query-params';
 import { set } from '@shell/utils/object';
 import { saferDump } from '@shell/utils/create-yaml';
 import jsyaml from 'js-yaml';
 import { mapGetters } from 'vuex';
 import { base64Encode } from '@shell/utils/crypto';
 import { exceptionToErrorsArray } from '@shell/utils/error';
-import { _CREATE } from '@shell/config/query-params';
 import { checkSchemasForFindAllHash } from '@shell/utils/auth';
 import {
   AUTH_TYPE, CATALOG as REPO_CATALOG, CONFIG_MAP, FLEET, NORMAN, SECRET, VIRTUAL_HARVESTER_PROVIDER
@@ -92,6 +94,8 @@ export default {
     this.allConfigMaps = hash.allConfigMaps || [];
 
     this.updateTargets();
+
+    await this.fillAppCo();
   },
 
   data() {
@@ -447,6 +451,33 @@ export default {
   },
 
   methods: {
+    fillAppCo() {
+      const repoType = this.$route.query[REPO_TYPE];
+      const repoName = this.$route.query[REPO];
+      const chart = this.$route.query[CHART];
+      const version = this.$route.query[VERSION];
+
+      if (repoType && repoName && chart && version) {
+        const reg = this.registries[0];
+
+        this.sourceType = {
+          key:               reg._key,
+          isClusterRegistry: true
+        };
+
+        this.value.spec.helm.repo = reg.spec.url;
+
+        this.value.spec.helm.chart = chart;
+        this.value.spec.helm.version = version;
+
+        this.getChartValues({
+          repoName,
+          name: chart,
+          version
+        });
+      }
+    },
+
     onSourceTypeSelect(value) {
       delete this.value.spec.helm.repo;
       delete this.value.spec.helm.chart;
@@ -497,11 +528,11 @@ export default {
       }));
     },
 
-    async getChartValues(version) {
+    async getChartValues(data) {
       this.fetchChartValues = true;
 
       try {
-        const res = await this.$store.dispatch('management/request', { url: `/v1/${ REPO_CATALOG.CLUSTER_REPO }/${ version.repoName }?link=info&chartName=${ version.name }&version=${ version.version }` });
+        const res = await this.$store.dispatch('management/request', { url: `/v1/${ REPO_CATALOG.CLUSTER_REPO }/${ data.repoName }?link=info&chartName=${ data.name }&version=${ data.version }` });
 
         if (res?.values) {
           this.chartValues = saferDump(res?.values || {});

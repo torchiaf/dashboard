@@ -185,6 +185,7 @@ export default [
           };
         }
       },
+      // example for fleet resource to redirect to correct page
       {
         path: '/c/:cluster/apps',
         redirect(to) {
@@ -219,9 +220,29 @@ export default [
         component: () => interopDefault(import('@shell/pages/c/_cluster/fleet/application/index.vue')),
         name:      'c-cluster-fleet-application',
       }, {
-        path:      '/c/:cluster/fleet/application/create',
-        component: () => interopDefault(import('@shell/pages/c/_cluster/fleet/application/create.vue')),
-        name:      'c-cluster-fleet-application-create',
+        path:     '/c/:cluster/fleet/application/create',
+        children: [
+          {
+            path:      '',
+            component: () => interopDefault(import('@shell/pages/c/_cluster/fleet/application/create.vue')),
+            name:      'c-cluster-fleet-application-create',
+          },
+          {
+            path:      'appco',
+            component: () => interopDefault(import('@shell/pages/c/_cluster/fleet/application/appco/index.vue')),
+            name:      'c-cluster-fleet-application-resource-create-appco'
+          },
+          {
+            path:      'chart',
+            component: () => interopDefault(import('@shell/pages/c/_cluster/fleet/application/appco/chart.vue')),
+            name:      'c-cluster-fleet-application-resource-create-appco-chart',
+          },
+          // {
+          //   path:      'install',
+          //   component: () => interopDefault(import('@shell/pages/c/_cluster/fleet/application/appco/install.vue')),
+          //   name:      'c-cluster-fleet-application-resource-create-appco-install',
+          // },
+        ]
       }, {
         path:      '/c/:cluster/fleet/application/:resource/create',
         component: () => interopDefault(import('@shell/pages/c/_cluster/fleet/application/_resource/create.vue')),

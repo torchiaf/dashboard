@@ -2564,9 +2564,11 @@ fleet:
     groupBy: Group By Type
     subTypes:
       fleet.cattle.io.gitrepo:
-        description: GitRepos text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text.
+        description: GitRepo describes a git repository that is watched by Fleet. The resource contains the necessary information to deploy the repo, or parts of it, to target clusters.
       fleet.cattle.io.helmapp:
-        description: HelmOps text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text text.
+        description: HelmOps is a simplified way of creating bundles by directly pointing to a Helm repository or to an OCI registry, without needing to set up a git repository.
+      appco.chart:
+        description: Create Helm Op from SUSE Application Collection chart.
     warningTooltip:
       clusterGroup: There are no clusters in this Cluster Group
       cluster: There are no clusters available
