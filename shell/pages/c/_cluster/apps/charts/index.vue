@@ -176,7 +176,11 @@ export default {
 
       const featuredCharts = filteredCharts.filter((value) => value.featured).sort((a, b) => a.featured - b.featured);
 
-      return featuredCharts.slice(0, 5);
+      const out = featuredCharts.slice(0, 5);
+
+      console.log(out);
+
+      return out;
     },
 
     categories() {
@@ -281,6 +285,7 @@ export default {
     },
 
     selectChart(chart) {
+      console.log('select -chart', chart);
       let version;
       const OSs = this.currentCluster.workerOSs;
       const showPrerelease = this.$store.getters['prefs/get'](SHOW_PRE_RELEASE);
@@ -351,6 +356,8 @@ export default {
     filterCharts({ category, searchQuery, hideRepos }) {
       const enabledCharts = (this.enabledCharts || []);
       const clusterProvider = this.currentCluster.status.provider || 'other';
+
+      console.log('enabledCharts', enabledCharts, hideRepos);
 
       return filterAndArrangeCharts(enabledCharts, {
         clusterProvider,
