@@ -1,4 +1,5 @@
 <script>
+import { ensureRegex } from '@shell/utils/string';
 import Loading from '@shell/components/Loading';
 import { Banner } from '@components/Banner';
 import {
@@ -323,12 +324,12 @@ export default {
       // console.log('Tag Clicked, ', tag);
     },
 
-    focusSearch() {
-      if ( this.$refs.searchQuery ) {
-        this.$refs.searchQuery.focus();
-        this.$refs.searchQuery.select();
-      }
-    },
+    // focusSearch() {
+    //   if ( this.$refs.searchQuery ) {
+    //     this.$refs.searchQuery.focus();
+    //     this.$refs.searchQuery.select();
+    //   }
+    // },
 
     async refresh(btnCb) {
       try {
@@ -343,7 +344,23 @@ export default {
     filterCharts({ category, searchQuery, hideRepos }) {
       const enabledCharts = (this.enabledCharts || []);
 
-      return enabledCharts.filter((chart) => chart.repoName === 'application-collection');
+      return enabledCharts.filter((c) => {
+
+        if ( searchQuery ) {
+          // The search filter doesn't match
+          const searchTokens = searchQuery.split(/\s*[, ]\s*/).map((x) => ensureRegex(x, false));
+
+          for ( const token of searchTokens ) {
+            const chartDescription = c.chartDescription || '';
+
+            if ( !c.chartNameDisplay.match(token) && !chartDescription.match(token) ) {
+              return false;
+            }
+          }
+        }
+
+        return c.repoName === 'application-collection';        
+      });
     }
   },
 };
@@ -362,6 +379,21 @@ export default {
         </h1>
       </div>
     </header>
+
+    <div class="left-right-split">
+      <div class="filter-block">
+        <input
+          ref="searchQuery"
+          v-model="searchQuery"
+          type="search"
+          class="input-sm"
+          :placeholder="t('catalog.charts.search')"
+          data-testid="charts-filter-input"
+          :aria-label="t('catalog.charts.search')"
+          role="textbox"
+        >
+      </div>
+    </div>
 
     <Banner
       v-for="(err, i) in loadingErrors"
@@ -468,6 +500,7 @@ export default {
     grid-template-columns: 40% auto auto;
     align-content: center;
     grid-column-gap: 10px;
+    margin-top: 10px;
 
     .filter-block {
       display: flex;
