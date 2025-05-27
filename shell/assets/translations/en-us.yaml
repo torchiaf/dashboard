@@ -7124,7 +7124,7 @@ typeLabel:
       one { Git Repo }
       other {Git Repos }
     }
-  fleet.cattle.io.helmapp: |-
+  fleet.cattle.io.helmop: |-
     {count, plural,
       one { Helm Op }
       other { Helm Ops }
