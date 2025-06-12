@@ -411,8 +411,14 @@ export default {
         }
 
         :deep() .footer {
-          margin-top: 10px !important;
-          margin-left: 30px;
+          margin-top: 5px !important;
+          margin-left: 20px;
+
+          .btn {
+            background: transparent;
+            color: var(--link);
+            border: 0
+          }
         }
       }
     }
