@@ -103,9 +103,11 @@ export default {
         ...this.$store.getters[`management/all`](FLEET.HELM_OP)
       ];
     },
-  },
 
-  methods: {}
+    customRouteName() {
+      return 'c-cluster-fleet-application-resource-namespace-id';
+    }
+  },
 };
 </script>
 
@@ -131,6 +133,7 @@ export default {
       :loading="$fetchState.pending"
       :use-query-params-for-simple-filtering="useQueryParamsForSimpleFiltering"
       :force-update-live-and-delayed="forceUpdateLiveAndDelayed"
+      :custom-route-name="customRouteName"
     />
   </div>
   <div v-else>

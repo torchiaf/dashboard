@@ -5,6 +5,7 @@ import { FLEET } from '@shell/config/types';
 import { Application } from '@shell/types/fleet';
 import ResourceTable from '@shell/components/ResourceTable.vue';
 import FleetIntro from '@shell/components/fleet/FleetIntro.vue';
+import ActionMenu from '@shell/components/ActionMenuShell.vue';
 import {
   AGE,
   NAME,
@@ -31,6 +32,7 @@ export default {
   components: {
     FleetIntro,
     ResourceTable,
+    ActionMenu
   },
 
   props: {
@@ -68,6 +70,11 @@ export default {
     showIntro: {
       type:    Boolean,
       default: true,
+    },
+
+    customRouteName: {
+      type: String,
+      default: ''
     }
   },
 
@@ -146,7 +153,14 @@ export default {
 
   methods: {
     getDetailLocation(row: Application) {
-      return row._detailLocation;
+      return {
+        ...row._detailLocation,
+        name: this.customRouteName || row._detailLocation.name
+      };
+    },
+
+    getCustomActions(row: any) {
+      return row.availableActions;
     }
   },
 };
@@ -173,7 +187,15 @@ export default {
       :loading="loading"
       :use-query-params-for-simple-filtering="useQueryParamsForSimpleFiltering"
       :namespaced="!workspace"
-    />
+    >
+      <template #row-actions="{ row }">
+        <ActionMenu
+          :resource="row"
+          :custom-actions="getCustomActions(row)"
+          @goToEdit="row.goToEdit(customRouteName)"
+        />
+      </template>
+    </ResourceTable>
   </div>
 </template>
 

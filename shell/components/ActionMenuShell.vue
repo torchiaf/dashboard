@@ -28,7 +28,7 @@ const openChanged = (event: boolean) => {
   }
 };
 
-const emit = defineEmits<{(event: string, payload: any): void}>();
+const emit = defineEmits<{(event: string | 'goToEdit', payload: any): void}>();
 const route = useRoute();
 
 const execute = (action: any, event: MouseEvent, args?: any) => {

@@ -6,6 +6,7 @@ import { RcItemCard } from '@components/RcItemCard';
 import ResourceCardSummary from '@shell/components/fleet/dashboard/ResourceCardSummary.vue';
 import FleetUtils from '@shell/utils/fleet';
 import { FleetDashboardState, FleetResourceState } from '@shell/types/fleet';
+import { _EDIT, _UNFLAG, AS, MODE } from '@shell/config/query-params';
 
 export default {
 
@@ -29,6 +30,11 @@ export default {
       type:     Object as PropType<FleetDashboardState>,
       required: true
     },
+
+    customRouteName: {
+      type: String,
+      default: ''
+    }
   },
 
   data() {
@@ -125,7 +131,7 @@ export default {
       }
 
       this.$emit('click');
-    },
+    }
   }
 };
 </script>
@@ -155,6 +161,8 @@ export default {
       <ActionMenu
         :resource="value"
         :button-aria-label="t('sortableTable.tableActionsLabel', { resource: value?.id || '' })"
+        :custom-actions="value.availableActions"
+        @goToEdit="value.goToEdit(customRouteName)"
       />
     </template>
     <template #item-card-content>

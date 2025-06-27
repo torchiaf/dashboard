@@ -153,6 +153,10 @@ export default {
     ...mapGetters({ isOpenSlideInPanel: 'slideInPanel/isOpen' }),
     ...mapGetters({ isClosingSlideInPanel: 'slideInPanel/isClosing' }),
 
+    customRouteName() {
+      return 'c-cluster-fleet-application-resource-namespace-id';
+    },
+
     repoSchema() {
       return this.$store.getters['management/schemaFor'](FLEET.GIT_REPO);
     },
@@ -663,6 +667,7 @@ export default {
                         :data-testid="`resource-card-${ item.id }`"
                         :value="item"
                         :state-panel="state.statePanel"
+                        :customRouteName="customRouteName"
                         @click="showResourceDetails(item, state.statePanel, workspace, `${ item.id }-${ y }`)"
                       />
                     </div>
@@ -700,6 +705,7 @@ export default {
               :loading="$fetchState.pending"
               :use-query-params-for-simple-filtering="true"
               :show-intro="false"
+              :custom-route-name="customRouteName"
             />
           </div>
         </div>

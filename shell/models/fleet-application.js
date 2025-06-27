@@ -7,6 +7,7 @@ import { addObject, addObjects, findBy } from '@shell/utils/array';
 import SteveModel from '@shell/plugins/steve/steve-class';
 import { mapStateToEnum, primaryDisplayStatusFromCount, STATES_ENUM } from '@shell/plugins/dashboard-store/resource-class';
 import FleetUtils from '@shell/utils/fleet';
+import { _EDIT, _UNFLAG, AS, MODE } from '@shell/config/query-params';
 
 export const MINIMUM_POLLING_INTERVAL = 15;
 export const DEFAULT_POLLING_INTERVAL = 60;
@@ -286,22 +287,23 @@ export default class FleetApplication extends SteveModel {
     return this.status?.readyClusters || 0;
   }
 
-  get _detailLocation() {
-    return {
-      ...super._detailLocation,
-      name: 'c-cluster-fleet-application-resource-namespace-id'
-    };
+  goToEdit(routeName) {
+    this.customAction(routeName, _EDIT);
   }
 
-  get doneOverride() {
-    return {
-      ...super.listLocation,
-      name: 'c-cluster-fleet-application'
+  customAction(routeName, mode) {
+    const location = {
+      ...this._detailLocation,
+      name: routeName || this._detailLocation.name
     };
-  }
 
-  get doneRoute() {
-    return this.doneOverride?.name;
+    location.query = {
+      ...location.query,
+      [MODE]: mode,
+      [AS]:   _UNFLAG,
+    };
+
+    this.currentRouter().push(location);
   }
 
   get parentNameOverride() {
