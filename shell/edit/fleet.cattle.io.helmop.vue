@@ -198,7 +198,7 @@ export default {
           value: 'configMapKeyRef', label: 'ConfigMap Key', hideVariableName: true
         },
         {
-          value: 'secretKeyRef', label: 'Secret key', hideVariableName: true
+          value: 'secretKeyRef', label: 'Secret Key', hideVariableName: true
         },
       ];
     },
