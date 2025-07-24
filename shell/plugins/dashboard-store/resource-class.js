@@ -1584,7 +1584,7 @@ export default class Resource {
 
           const initialValue = jsyaml.load(initialYaml);
           const value = jsyaml.load(yaml);
-          const liveValue = this.$rootGetters[`${ inStore }/byId`](this.type, this.id);
+          const liveValue = await this.$dispatch(`${ inStore }/find`, { type: this.type, id: this.id }, { root: true });
 
           const handledConflictErr = await handleConflict(
             initialValue,
