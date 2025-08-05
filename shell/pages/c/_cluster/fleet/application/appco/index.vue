@@ -274,9 +274,9 @@ export default {
 
     selectChart(chart) {
       let version;
-      const OSs = this.currentCluster.workerOSs;
+
       const showPrerelease = this.$store.getters['prefs/get'](SHOW_PRE_RELEASE);
-      const compatibleVersions = compatibleVersionsFor(chart, OSs, showPrerelease);
+      const compatibleVersions = compatibleVersionsFor(chart, [], showPrerelease);
       const versions = chart.versions;
 
       if (compatibleVersions.length > 0) {

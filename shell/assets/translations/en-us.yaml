@@ -2565,7 +2565,7 @@ fleet:
     subTypes:
       fleet.cattle.io.gitrepo:
         description: GitRepo describes a git repository that is watched by Fleet. The resource contains the necessary information to deploy the repo, or parts of it, to target clusters.
-      fleet.cattle.io.helmapp:
+      fleet.cattle.io.helmop:
         description: HelmOps is a simplified way of creating bundles by directly pointing to a Helm repository or to an OCI registry, without needing to set up a git repository.
       appco.chart:
         description: Create Helm Op from SUSE Application Collection chart.
@@ -7311,7 +7311,7 @@ typeLabel:
       one { Git Repo }
       other {Git Repos }
     }
-  fleet.cattle.io.helmapp: |-
+  fleet.cattle.io.helmop: |-
     {count, plural,
       one { Helm Op }
       other { Helm Ops }

@@ -77,7 +77,7 @@ export default {
 
     osWarning() {
       if (this.chart) {
-        const compatible = compatibleVersionsFor(this.chart, this.currentCluster.workerOSs, this.showPreRelease );
+        const compatible = compatibleVersionsFor(this.chart, [], this.showPreRelease );
 
         const currentlyCompatible = !!compatible.find((version) => {
           return version.version === this.targetVersion;
