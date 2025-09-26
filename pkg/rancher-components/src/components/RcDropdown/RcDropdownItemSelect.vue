@@ -16,6 +16,10 @@ defineProps({
     default: ''
   },
   disabled: Boolean,
+  label: {
+    type:    String,
+    default: ''
+  },
   options:  {
     type: Array,
     default() {
@@ -55,7 +59,7 @@ const focusMenuItem = () => {
     <LabeledSelect
       ref="menuItemSelect"
       :value="modelValue"
-      :label="t('console.containerLogs.range.label')"
+      :label="label"
       :options="options"
       :clearable="false"
       placement="top"

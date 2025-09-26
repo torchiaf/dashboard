@@ -1,0 +1,65 @@
+import { watch } from 'vue';
+
+// function getElement(id: string): HTMLElement | null {
+//   return document.querySelector(``);
+// }
+// function isVisible(id: string): boolean {
+//   const element = getElement(id);
+
+//   if (!element) {
+//     return false;
+//   }
+
+//   const style = window.getComputedStyle(element);
+//   const isVisible = style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+
+//   if (!isVisible) {
+//     return false;
+//   }
+
+//   const rect = element.getBoundingClientRect();
+//   const isOnScreen = rect.width > 0 && rect.height > 0;
+
+//   return isOnScreen;
+// }
+
+
+interface DataContext {
+  key: string;
+  value: any;
+  description?: string;
+}
+
+function isValid(context: DataContext): context is DataContext {
+  return (
+    context !== null &&
+    typeof context === 'object' &&
+    typeof context.key === 'string' &&
+    context.description !== undefined &&
+    (typeof context.description === 'string' || context.description === undefined)
+  );
+}
+
+export default {
+  async mounted(el: any, binding: { value: DataContext, instance: any }) {
+    const store = binding.instance.$store;
+    const context = binding.value;
+
+    if (binding.instance && binding.instance[context.key]) {
+      if(!isValid(context)) {
+        throw new Error('Invalid ui-context value');
+      }
+
+      el._uiContextId = await store.dispatch('ui-context/add', { ...context, value: binding.instance[context.key] });
+    }
+  },
+
+  async beforeUnmount(el: any, binding: { value: DataContext, instance: any }) {
+    const store = binding.instance.$store;
+
+
+    console.log(store.getters['ui-context/all']());
+
+    await store.dispatch('ui-context/remove', el._uiContextId);
+  }
+};

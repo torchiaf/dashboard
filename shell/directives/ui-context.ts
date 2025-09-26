@@ -5,6 +5,7 @@ interface Context {
   path?: string;
   value?: any;
   description?: string;
+  icon?: string;
 }
 
 function isValid(context: Context ): context is Context {

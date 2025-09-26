@@ -25,8 +25,6 @@ const deprecationProxy = (target, message) => {
 
   const deprecationHandler = {
     get(target, prop) {
-      logWarning();
-
       return Reflect.get(target, prop);
     }
   };

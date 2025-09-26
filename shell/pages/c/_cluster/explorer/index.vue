@@ -655,8 +655,7 @@ export default {
             {{ displayProvider }}
           </button>
         </span>
-        <span
-          v-else
+        <span v-else
           v-ui-context="{ tag: 'cluster', path: 'currentCluster.name', description: 'Cluster name' }"
         >
           {{ displayProvider }}

@@ -2,6 +2,7 @@ interface Context {
   tag: string;
   value: any;
   description?: string;
+  icon?: string;
 }
 
 interface Element {
