@@ -9,8 +9,7 @@ import ActionMenu from '@shell/components/ActionMenu';
 import GrowlManager from '@shell/components/GrowlManager';
 import ModalManager from '@shell/components/ModalManager';
 import SlideInPanelManager from '@shell/components/SlideInPanelManager';
-import PrimarySideWindow from '@shell/components/nav/PrimarySideWindow';
-import SecondarySideWindow from '@shell/components/nav/SecondarySideWindow.vue';
+import WindowManager from '@shell/components/nav/WindowManager';
 import PromptRemove from '@shell/components/PromptRemove';
 import PromptRestore from '@shell/components/PromptRestore';
 import PromptModal from '@shell/components/PromptModal';
@@ -20,13 +19,11 @@ import Brand from '@shell/mixins/brand';
 import FixedBanner from '@shell/components/FixedBanner';
 import AwsComplianceBanner from '@shell/components/AwsComplianceBanner';
 import AzureWarning from '@shell/components/auth/AzureWarning';
-import DraggableZone from '@shell/components/DraggableZone';
 import { MANAGEMENT } from '@shell/config/types';
 import { markSeenReleaseNotes } from '@shell/utils/version';
 import PageHeaderActions from '@shell/mixins/page-actions';
 import BrowserTabVisibility from '@shell/mixins/browser-tab-visibility';
 import { getClusterFromRoute, getProductFromRoute } from '@shell/utils/router';
-import { BOTTOM } from '@shell/utils/position';
 import SideNav from '@shell/components/SideNav';
 
 const SET_LOGIN_ACTION = 'set-as-login';
@@ -42,12 +39,10 @@ export default {
     GrowlManager,
     ModalManager,
     SlideInPanelManager,
-    PrimarySideWindow,
-    SecondarySideWindow,
+    WindowManager,
     FixedBanner,
     AwsComplianceBanner,
     AzureWarning,
-    DraggableZone,
     Inactivity,
     SideNav,
   },
@@ -59,9 +54,6 @@ export default {
     return {
       noLocaleShortcut: process.env.dev || false,
       wantNavSync:      false,
-      unwatchPin:       undefined,
-      wmPin:            null,
-      draggable:        false,
     };
   },
 
@@ -110,26 +102,6 @@ export default {
       return this.clusterReady &&
         this.clusterId === getClusterFromRoute(this.$route) && routeReady;
     },
-
-    pinClass() {
-      return `pin-${ this.wmPin }`;
-    },
-
-  },
-
-  mounted() {
-    // Here pin the window manager to the last known position
-    this.wmPin = window.localStorage.getItem('wm-pin') || BOTTOM;
-
-    // two-way binding this.wmPin <-> draggableZone.pin
-    this.$refs.draggableZone.pin = this.wmPin;
-    this.unwatchPin = this.$watch('$refs.draggableZone.pin', (pin) => {
-      this.wmPin = pin;
-    });
-  },
-
-  unmounted() {
-    this.unwatchPin();
   },
 
   methods: {
@@ -193,7 +165,7 @@ export default {
     <div
       v-if="managementReady"
       class="dashboard-content"
-      :class="{[pinClass]: true, 'dashboard-padding-left': showTopLevelMenu}"
+      :class="{'dashboard-padding-left': showTopLevelMenu}"
     >
       <Header />
       <SideNav
@@ -248,25 +220,11 @@ export default {
           class="outlet"
         />
       </main>
-      <div
-        v-if="$refs.draggableZone"
-        class="wm"
-        :class="{
-          'drag-end': !$refs.draggableZone.drag.active,
-          'drag-start': $refs.draggableZone.drag.active,
-        }"
-        :draggable="draggable"
-        @dragstart="$refs.draggableZone.onDragStart($event)"
-        @dragend="$refs.draggableZone.onDragEnd($event)"
-      >
-        <PrimarySideWindow @draggable="draggable=$event" />
-      </div>
-      <SecondarySideWindow />
+      <WindowManager />
     </div>
     <FixedBanner :footer="true" />
     <GrowlManager />
     <SlideInPanelManager />
     <Inactivity />
-    <DraggableZone ref="draggableZone" />
   </div>
 </template>

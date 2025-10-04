@@ -6994,7 +6994,9 @@ sideWindow:
     resize: Resize secondary window
 
 wm:
-  closeTab: Close tab {tabId}
+  resize: Resize Window - use arrow keys {arrow1} and {arrow2} to resize with keyboard
+  tabIcon: Window tab icon
+  closeTab: Close tab - {tabId}
   connection:
     connected: Connected
     connecting: Connecting&hellip;
@@ -7031,9 +7033,6 @@ wm:
     timestamps: Show Timestamps
     wrap: Wrap Lines
   containerShell:
-    resizeShellWindow: Resize Shell window - use arrow keys {arrow1} and {arrow2} to resize with keyboard
-    tabIcon: Shell tab icon
-    closeShellTab: Close Shell tab - {tab}
     escapeText: Press Shift+Escape to blur from terminal
     clear: Clear
     containerName: "Container: {label}"

@@ -1,0 +1,66 @@
+<script setup lang="ts">
+import { BOTTOM, CENTER, LEFT, RIGHT } from '@shell/utils/position';
+import HorizontalPanel from './panels/HorizontalPanel.vue';
+import VerticalPanel from './panels/VerticalPanel.vue';
+import PinArea from './PinArea.vue';
+import useComponentsMount from './composables/useComponentsMount';
+import useTabsHandler from './composables/useTabsHandler';
+
+export type Position = typeof BOTTOM | typeof LEFT | typeof RIGHT | typeof CENTER;
+
+export interface Tab {
+  id: string,
+  icon: string,
+  label: string,
+  component?: string,
+  extensionId?: string,
+  position: Position,
+  containerHeight: number,
+  containerWidth: number,
+  attrs?: Record<string, any>,
+}
+
+const props = defineProps({
+  positions: {
+    type:    Array as () => Position[],
+    default: () => [BOTTOM, LEFT, RIGHT]
+  },
+});
+
+const { loadComponent } = useComponentsMount();
+
+const { tabs, isPanelOpen } = useTabsHandler();
+</script>
+
+<template>
+  <HorizontalPanel
+    v-if="props.positions.includes(BOTTOM) && isPanelOpen[BOTTOM]"
+    :position="BOTTOM"
+  />
+  <VerticalPanel
+    v-if="props.positions.includes(LEFT) && isPanelOpen[LEFT]"
+    :position="LEFT"
+  />
+  <VerticalPanel
+    v-if="props.positions.includes(RIGHT) && isPanelOpen[RIGHT]"
+    :position="RIGHT"
+  />
+  <Teleport
+    v-for="tab in tabs"
+    :key="tab.tab.id"
+    :to="`#${ tab.containerId }`"
+  >
+    <keep-alive>
+      <component
+        :is="loadComponent(tab.tab)"
+        :key="tab.tab.id"
+        :tab="tab"
+        :active="true"
+        :height="tab.tab.containerHeight"
+        :width="tab.tab.containerWidth"
+        v-bind="tab.tab.attrs"
+      />
+    </keep-alive>
+  </Teleport>
+  <PinArea />
+</template>
