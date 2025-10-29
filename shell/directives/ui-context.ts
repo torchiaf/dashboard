@@ -11,6 +11,62 @@ interface Context {
   store?: any;
 }
 
+interface UIContextAPI {
+  add: (context: any) => Promise<any>;
+  remove: (id: any) => Promise<any>;
+}
+
+/**
+ * Builds a minimal UI context store from the given store.
+ * @param store The store to build the UI context store from.
+ * @returns The built UI context store.
+ */
+function buildUIContextAPI(store: any) {
+  if (!store || typeof store.dispatch !== 'function') {
+    return null;
+  }
+
+  return {
+    add:    (context: any) => store.dispatch('ui-context/add', context),
+    remove: (id: any) => store.dispatch('ui-context/remove', id),
+  };
+}
+
+/**
+ * Cache the UI context API from the given binding and vnode.
+ * @param binding The binding object containing the context and instance.
+ * @param vnode The vnode object representing the component.
+ * @returns The built UI context API or null if it couldn't be created.
+ */
+function cacheUIContextStore(binding: { value: Context, instance: any }, vnode: any) {
+  const explicitStore = binding.value?.store;
+  const instanceStore = binding.instance?.$store || binding.instance?.store;
+  const appStore = vnode?.appContext?.config?.globalProperties?.$store;
+
+  if (!cachedUIContextStore) {
+    cachedUIContextStore = buildUIContextAPI(explicitStore || instanceStore || appStore);
+  }
+}
+
+/**
+ * Cache a minimal ui-context API (shared across directives)
+ *
+ * This is necessary to access the store when the directive is unmounted and the store reference from the component is already gone
+ * The cache will allow the directive to remove the context properly.
+ */
+let cachedUIContextStore: UIContextAPI | null = null;
+/**
+ * Maps UI context elements to their unique IDs.
+ *
+ * WeakMap allows entries to vanish automatically when elements are removed (no manual memory management)
+ */
+const uiContextIds = new WeakMap<Element, string | number>();
+
+/**
+ * Validates the context object.
+ * @param context The context object to validate.
+ * @returns True if the context is valid, false otherwise.
+ */
 function isValid(context: Context ): context is Context {
   return (
     context !== null &&
@@ -45,7 +101,7 @@ function isValid(context: Context ): context is Context {
  *
 */
 export default {
-  async mounted(el: any, binding: { value: Context, instance: any }) {
+  async mounted(el: any, binding: { value: Context, instance: any }, vnode: any) {
     const context: Context = binding.value;
 
     if (!context || isEmpty(context)) {
@@ -85,19 +141,31 @@ export default {
       (context as any).hookId = hookId;
     }
 
-    const store = context.store || binding.instance.$store || binding.instance.store;
+    cacheUIContextStore(binding, vnode);
 
-    if (store) {
+    if (cachedUIContextStore) {
       delete context.store;
-      el._uiContextId = await store.dispatch('ui-context/add', context);
+
+      const id = await cachedUIContextStore.add(context);
+
+      uiContextIds.set(el, id);
     }
   },
 
-  async beforeUnmount(el: any, binding: { value: Context, instance: any }) {
-    const store = binding.value?.store || binding.instance.$store || binding.instance.store;
+  async beforeUnmount(el: any, binding: { value: Context, instance: any }, vnode: any) {
+    cacheUIContextStore(binding, vnode);
 
-    if (store && el._uiContextId) {
-      await store.dispatch('ui-context/remove', el._uiContextId);
+    const id = uiContextIds.get(el);
+
+    if (cachedUIContextStore && id) {
+      try {
+        await cachedUIContextStore.remove(id);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn(`[ui-context] failed to remove context id "${ id }"`);
+      }
     }
+
+    uiContextIds.delete(el);
   }
 };
