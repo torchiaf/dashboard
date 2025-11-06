@@ -72,11 +72,10 @@ HEADER {
   min-height: 0px;
 
   grid-template-areas:
-    "header  header  header  header"
-    "wm-vl    nav     main   wm-vr"
-    "wm-vl    wm       wm    wm-vr";
-  grid-template-rows: var(--header-height) auto var(--wm-height, 0px);
-  grid-template-columns: var(--wm-vl-width, 0px) var(--nav-width) auto var(--wm-vr-width, 0px);
+    "header  header"
+    "nav     main";
+  grid-template-rows: var(--header-height) auto;
+  grid-template-columns: var(--nav-width) auto;
 
   &.dashboard-padding-left {
     padding-left: $app-bar-collapsed-width;
@@ -93,27 +92,6 @@ HEADER {
   .default-side-nav {
     grid-area: nav;
   }
-}
-
-.wm {
-  grid-area: wm;
-  overflow-y: hidden;
-  z-index: z-index('windowsManager');
-  position: relative;
-}
-
-.wm-vr {
-  grid-area: wm-vr;
-  overflow-y: hidden;
-  z-index: z-index('windowsManager');
-  position: relative;
-}
-
-.wm-vl {
-  grid-area: wm-vl;
-  overflow-y: hidden;
-  z-index: z-index('windowsManager');
-  position: relative;
 }
 
 .localeSelector {

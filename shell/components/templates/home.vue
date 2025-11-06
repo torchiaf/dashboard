@@ -12,7 +12,6 @@ import BrowserTabVisibility from '@shell/mixins/browser-tab-visibility';
 import Inactivity from '@shell/components/Inactivity';
 import { mapState, mapGetters } from 'vuex';
 import PromptModal from '@shell/components/PromptModal';
-import WindowManager from '@shell/components/nav/WindowManager';
 import { Layout } from '@shell/types/window-manager';
 
 export default {
@@ -27,7 +26,6 @@ export default {
     AwsComplianceBanner,
     Inactivity,
     PromptModal,
-    WindowManager
   },
 
   mixins: [Brand, BrowserTabVisibility],
@@ -85,7 +83,6 @@ export default {
           class="outlet"
         />
       </main>
-      <WindowManager :layout="layout" />
     </div>
     <FixedBanner :footer="true" />
     <GrowlManager />
@@ -117,36 +114,15 @@ export default {
     flex-grow:1;
 
     grid-template-areas:
-      "header header header"
-      "wm-vl  main    wm-vr";
+      "header"
+      "main";
 
-    grid-template-columns: var(--wm-vl-width, 0px) auto var(--wm-vr-width, 0px);
+    grid-template-columns: auto;
     grid-template-rows:    var(--header-height) auto;
 
     > HEADER {
       grid-area: header;
     }
-  }
-
-  .wm {
-    grid-area: wm;
-    overflow-y: hidden;
-    z-index: z-index('windowsManager');
-    position: relative;
-  }
-
-  .wm-vr {
-    grid-area: wm-vr;
-    overflow-y: hidden;
-    z-index: z-index('windowsManager');
-    position: relative;
-  }
-
-  .wm-vl {
-    grid-area: wm-vl;
-    overflow-y: hidden;
-    z-index: z-index('windowsManager');
-    position: relative;
   }
 
   MAIN {

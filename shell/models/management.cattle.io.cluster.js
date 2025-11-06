@@ -359,7 +359,8 @@ export default class MgmtCluster extends SteveModel {
       attrs:     {
         cluster: this,
         pod:     {}
-      }
+      },
+      position:      'bottom',
     }, { root: true });
   }
 

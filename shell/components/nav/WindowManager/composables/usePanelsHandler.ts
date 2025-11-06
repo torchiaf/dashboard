@@ -7,7 +7,7 @@ export default (props?: { positions: Position[], layout: Layout }) => {
 
   const isPanelEnabled = computed(() => (props?.positions || []).reduce((acc, pos) => ({
     ...acc,
-    [pos]: store.state.wm.open[pos] && !store.state.wm.tabs.find((t: Tab) => !t.layouts.includes(props?.layout || Layout.default) && t.position === pos),
+    [pos]: store.state.wm.open[pos],
   }), {} as Record<Position, boolean>));
 
   return { isPanelEnabled };

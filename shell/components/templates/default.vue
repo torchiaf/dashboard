@@ -9,7 +9,6 @@ import ActionMenu from '@shell/components/ActionMenu';
 import GrowlManager from '@shell/components/GrowlManager';
 import ModalManager from '@shell/components/ModalManager';
 import SlideInPanelManager from '@shell/components/SlideInPanelManager';
-import WindowManager from '@shell/components/nav/WindowManager';
 import PromptRemove from '@shell/components/PromptRemove';
 import PromptRestore from '@shell/components/PromptRestore';
 import PromptModal from '@shell/components/PromptModal';
@@ -40,7 +39,6 @@ export default {
     GrowlManager,
     ModalManager,
     SlideInPanelManager,
-    WindowManager,
     FixedBanner,
     AwsComplianceBanner,
     AzureWarning,
@@ -222,7 +220,6 @@ export default {
           class="outlet"
         />
       </main>
-      <WindowManager :layout="layout" />
     </div>
     <FixedBanner :footer="true" />
     <GrowlManager />

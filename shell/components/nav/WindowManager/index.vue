@@ -7,6 +7,10 @@ import useComponentsMount from './composables/useComponentsMount';
 import useTabsHandler from './composables/useTabsHandler';
 import usePanelsHandler from '@shell/components/nav/WindowManager/composables/usePanelsHandler';
 import { Layout, Position } from '@shell/types/window-manager';
+import { onMounted, watch } from 'vue';
+import { useStore } from 'vuex';
+
+const store = useStore();
 
 /**
  * This component is responsible for rendering the window manager panels and tabs.
@@ -38,37 +42,67 @@ const { loadComponent } = useComponentsMount();
 
 const { isPanelEnabled } = usePanelsHandler({ layout: props.layout, positions: props.positions });
 const { tabs } = useTabsHandler();
+
+onMounted(() => {
+  console.log('-------------- WindowManager mounted with layout:', props.layout, isPanelEnabled, store);
+});
+
+watch(
+  () => isPanelEnabled,
+  (newVal) => {
+    console.log('WindowManager layout changed to:', newVal, isPanelEnabled);
+  }
+);
+
+watch(
+  () => store.state.wm,
+  (newVal) => {
+    console.log('--- WindowManager state changed to:', newVal);
+  },
+  { immediate: true, deep: true }
+)
 </script>
 
 <template>
-  <HorizontalPanel
-    v-if="isPanelEnabled[BOTTOM]"
-    :position="BOTTOM"
-  />
-  <VerticalPanel
-    v-if="isPanelEnabled[LEFT]"
-    :position="LEFT"
-  />
-  <VerticalPanel
-    v-if="isPanelEnabled[RIGHT]"
-    :position="RIGHT"
-  />
-  <Teleport
-    v-for="{ tab, containerId } in tabs"
-    :key="tab.id"
-    :to="`#${ containerId }`"
-  >
-    <keep-alive>
-      <component
-        :is="loadComponent(tab)"
-        :key="tab.id"
-        :tab="tab"
-        :active="true"
-        :height="tab.containerHeight"
-        :width="tab.containerWidth"
-        v-bind="tab.attrs"
-      />
-    </keep-alive>
-  </Teleport>
-  <PinArea />
+
+    <HorizontalPanel
+      v-if="isPanelEnabled[BOTTOM]"
+      class="hp"
+      :position="BOTTOM"
+    />
+    <VerticalPanel
+      v-if="isPanelEnabled[LEFT]"
+      :position="LEFT"
+    />
+    <VerticalPanel
+      v-if="isPanelEnabled[RIGHT]"
+      :position="RIGHT"
+    />
+    <Teleport
+      v-for="{ tab, containerId } in tabs"
+      :key="tab.id"
+      :to="`#${ containerId }`"
+    >
+      <keep-alive>
+        <component
+          :is="loadComponent(tab)"
+          :key="tab.id"
+          :tab="tab"
+          :active="true"
+          :height="tab.containerHeight"
+          :width="tab.containerWidth"
+          v-bind="tab.attrs"
+        />
+      </keep-alive>
+    </Teleport>
+    <PinArea />
+
 </template>
+
+<style lang="scss" scoped>
+.hp {
+  position: fixed;
+  bottom: 0px;
+  width: 100%;
+}
+</style>

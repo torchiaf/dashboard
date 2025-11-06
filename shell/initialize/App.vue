@@ -1,10 +1,22 @@
 <script>
+import { watch } from 'vue';
+
 import NuxtLoading from '@shell/components/nav/GlobalLoading.vue';
+import WindowManager from '@shell/components/nav/WindowManager/index.vue';
 
 import '@shell/assets/styles/app.scss';
 
 export default {
-  data: () => ({ isOnline: true }),
+  components: {
+    WindowManager,
+    NuxtLoading
+  },
+
+  data: () => ({
+    isOnline: true,
+    windowManagerContainerReady: false,
+    unwatch: null,
+  }),
 
   created() {
     // add to window so we can listen when ready
@@ -34,6 +46,22 @@ export default {
 
   mounted() {
     this.$loading = this.$refs.loading;
+
+    // setTimeout(() => {
+    //   this.windowManagerContainerReady = true;
+    // }, 3000);
+
+    this.unwatch = watch(
+      () => this.$loading,
+      (newVal) => {
+        console.log('------ Loading state changed:', newVal.state.pending); // eslint-disable-line no-console
+        if (!newVal.state.pending) {
+          this.windowManagerContainerReady = true;
+          // this.unwatch(); // stop watching after first load complete
+        }
+      },
+      { immediate: true }
+    );
   },
 
   computed: {
@@ -54,8 +82,6 @@ export default {
       }
     },
   },
-
-  components: { NuxtLoading }
 };
 </script>
 <template>
@@ -65,6 +91,7 @@ export default {
       id="__layout"
     >
       <router-view />
+      <WindowManager v-if="windowManagerContainerReady" />
     </div>
   </div>
 </template>
