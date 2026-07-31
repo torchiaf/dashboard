@@ -71,6 +71,17 @@ cp globals.d.ts dist/
 cp -r bin dist/
 cp -r template dist/
 
+echo "Verifying no @shell imports in cypress..."
+
+if grep -r "@shell" tmp/ --include="*.ts" 2>/dev/null; then
+  echo "ERROR: Found @shell imports in cypress folder. All shell dependencies must be removed."
+  echo "If you need shell functionality, please replicate it in cypress/utils/shell.ts instead."
+  echo ""
+  exit 1
+fi
+
+echo "✓ Verification passed: No @shell imports found"
+
 if [ "$1" == "--verify" ]; then
   echo ""
   echo "Package build verified"

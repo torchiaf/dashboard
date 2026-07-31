@@ -1,5 +1,4 @@
 // External version of globals.d.ts for @rancher/cypress package
-// Dependencies on @shell/types removed for standalone use
 
 type Verbs = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
@@ -119,7 +118,7 @@ declare global {
          */
         context?: string,
         namespace?: string,
-        createResource: ({ ns, i }) => Chainable
+        createResource: ({ ns, i }: { ns: string, i: number }) => Chainable
         count?: number,
         /**
          * Every 5 resources cy.wait this amount of milliseconds
@@ -149,7 +148,7 @@ declare global {
       getClusterToolsChartCount(repoName?: string): Chainable<number>;
       installChart(repo: string, chartId: string, chartName: string, chartVersion: string, namespace: string): Chainable;
       getChartVersions(repo: string, chartId: string): Chainable<string[]>;
-      deleteNodeTemplate(nodeTemplateId: string, timeout?: number, failOnStatusCode?: boolean)
+      deleteNodeTemplate(nodeTemplateId: string, timeout?: number, failOnStatusCode?: boolean): Chainable<void>;
       /**
        * Delete a namespace and wait for it to 404. Helpful when the ns contains many resources
        */
@@ -166,7 +165,7 @@ declare global {
          * Every 5 resources cy.wait this amount of milliseconds
          */
         wait?: number
-      })
+      }): Chainable<void>;
       /**
        * Loop through the array and execute the process, pausing every 5 entries for wait amount
        */
@@ -234,7 +233,7 @@ declare global {
       isEnabled(): Chainable<Element>;
 
       // Check css var
-      shouldHaveCssVar(name: string, value: string);
+      shouldHaveCssVar(name: string, value: string): Chainable<void>;
 
       /**
        * realHover event from cypress-real-events
