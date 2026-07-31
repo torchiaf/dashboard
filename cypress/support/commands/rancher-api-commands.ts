@@ -3,7 +3,7 @@ import { CreateUserParams, CreateAmazonRke2ClusterParams, CreateAmazonRke2Cluste
 import { CypressChainable } from '~/cypress/e2e/po/po.types';
 import { MEDIUM_API_DELAY } from '@/cypress/support/utils/api-endpoints';
 import { MEDIUM_TIMEOUT_OPT } from '@/cypress/support/utils/timeouts';
-import { base64Encode } from '@/cypress/utils/shell';
+import { base64Encode } from '@shell/utils/crypto/index.js';
 
 // This file contains commands which makes API requests to the rancher API.
 // It includes the `login` command to store the `token` to use
